@@ -80,8 +80,9 @@
     }}
   >
     <input bind:value={path} placeholder="/Users/moi/Dev/mon-repo" aria-label="Chemin du dossier" required />
-    <button type="button" disabled={loading} onclick={() => picker.open()}>Ajouter projet</button>
-    <button class="primary" disabled={loading}>{loading ? 'Analyse…' : 'Analyser'}</button>
+    <button type="button" class="primary" disabled={loading} onclick={() => picker.open()}>
+      {loading ? 'Analyse…' : 'Ajouter projet'}
+    </button>
   </form>
 </div>
 
