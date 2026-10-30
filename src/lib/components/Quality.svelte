@@ -17,12 +17,10 @@
 <div class="head card">
   <ScoreBadge score={quality.score} size="lg" />
   <div>
-    <p>Contrôle de ce qui sera envoyé à Claude. Barème : erreur −15, avertissement −5, suggestion −1.</p>
-    <p class="muted">
-      Repères : racine &lt; {LIMITS.rootWarn} lignes (max {LIMITS.rootError}) · ≈ {LIMITS.alwaysInstructions} instructions
-      toujours chargées · règles vérifiables, pas de secret, pas de style qu'un linter gère. Actuellement
-      <b>{quality.alwaysLoadedInstructions}</b> instructions toujours chargées.
+    <p>
+      <b>{quality.alwaysLoadedInstructions}</b> instructions chargées à chaque session (repère : {LIMITS.alwaysInstructions}).
     </p>
+    <p class="muted">Erreur −15 · avertissement −5 · suggestion −1</p>
   </div>
 </div>
 
