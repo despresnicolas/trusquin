@@ -1,0 +1,19 @@
+meta {
+  name: Historique d'un projet
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/analyses?path={{repoPath}}
+  body: none
+  auth: none
+}
+
+params:query {
+  path: {{repoPath}}
+}
+
+docs {
+  Analyses d'un dossier, sans le détail des critères, la plus récente en premier.
+}

@@ -1,0 +1,7 @@
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.claude/
+pnpm-lock.yaml
+build/
+.svelte-kit/

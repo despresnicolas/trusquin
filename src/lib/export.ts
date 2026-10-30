@@ -1,0 +1,43 @@
+import JSZip from 'jszip';
+import { USER_PREFIX } from './core/placement';
+import type { GeneratedFile, Project, QualityReport } from './core/types';
+
+export const CONFIG_FILE = 'sauron.json';
+
+function report(files: GeneratedFile[], quality: QualityReport): string {
+  const lines = [
+    '# Rapport SAURON',
+    '',
+    `Score qualité : **${quality.score}/100** · ${quality.alwaysLoadedInstructions} instructions toujours chargées`,
+    '',
+    '## Fichiers',
+    '',
+    ...files.map((f) => `- \`${f.path}\` — ${f.explanation}`),
+    '',
+    '## Points à traiter',
+    '',
+    ...(quality.issues.length ? quality.issues.map((i) => `- [${i.severity}] ${i.message} → ${i.fix}`) : ['Aucun.']),
+    '',
+  ];
+  return lines.join('\n');
+}
+
+/** Zip à décompresser à la racine du repo. Les fichiers ~/ vont dans `_home/`. */
+export async function exportZip(project: Project, files: GeneratedFile[], quality: QualityReport): Promise<Blob> {
+  const zip = new JSZip();
+  for (const file of files) {
+    const path = file.path.startsWith(USER_PREFIX) ? `_home/${file.path.slice(USER_PREFIX.length)}` : file.path;
+    zip.file(path, file.content);
+  }
+  zip.file(CONFIG_FILE, JSON.stringify(project, null, 2) + '\n');
+  zip.file('_sauron-report.md', report(files, quality));
+  return zip.generateAsync({ type: 'blob' });
+}
+
+export function download(name: string, data: Blob | string): void {
+  const blob = typeof data === 'string' ? new Blob([data], { type: 'application/json' }) : data;
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Analyser un dossier
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/analyses
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "path": "{{repoPath}}"
+  }
+}
+
+docs {
+  Analyse un dossier local du serveur et l'enregistre.
+  Réponse : AnalysisRecord + `rules` (règles importables, non stockées).
+  400 si chemin relatif, introuvable, pas un dossier ou hors SAURON_ROOTS ; 503 si base indisponible.
+}

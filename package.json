@@ -1,0 +1,42 @@
+{
+  "name": "sauron",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Générateur de configuration Claude Code (CLAUDE.md, rules, skills, agents, hooks) avec contrôle qualité et analyse de repo.",
+  "type": "module",
+  "bin": {
+    "sauron": "./cli/sauron.ts"
+  },
+  "scripts": {
+    "prepare": "svelte-kit sync || echo \"\"",
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "sauron": "tsx cli/sauron.ts",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "jszip": "^3.10.2",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "6.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^26.6.5",
+    "prettier": "^3.9.10",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.7",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "packageManager": "pnpm@12.8.1",
+  "imports": {
+    "#lib/*": "./src/lib/*"
+  }
+}
