@@ -174,6 +174,14 @@ describe('analyze', () => {
     ]);
   });
 
+  it('imports hooks from .claude/settings.json', () => {
+    const hook = newRule({ kind: 'hook', event: 'PostToolUse', matcher: 'Edit', command: 'prettier' });
+    const files = generate(project([newRule({ body: 'x' }), hook]));
+    const contents = Object.fromEntries(files.map((f) => [f.path, f.content]));
+    const imported = importRules({ paths: [], contents }, () => 'h').filter((r) => r.kind === 'hook');
+    expect(imported.map((r) => [r.event, r.matcher, r.command])).toEqual([['PostToolUse', 'Edit', 'prettier']]);
+  });
+
   it('imports description and stack from the root memory, else package.json', () => {
     const files = generate(project([newRule({ body: 'x' })], { description: 'Un outil.', stack: 'Svelte, TS' }));
     const contents = Object.fromEntries(files.map((f) => [f.path, f.content]));

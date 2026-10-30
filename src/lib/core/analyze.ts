@@ -1,5 +1,5 @@
 import { lintMemoryText, LIMITS } from './quality';
-import type { Category, Criterion, CriterionStatus, Issue, RepoAnalysis, RepoSnapshot, Rule } from './types';
+import type { Category, Criterion, CriterionStatus, HookEvent, Issue, RepoAnalysis, RepoSnapshot, Rule } from './types';
 
 export const IGNORED_DIRS = new Set([
   'node_modules',
@@ -485,6 +485,32 @@ export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
         ? sections
         : [{ title: name, body: text.replace(/^---\n[\s\S]*?\n---\n/, '').trim() }];
       for (const s of list) add(s.title, s.body, globs.length ? 'path' : 'topic', globs, categoryOf(name));
+    }
+  }
+
+  let hooks: Record<string, { matcher?: string; hooks?: { command?: string }[] }[]> = {};
+  try {
+    hooks = JSON.parse(repo.contents['.claude/settings.json'] ?? '{}').hooks ?? {};
+  } catch {
+    // settings.json invalide : déjà signalé par analyzeRepo
+  }
+  for (const [event, groups] of Object.entries(hooks)) {
+    for (const group of Array.isArray(groups) ? groups : []) {
+      for (const h of group.hooks ?? []) {
+        if (!h.command) continue;
+        rules.push({
+          ...base,
+          id: newId(),
+          kind: 'hook',
+          title: `${event} ${group.matcher ?? ''}`.trim(),
+          body: '',
+          scope: 'project',
+          category: 'other',
+          event: event as HookEvent,
+          matcher: group.matcher,
+          command: h.command,
+        });
+      }
     }
   }
   return rules;
