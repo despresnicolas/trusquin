@@ -423,6 +423,28 @@ function splitSections(text: string): { title: string; body: string }[] {
   return out.filter((s) => s.body);
 }
 
+/** Description et stack : intro de la mémoire racine (avant le premier `##`), sinon `description` du package.json. */
+export function importContext(repo: RepoSnapshot): { description: string; stack: string } {
+  const memory = repo.contents['CLAUDE.md'] ?? repo.contents['AGENTS.md'] ?? '';
+  const intro = memory.replace(/^---\n[\s\S]*?\n---\n/, '').split(/^#{2,3}\s/m)[0];
+  const stackLine = /^\**stack\s*:?\s*\**\s*:?\s*(.+)$/im;
+  const stack = intro.match(stackLine)?.[1].trim() ?? '';
+  let description = intro
+    .replace(stackLine, '')
+    .split('\n')
+    .filter((l) => l.trim() && !/^#\s|^@/.test(l))
+    .join(' ')
+    .trim();
+  if (!description) {
+    try {
+      description = String(JSON.parse(repo.contents['package.json'] ?? '{}').description ?? '').trim();
+    } catch {
+      // package.json illisible : pas de description
+    }
+  }
+  return { description, stack };
+}
+
 /** Reconstruit des règles à partir des fichiers mémoire existants d'un repo. */
 export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
   const rules: Rule[] = [];

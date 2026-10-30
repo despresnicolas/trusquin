@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeRepo, importRules } from './analyze';
+import { analyzeRepo, importContext, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
 import { newRule, starterProject } from './presets';
 import { checkProject, lintMemoryText } from './quality';
@@ -172,5 +172,17 @@ describe('analyze', () => {
       ['path', 'other', ['src/api/**']],
       ['directory', 'conventions', ['apps/web']],
     ]);
+  });
+
+  it('imports description and stack from the root memory, else package.json', () => {
+    const files = generate(project([newRule({ body: 'x' })], { description: 'Un outil.', stack: 'Svelte, TS' }));
+    const contents = Object.fromEntries(files.map((f) => [f.path, f.content]));
+    expect(importContext({ paths: [], contents })).toEqual({ description: 'Un outil.', stack: 'Svelte, TS' });
+    expect(
+      importContext({
+        paths: [],
+        contents: { 'CLAUDE.md': '# P\n\n## Cmd\n\n- x', 'package.json': '{"description":"Pkg."}' },
+      }),
+    ).toEqual({ description: 'Pkg.', stack: '' });
   });
 });

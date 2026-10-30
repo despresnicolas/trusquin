@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Rule } from '../core/types';
-  import { api, type AnalysisRecord, type AnalysisRun, type ProjectSummary } from '../history';
+  import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type ProjectSummary } from '../history';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
@@ -10,6 +10,7 @@
   let runs = $state<AnalysisRun[]>([]);
   let record = $state<AnalysisRecord | null>(null);
   let rules = $state<Rule[] | undefined>();
+  let context = $state<FreshAnalysis['context'] | undefined>();
   let loading = $state(false);
   let failure = $state('');
   let picker: DirPicker;
@@ -32,9 +33,10 @@
     projects = await api.projects();
   };
 
-  async function show(next: AnalysisRecord, nextRules?: Rule[]) {
+  async function show(next: AnalysisRecord, fresh?: FreshAnalysis) {
     record = next;
-    rules = nextRules;
+    rules = fresh?.rules;
+    context = fresh?.context;
     path = next.path;
     runs = await api.runs(next.path);
   }
@@ -42,7 +44,7 @@
   const analyze = (target: string) =>
     attempt(async () => {
       const fresh = await api.analyze(target);
-      await show(fresh, fresh.rules);
+      await show(fresh, fresh);
       await refresh();
     });
 
@@ -140,7 +142,7 @@
         </div>
       {/if}
       {#key record.id}
-        <AnalysisReport {record} {rules} />
+        <AnalysisReport {record} {rules} {context} />
       {/key}
     {:else}
       <p class="muted">Analyser un dossier ou en choisir un dans l'historique.</p>

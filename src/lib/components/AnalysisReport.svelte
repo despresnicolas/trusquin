@@ -2,16 +2,17 @@
   import { starterProject } from '../core/presets';
   import { checkProject } from '../core/quality';
   import type { Rule } from '../core/types';
-  import type { AnalysisRecord } from '../history';
+  import type { AnalysisRecord, FreshAnalysis } from '../history';
   import { store } from '../state.svelte';
   import Quality from './Quality.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
-  let { record, rules }: { record: AnalysisRecord; rules?: Rule[] } = $props();
+  let { record, rules, context }: { record: AnalysisRecord; rules?: Rule[]; context?: FreshAnalysis['context'] } =
+    $props();
   const result = $derived(record.result);
   // Qualité de ce que le générateur exporterait à partir des règles importées du repo.
   const exportQuality = $derived(
-    rules?.length ? checkProject({ ...starterProject(), name: record.name, rules }) : null,
+    rules?.length ? checkProject({ ...starterProject(), ...context, name: record.name, rules }) : null,
   );
   let imported = $state(0);
 
@@ -19,6 +20,8 @@
     if (!rules) return;
     store.project.rules.push(...rules);
     if (store.project.name === 'Mon projet') store.project.name = record.name;
+    store.project.description ||= context?.description ?? '';
+    store.project.stack ||= context?.stack ?? '';
     imported = rules.length;
   }
 

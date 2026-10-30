@@ -18,6 +18,7 @@ export interface AnalysisRecord extends AnalysisRun {
 /** Réponse d'une nouvelle analyse : les règles importables ne sont pas stockées. */
 export interface FreshAnalysis extends AnalysisRecord {
   rules: Rule[];
+  context: { description: string; stack: string };
 }
 
 export interface ProjectSummary {
