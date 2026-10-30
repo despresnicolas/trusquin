@@ -35,8 +35,8 @@
   {/if}
 </div>
 <p class="muted hint">
-  Décompresser à la racine du repo. Le zip contient aussi <code>sauron.json</code> (source, rechargeable et utilisable en
-  CLI) et <code>_sauron-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code>
+  Décompresser à la racine du repo. Le zip contient aussi <code>sauron.json</code> (source, rechargeable et utilisable
+  en CLI) et <code>_sauron-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code>
   sont rangés dans <code>_home/</code>.
 </p>
 

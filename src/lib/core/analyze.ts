@@ -193,7 +193,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     ),
   );
 
-  let settings: Record<string, any> = {};
+  let settings: { permissions?: { allow?: unknown[]; deny?: unknown[] }; hooks?: Record<string, unknown[]> } = {};
   try {
     settings = JSON.parse(read('.claude/settings.json') || '{}');
   } catch {

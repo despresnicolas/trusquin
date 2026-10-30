@@ -1,6 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { RepoAnalysis } from '../core/types.ts';
-import { connect, databaseUrl, deleteProject, getAnalysis, listProjects, listRuns, migrate, saveAnalysis } from './db.ts';
+import {
+  connect,
+  databaseUrl,
+  deleteProject,
+  getAnalysis,
+  listProjects,
+  listRuns,
+  migrate,
+  saveAnalysis,
+} from './db.ts';
 import type { Sql } from './db.ts';
 
 const url = databaseUrl();

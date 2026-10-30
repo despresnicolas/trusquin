@@ -12,10 +12,11 @@ Générateur Svelte qui transforme des règles (quoi + à quoi ça s'applique) e
 - Tests : `pnpm test`
 - Un seul test : `pnpm exec vitest run src/lib/core/core.test.ts -t "nom"`
 - Types Svelte + TS : `pnpm check`
+- Lint : `pnpm lint` ; format : `pnpm format` (vérif : `pnpm format:check`)
 - CLI : `pnpm sauron analyze <dossier>` / `pnpm sauron check sauron.json` / `pnpm sauron generate sauron.json <dossier>`
 - Base locale : `cp .env.example .env && docker compose up -d db`
 - Docker : `docker compose up --build web` (http://localhost:8080) ; hot reload : `docker compose up --build dev` (http://localhost:5173) ; CLI : `REPO=<dossier> docker compose run --rm cli analyze .`
-- Avant de rendre la main : `pnpm check && pnpm test`
+- Avant de rendre la main : `pnpm check && pnpm lint && pnpm test`
 
 ## Architecture
 

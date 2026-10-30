@@ -16,7 +16,7 @@ export function databaseUrl(): string | undefined {
   return process.env.DATABASE_URL || undefined;
 }
 
-export function connect(url: string, options: postgres.Options<{}> = {}): Sql {
+export function connect(url: string, options: postgres.Options<Record<string, never>> = {}): Sql {
   return postgres(url, { onnotice: () => {}, ...options });
 }
 
