@@ -1,0 +1,553 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`non-régression > analyzeRepo 1`] = `
+{
+  "criteria": [
+    {
+      "detail": "CLAUDE.md présent (41 lignes).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "root-memory",
+      "label": "Mémoire racine (CLAUDE.md / AGENTS.md)",
+      "max": 12,
+      "points": 12,
+      "status": "pass",
+    },
+    {
+      "detail": "41 lignes (cible < 100, max 200).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "root-length",
+      "label": "Mémoire racine concise",
+      "max": 6,
+      "points": 6,
+      "status": "pass",
+    },
+    {
+      "detail": "7 commande(s) exacte(s) trouvée(s).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "commands",
+      "label": "Commandes exactes (build/test/lint)",
+      "max": 8,
+      "points": 8,
+      "status": "pass",
+    },
+    {
+      "detail": "Section trouvée.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "architecture",
+      "label": "Section architecture / structure",
+      "max": 5,
+      "points": 5,
+      "status": "pass",
+    },
+    {
+      "detail": "Rien détecté.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "no-secrets",
+      "label": "Aucun secret dans la mémoire",
+      "max": 8,
+      "points": 8,
+      "status": "pass",
+    },
+    {
+      "detail": "Pas de formulation vague détectée.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "specific",
+      "label": "Règles spécifiques et vérifiables",
+      "max": 4,
+      "points": 4,
+      "status": "pass",
+    },
+    {
+      "detail": "Aucun import.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "imports",
+      "label": "Imports @ valides",
+      "max": 3,
+      "points": 0,
+      "status": "na",
+    },
+    {
+      "detail": "2 fichier(s) rules (1 avec paths), 0 CLAUDE.md de sous-dossier.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "modular",
+      "label": "Règles modulaires (rules/ ou CLAUDE.md de dossier)",
+      "max": 6,
+      "points": 6,
+      "status": "pass",
+    },
+    {
+      "detail": "2 allow, 2 deny.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "permissions",
+      "label": "Permissions versionnées",
+      "max": 5,
+      "points": 5,
+      "status": "pass",
+    },
+    {
+      "detail": "2 hook(s).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "hooks",
+      "label": "Hooks déterministes (format/lint/tests)",
+      "max": 6,
+      "points": 6,
+      "status": "pass",
+    },
+    {
+      "detail": "1 skill(s), 1 commande(s).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "on-demand",
+      "label": "Skills / slash commands",
+      "max": 5,
+      "points": 5,
+      "status": "pass",
+    },
+    {
+      "detail": "1 agent(s).",
+      "fix": undefined,
+      "group": "claude",
+      "id": "agents",
+      "label": "Sous-agents spécialisés",
+      "max": 2,
+      "points": 2,
+      "status": "pass",
+    },
+    {
+      "detail": "Non ignoré(s) : CLAUDE.local.md.",
+      "fix": "Ajouter \`CLAUDE.local.md\` et \`.claude/settings.local.json\` à .gitignore.",
+      "group": "claude",
+      "id": "local-ignored",
+      "label": "Fichiers perso gitignorés",
+      "max": 3,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Absent.",
+      "fix": "Ajouter un README.",
+      "group": "practices",
+      "id": "readme",
+      "label": "README",
+      "max": 3,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "0 fichier(s) de test.",
+      "fix": "Claude vérifie son travail par les tests : sans eux, il devine.",
+      "group": "practices",
+      "id": "tests",
+      "label": "Tests automatisés",
+      "max": 8,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Aucun linter détecté.",
+      "fix": "Ajouter ESLint/Biome/Ruff… et l’appeler par hook.",
+      "group": "practices",
+      "id": "linter",
+      "label": "Linter configuré",
+      "max": 5,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Aucun formatter détecté.",
+      "fix": "Ajouter Prettier/Biome/Black/gofmt.",
+      "group": "practices",
+      "id": "formatter",
+      "label": "Formatter configuré",
+      "max": 4,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Pas de vérification de types.",
+      "fix": "Activer TypeScript strict / mypy / pyright.",
+      "group": "practices",
+      "id": "types",
+      "label": "Typage statique",
+      "max": 4,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Aucune CI.",
+      "fix": "Ajouter une CI qui lance lint + tests.",
+      "group": "practices",
+      "id": "ci",
+      "label": "Intégration continue",
+      "max": 5,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Pas de lockfile.",
+      "fix": "Committer le lockfile.",
+      "group": "practices",
+      "id": "lockfile",
+      "label": "Dépendances verrouillées",
+      "max": 2,
+      "points": 0,
+      "status": "fail",
+    },
+    {
+      "detail": "Absent.",
+      "fix": "Ignorer .env et documenter les variables dans .env.example.",
+      "group": "practices",
+      "id": "gitignore",
+      "label": ".gitignore + .env.example",
+      "max": 3,
+      "points": 0,
+      "status": "fail",
+    },
+  ],
+  "grade": "C",
+  "memoryFiles": [
+    "CLAUDE.md",
+    "CLAUDE.local.md",
+  ],
+  "memoryIssues": [],
+  "score": 64,
+}
+`;
+
+exports[`non-régression > checkProject 1`] = `
+{
+  "alwaysLoadedInstructions": 19,
+  "issues": [
+    {
+      "code": "local-gitignore",
+      "file": "CLAUDE.local.md",
+      "fix": "Vérifier que \`.gitignore\` contient \`CLAUDE.local.md\`.",
+      "message": "CLAUDE.local.md doit rester hors du dépôt.",
+      "severity": "info",
+    },
+  ],
+  "score": 99,
+}
+`;
+
+exports[`non-régression > generate 1`] = `
+[
+  {
+    "content": "# Fixture
+
+Projet de référence
+
+**Stack :** TypeScript
+
+## Commandes
+
+- Installer : \`pnpm install\`
+- Dev : \`pnpm dev\`
+- Tests : \`pnpm test\`
+- Un seul test : \`pnpm test -- path/to/file.test.ts\`
+- Typecheck : \`pnpm typecheck\`
+- Lint : \`pnpm lint\`
+- Avant de rendre la main : \`pnpm typecheck && pnpm lint && pnpm test\`
+
+## Architecture
+
+- \`apps/api\` : API REST (Fastify), seule à parler à la base
+- \`apps/web\` : front SvelteKit, appelle l’API via \`src/lib/api.ts\`
+- \`packages/shared\` : types partagés, aucune dépendance runtime
+- Pourquoi : la base n’est jamais exposée au front (contrainte RGPD)
+
+## Git & workflow
+
+- Commits au format Conventional Commits (\`feat:\`, \`fix:\`, \`chore:\`)
+- Ne jamais lancer \`git push\` ni \`git commit\` : proposer le message
+- Branches : \`feat/<ticket>-<slug>\`
+
+## Glossaire métier
+
+**Chantier** : projet client facturable (table \`projects\`)
+**Lot** : sous-ensemble d’un chantier, unité de planning
+
+## Automatisations
+
+Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les refaire à la main.
+
+- Prettier après chaque édition (PostToolUse · Edit|Write|MultiEdit)
+- Protéger .env (PreToolUse · Edit|Write|MultiEdit)
+",
+    "explanation": "Mémoire racine versionnée, chargée à chaque session. Viser < 100 lignes.",
+    "loading": "always",
+    "path": "CLAUDE.md",
+    "sources": [
+      "r0",
+      "r1",
+      "r4",
+      "r5",
+    ],
+  },
+  {
+    "content": "# Tests
+
+## Tests
+
+- Tests à côté du code : \`foo.ts\` → \`foo.test.ts\`
+- Pas de mock de la base : utiliser \`createTestDb()\` de \`test/helpers.ts\`
+- Tout bug corrigé arrive avec un test qui échouait avant
+",
+    "explanation": "Règle thématique sans \`paths\` : chargée à chaque session, mais isolée pour rester lisible.",
+    "loading": "always",
+    "path": ".claude/rules/testing.md",
+    "sources": [
+      "r3",
+    ],
+  },
+  {
+    "content": "---
+paths:
+  - "apps/api/src/**/*.ts"
+---
+## Conventions
+
+- Valider chaque entrée avec le schéma zod du dossier \`schemas/\`
+- Retourner les erreurs via \`httpError()\` de \`src/errors.ts\`
+- Toute nouvelle route : ajouter le fichier Bruno correspondant dans \`bruno/\`
+",
+    "explanation": "Chargée seulement quand Claude lit ou modifie apps/api/src/**/*.ts.",
+    "loading": "on-path",
+    "path": ".claude/rules/endpoints-api.md",
+    "sources": [
+      "r2",
+    ],
+  },
+  {
+    "content": "# Préférences locales
+
+## Méthode de travail
+
+- Répondre en français
+- Montrer le diff avant de modifier plus de 3 fichiers
+",
+    "explanation": "Préférences personnelles du projet. À garder dans .gitignore.",
+    "loading": "personal",
+    "path": "CLAUDE.local.md",
+    "sources": [
+      "r6",
+    ],
+  },
+  {
+    "content": "---
+description: Relire le diff courant
+argument-hint: [branche de base]
+allowed-tools: Bash(git diff:*), Read, Grep
+---
+Relis \`git diff \${ARGUMENTS:-main}...HEAD\`.
+Pour chaque problème : \`fichier:ligne\`, gravité, correction proposée.
+Ignore le formatage (géré par hook).
+",
+    "explanation": "Slash command /review, lancée explicitement par l’utilisateur.",
+    "loading": "on-demand",
+    "path": ".claude/commands/review.md",
+    "sources": [
+      "r9",
+    ],
+  },
+  {
+    "content": "---
+name: release
+description: Prépare une release : changelog, bump de version, tag. Use when the user asks to release, publish or bump the version.
+---
+# Release
+
+1. Lire les commits depuis le dernier tag : \`git log $(git describe --tags --abbrev=0)..HEAD --oneline\`
+2. Mettre à jour \`CHANGELOG.md\`
+3. \`pnpm version <patch|minor|major> --no-git-tag-version\`
+4. Proposer les commandes git, ne pas les lancer
+",
+    "explanation": "Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.",
+    "loading": "on-demand",
+    "path": ".claude/skills/release/SKILL.md",
+    "sources": [
+      "r10",
+    ],
+  },
+  {
+    "content": "---
+name: test-runner
+description: Lance les tests et analyse les échecs. Use proactively after code changes to verify nothing broke.
+tools: Bash, Read, Grep, Glob
+model: sonnet
+---
+Tu lances \`pnpm test\` puis, pour chaque échec, tu identifies la cause racine.
+Tu ne modifies aucun fichier. Tu rends : test, cause, fichier:ligne, correction suggérée.
+",
+    "explanation": "Sous-agent avec son propre contexte, délégué par Claude ou appelé par son nom.",
+    "loading": "on-demand",
+    "path": ".claude/agents/test-runner.md",
+    "sources": [
+      "r11",
+    ],
+  },
+  {
+    "content": "{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write --ignore-unknown"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | grep -qE '(^|/)\\\\.env' && { echo \\"Fichier protégé\\" >&2; exit 2; } || exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
+",
+    "explanation": "Permissions et hooks versionnés : exécutés par le harness, pas interprétés par le modèle.",
+    "loading": "deterministic",
+    "path": ".claude/settings.json",
+    "sources": [
+      "r7",
+      "r8",
+    ],
+  },
+]
+`;
+
+exports[`non-régression > importRules 1`] = `
+[
+  {
+    "body": "- Installer : \`pnpm install\`
+- Dev : \`pnpm dev\`
+- Tests : \`pnpm test\`
+- Un seul test : \`pnpm test -- path/to/file.test.ts\`
+- Typecheck : \`pnpm typecheck\`
+- Lint : \`pnpm lint\`
+- Avant de rendre la main : \`pnpm typecheck && pnpm lint && pnpm test\`",
+    "category": "commands",
+    "enabled": true,
+    "id": "i0",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Commandes",
+  },
+  {
+    "body": "- \`apps/api\` : API REST (Fastify), seule à parler à la base
+- \`apps/web\` : front SvelteKit, appelle l’API via \`src/lib/api.ts\`
+- \`packages/shared\` : types partagés, aucune dépendance runtime
+- Pourquoi : la base n’est jamais exposée au front (contrainte RGPD)",
+    "category": "architecture",
+    "enabled": true,
+    "id": "i1",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Architecture",
+  },
+  {
+    "body": "- Commits au format Conventional Commits (\`feat:\`, \`fix:\`, \`chore:\`)
+- Ne jamais lancer \`git push\` ni \`git commit\` : proposer le message
+- Branches : \`feat/<ticket>-<slug>\`",
+    "category": "git",
+    "enabled": true,
+    "id": "i2",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Git & workflow",
+  },
+  {
+    "body": "**Chantier** : projet client facturable (table \`projects\`)
+**Lot** : sous-ensemble d’un chantier, unité de planning",
+    "category": "domain",
+    "enabled": true,
+    "id": "i3",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Glossaire métier",
+  },
+  {
+    "body": "Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les refaire à la main.
+
+- Prettier après chaque édition (PostToolUse · Edit|Write|MultiEdit)
+- Protéger .env (PreToolUse · Edit|Write|MultiEdit)",
+    "category": "other",
+    "enabled": true,
+    "id": "i4",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Automatisations",
+  },
+  {
+    "body": "- Tests à côté du code : \`foo.ts\` → \`foo.test.ts\`
+- Pas de mock de la base : utiliser \`createTestDb()\` de \`test/helpers.ts\`
+- Tout bug corrigé arrive avec un test qui échouait avant",
+    "category": "testing",
+    "enabled": true,
+    "id": "i5",
+    "kind": "rule",
+    "scope": "topic",
+    "targets": [],
+    "title": "Tests",
+  },
+  {
+    "body": "- Valider chaque entrée avec le schéma zod du dossier \`schemas/\`
+- Retourner les erreurs via \`httpError()\` de \`src/errors.ts\`
+- Toute nouvelle route : ajouter le fichier Bruno correspondant dans \`bruno/\`",
+    "category": "other",
+    "enabled": true,
+    "id": "i6",
+    "kind": "rule",
+    "scope": "path",
+    "targets": [
+      "apps/api/src/**/*.ts",
+    ],
+    "title": "Conventions",
+  },
+  {
+    "body": "- Répondre en français
+- Montrer le diff avant de modifier plus de 3 fichiers",
+    "category": "workflow",
+    "enabled": true,
+    "id": "i7",
+    "kind": "rule",
+    "scope": "local",
+    "targets": [],
+    "title": "Méthode de travail",
+  },
+]
+`;
