@@ -25,7 +25,7 @@
     {#each tabs as t}
       <a href={t.href} class:active={page.url.pathname === t.href}>
         {t.label}
-        {#if t.href === '/' && hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
+        {#if t.href === '/preview' && hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
       </a>
     {/each}
   </nav>

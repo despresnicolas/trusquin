@@ -26,7 +26,7 @@ Générateur Svelte qui transforme des règles (quoi + à quoi ça s'applique) e
 - `src/lib/server/` : Node seulement (lecture disque `repo.ts`, PostgreSQL `db.ts`), utilisé par `src/routes/api/` et la CLI
 - `src/lib/history.ts` : types et client de l'API d'historique des analyses
 - `src/lib/state.svelte.ts` : état partagé (`store.project`, `store.files`, `store.quality`), persisté en localStorage
-- `src/routes/` : une route par onglet (`/` = analyse projet + qualité de l'export), `ssr = false` (SPA) ; `src/routes/api/` : API JSON (documentée dans `bruno/`) ; `src/lib/components/` : contenu des onglets
+- `src/routes/` : une route par onglet (`/` = analyse projet, avec la qualité de l'export des règles importées), `ssr = false` (SPA) ; `src/routes/api/` : API JSON (documentée dans `bruno/`) ; `src/lib/components/` : contenu des onglets
 - `cli/sauron.ts` : CLI Node (appelle `core/` et `server/`, enregistre `analyze` en base si `DATABASE_URL`)
 - `Dockerfile` : cibles `web` (serveur Node SvelteKit) et `cli` (tsx, repo monté sur `/repo`) ; `compose.yaml` ajoute `db` (PostgreSQL)
 - Pourquoi : le même code sert au navigateur et au terminal

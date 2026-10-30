@@ -1,11 +1,18 @@
 <script lang="ts">
+  import { starterProject } from '../core/presets';
+  import { checkProject } from '../core/quality';
   import type { Rule } from '../core/types';
   import type { AnalysisRecord } from '../history';
   import { store } from '../state.svelte';
+  import Quality from './Quality.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { record, rules }: { record: AnalysisRecord; rules?: Rule[] } = $props();
   const result = $derived(record.result);
+  // Qualité de ce que le générateur exporterait à partir des règles importées du repo.
+  const exportQuality = $derived(
+    rules?.length ? checkProject({ ...starterProject(), name: record.name, rules }) : null,
+  );
   let imported = $state(0);
 
   function importExisting() {
@@ -22,60 +29,67 @@
   const icon = { pass: '✓', partial: '◐', fail: '✗', na: '–' };
 </script>
 
-  <div class="card summary">
-    <ScoreBadge score={result.score} label={result.grade} size="lg" />
-    <div>
-      <b>{record.name}</b> · {record.fileCount} fichiers · mémoire : {result.memoryFiles.join(', ') || 'aucune'}
-      <div class="bars">
-        {#each groups as g}
-          {@const list = result.criteria.filter((c) => c.group === g.id && c.status !== 'na')}
-          {@const got = list.reduce((s, c) => s + c.points, 0)}
-          {@const max = list.reduce((s, c) => s + c.max, 0)}
-          <div class="bar">
-            <span>{g.label}</span>
-            <meter min="0" {max} value={got}></meter>
-            <span class="muted">{got}/{max}</span>
-          </div>
-        {/each}
-      </div>
-    </div>
-    {#if rules?.length}
-      <button onclick={importExisting} disabled={imported > 0}>
-        {imported ? `${imported} règle(s) importée(s)` : `Importer ${rules.length} règle(s) existante(s) dans le générateur`}
-      </button>
-    {/if}
-  </div>
-
-  {#each groups as g}
-    <h3>{g.label}</h3>
-    <table>
-      <tbody>
-        {#each result.criteria.filter((c) => c.group === g.id) as c}
-          <tr class={c.status}>
-            <td class="icon">{icon[c.status]}</td>
-            <td
-              ><b>{c.label}</b>
-              <div class="muted">{c.detail}</div>
-              {#if c.fix}<div class="fix">→ {c.fix}</div>{/if}</td
-            >
-            <td class="pts">{c.status === 'na' ? 'n/a' : `${c.points}/${c.max}`}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {/each}
-
-  {#if result.memoryIssues.length}
-    <h3>Problèmes dans les fichiers mémoire existants</h3>
-    <ul>
-      {#each result.memoryIssues as i}
-        <li class="sev-{i.severity}">
-          {#if i.file}<code>{i.file}</code>
-          {/if}{i.message} <span class="muted">→ {i.fix}</span>
-        </li>
+<div class="card summary">
+  <ScoreBadge score={result.score} label={result.grade} size="lg" />
+  <div>
+    <b>{record.name}</b> · {record.fileCount} fichiers · mémoire : {result.memoryFiles.join(', ') || 'aucune'}
+    <div class="bars">
+      {#each groups as g}
+        {@const list = result.criteria.filter((c) => c.group === g.id && c.status !== 'na')}
+        {@const got = list.reduce((s, c) => s + c.points, 0)}
+        {@const max = list.reduce((s, c) => s + c.max, 0)}
+        <div class="bar">
+          <span>{g.label}</span>
+          <meter min="0" {max} value={got}></meter>
+          <span class="muted">{got}/{max}</span>
+        </div>
       {/each}
-    </ul>
+    </div>
+  </div>
+  {#if rules?.length}
+    <button onclick={importExisting} disabled={imported > 0}>
+      {imported
+        ? `${imported} règle(s) importée(s)`
+        : `Importer ${rules.length} règle(s) existante(s) dans le générateur`}
+    </button>
   {/if}
+</div>
+
+{#each groups as g}
+  <h3>{g.label}</h3>
+  <table>
+    <tbody>
+      {#each result.criteria.filter((c) => c.group === g.id) as c}
+        <tr class={c.status}>
+          <td class="icon">{icon[c.status]}</td>
+          <td
+            ><b>{c.label}</b>
+            <div class="muted">{c.detail}</div>
+            {#if c.fix}<div class="fix">→ {c.fix}</div>{/if}</td
+          >
+          <td class="pts">{c.status === 'na' ? 'n/a' : `${c.points}/${c.max}`}</td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+{/each}
+
+{#if result.memoryIssues.length}
+  <h3>Problèmes dans les fichiers mémoire existants</h3>
+  <ul>
+    {#each result.memoryIssues as i}
+      <li class="sev-{i.severity}">
+        {#if i.file}<code>{i.file}</code>
+        {/if}{i.message} <span class="muted">→ {i.fix}</span>
+      </li>
+    {/each}
+  </ul>
+{/if}
+
+{#if exportQuality}
+  <h3>Qualité de l'export</h3>
+  <Quality quality={exportQuality} />
+{/if}
 
 <style>
   .summary {
