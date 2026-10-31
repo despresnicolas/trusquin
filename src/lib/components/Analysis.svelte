@@ -15,6 +15,8 @@
   let view = $state<'report' | 'files' | 'history'>('report');
   let loading = $state(false);
   let failure = $state('');
+  let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
+  let toastTimer: ReturnType<typeof setTimeout>;
   let picker: DirPicker;
 
   const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
@@ -41,12 +43,16 @@
     context = fresh?.context;
     path = next.path;
     runs = await api.runs(next.path);
+    view = 'report';
   }
 
   const analyze = (target: string) =>
     attempt(async () => {
       const fresh = await api.analyze(target);
       await show(fresh, fresh);
+      toast = { run: fresh, delta: runs[1] ? fresh.score - runs[1].score : null };
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => (toast = null), 5000);
       await refresh();
     });
 
@@ -150,13 +156,7 @@
               {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
               <tr class:active={r.id === record.id}>
                 <td>
-                  <button
-                    class="ghost"
-                    onclick={async () => {
-                      await open(r.id);
-                      view = 'report';
-                    }}>{date(r.createdAt)}</button
-                  >
+                  <button class="ghost" onclick={() => open(r.id)}>{date(r.createdAt)}</button>
                 </td>
                 <td><ScoreBadge score={r.score} label={r.grade} /></td>
                 <td>
@@ -173,6 +173,20 @@
       {/if}
     {/if}
   </section>
+</div>
+
+<div class="toast-zone" role="status" aria-live="polite">
+  {#if toast}
+    <div class="toast card">
+      <span>Analyse terminée · <b>{toast.run.name}</b></span>
+      <ScoreBadge score={toast.run.score} label={toast.run.grade} />
+      {#if toast.delta}<span class={toast.delta > 0 ? 'up' : 'down'}
+          >{toast.delta > 0 ? '▲' : '▼'} {Math.abs(toast.delta)}</span
+        >{/if}
+      <span class="muted">{toast.run.fileCount} fichiers</span>
+      <button class="ghost" aria-label="Fermer" onclick={() => (toast = null)}>×</button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -285,5 +299,18 @@
   }
   .history tr.active {
     background: var(--accent-soft);
+  }
+  .toast-zone {
+    position: fixed;
+    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+  }
+  .toast {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 8px 10px 16px;
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
   }
 </style>
