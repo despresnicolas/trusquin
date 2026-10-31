@@ -1,11 +1,11 @@
 meta {
-  name: Supprimer l'historique d'un projet
+  name: Supprimer l'historique d'un dépôt
   type: http
   seq: 5
 }
 
 delete {
-  url: {{baseUrl}}/api/projects?path={{repoPath}}
+  url: {{baseUrl}}/api/repos?path={{repoPath}}
   body: none
   auth: none
 }
@@ -19,6 +19,6 @@ headers {
 }
 
 docs {
-  Supprime toutes les analyses du dossier. Réponse : { "deleted": <nombre> }.
+  Supprime toutes les analyses du dépôt. Réponse : { "deleted": <nombre> }.
   En-tête `content-type: application/json` requis : sans lui, SvelteKit renvoie 403 (contrôle CSRF des formulaires).
 }

@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Rule } from '../core/types';
-  import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type ProjectSummary } from '../history';
+  import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type RepoSummary } from '../history';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let path = $state('');
-  let projects = $state<ProjectSummary[]>([]);
+  let repos = $state<RepoSummary[]>([]);
   let runs = $state<AnalysisRun[]>([]);
   let record = $state<AnalysisRecord | null>(null);
   let rules = $state<Rule[] | undefined>();
@@ -30,7 +30,7 @@
   }
 
   const refresh = async () => {
-    projects = await api.projects();
+    repos = await api.repos();
   };
 
   async function show(next: AnalysisRecord, fresh?: FreshAnalysis) {
@@ -69,11 +69,6 @@
 <div class="card intro">
   <div>
     <h3>Analyser un projet</h3>
-    <p class="muted">
-      Chemin absolu d'un dossier lisible par le serveur. Chaque analyse est enregistrée dans l'historique.
-      <code>node_modules</code>, <code>.git</code>, <code>dist</code>… sont ignorés. Aussi en terminal :
-      <code>pnpm sauron analyze &lt;dossier&gt;</code>.
-    </p>
   </div>
   <form
     onsubmit={(e) => {
@@ -83,7 +78,7 @@
   >
     <input bind:value={path} placeholder="/Users/moi/Dev/mon-repo" aria-label="Chemin du dossier" required />
     <button type="button" class="primary" disabled={loading} onclick={() => picker.open()}>
-      {loading ? 'Analyse…' : 'Ajouter projet'}
+      {loading ? 'Analyse…' : 'Ajouter un dépôt'}
     </button>
   </form>
 </div>
@@ -102,21 +97,21 @@
 <div class="layout">
   <aside>
     <h3>Historique</h3>
-    {#if !projects.length}
-      <p class="muted">Aucun dossier analysé.</p>
+    {#if !repos.length}
+      <p class="muted">Aucun dépôt analysé.</p>
     {/if}
-    <ul class="projects">
-      {#each projects as p (p.last.path)}
-        {@const delta = p.previousScore === null ? null : p.last.score - p.previousScore}
-        <li class:active={record?.path === p.last.path}>
-          <button class="item" onclick={() => open(p.last.id)} title={p.last.path}>
+    <ul class="repos">
+      {#each repos as repo (repo.last.path)}
+        {@const delta = repo.previousScore === null ? null : repo.last.score - repo.previousScore}
+        <li class:active={record?.path === repo.last.path}>
+          <button class="item" onclick={() => open(repo.last.id)} title={repo.last.path}>
             <span class="head">
-              <b>{p.last.name}</b>
-              <ScoreBadge score={p.last.score} label={p.last.grade} />
+              <b>{repo.last.name}</b>
+              <ScoreBadge score={repo.last.score} label={repo.last.grade} />
             </span>
-            <span class="muted path">{p.last.path}</span>
+            <span class="muted path">{repo.last.path}</span>
             <span class="muted small">
-              {date(p.last.createdAt)} · {p.runs} analyse{p.runs > 1 ? 's' : ''}
+              {date(repo.last.createdAt)} · {repo.runs} analyse{repo.runs > 1 ? 's' : ''}
               {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
             </span>
           </button>
@@ -144,8 +139,6 @@
       {#key record.id}
         <AnalysisReport {record} {rules} {context} />
       {/key}
-    {:else}
-      <p class="muted">Analyser un dossier ou en choisir un dans l'historique.</p>
     {/if}
   </section>
 </div>
@@ -190,7 +183,7 @@
     margin: 0 0 8px;
     font-size: 15px;
   }
-  .projects {
+  .repos {
     list-style: none;
     padding: 0;
     margin: 0;

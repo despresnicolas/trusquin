@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import type { RepoAnalysis } from '../core/types.ts';
-import type { AnalysisRecord, AnalysisRun, ProjectSummary } from '../history.ts';
+import type { AnalysisRecord, AnalysisRun, RepoSummary } from '../history.ts';
 
 export type Sql = postgres.Sql;
 
@@ -67,7 +67,7 @@ export async function saveAnalysis(
 }
 
 /** Un résumé par dossier analysé, le plus récent en premier. */
-export async function listProjects(sql: Sql): Promise<ProjectSummary[]> {
+export async function listRepos(sql: Sql): Promise<RepoSummary[]> {
   const rows = await sql<(Row & { runs: number; previous_score: number | null })[]>`
     SELECT * FROM (
       SELECT DISTINCT ON (path) id, path, name, file_count, score, grade, created_at,
@@ -95,7 +95,7 @@ export async function getAnalysis(sql: Sql, id: number): Promise<AnalysisRecord 
 }
 
 /** Supprime tout l'historique d'un dossier ; renvoie le nombre d'analyses supprimées. */
-export async function deleteProject(sql: Sql, path: string): Promise<number> {
+export async function deleteRepo(sql: Sql, path: string): Promise<number> {
   const result = await sql`DELETE FROM analyses WHERE path = ${path}`;
   return result.count;
 }

@@ -1,12 +1,12 @@
 <script lang="ts">
-  import '../app.css';
-  import { page } from '$app/state';
   import { persist, store } from '#lib/state.svelte.ts';
+  import { page } from '$app/state';
+  import '../app.css';
 
   let { children } = $props();
 
   const tabs = [
-    { href: '/', label: 'Analyse projet' },
+    { href: '/', label: 'Analyse de dépôt' },
     { href: '/rules', label: 'Règles' },
     { href: '/preview', label: 'Aperçu & export' },
     { href: '/guide', label: 'Où mettre quoi ?' },
@@ -19,7 +19,6 @@
 <header>
   <div class="brand">
     <strong>SAURON</strong>
-    <span class="muted">règles → bons fichiers, au bon endroit</span>
   </div>
   <nav>
     {#each tabs as t}

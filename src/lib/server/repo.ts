@@ -56,7 +56,7 @@ export function resolveRepoPath(input: string, roots: string[] = []): string {
 }
 
 /**
- * Sous-dossiers d'un dossier du serveur, pour choisir un projet à analyser.
+ * Sous-dossiers d'un dossier du serveur, pour choisir un dépôt à analyser.
  * Sans chemin : première racine autorisée, sinon le dossier personnel.
  * Les dossiers cachés et ignorés par l'analyse ne sont pas listés.
  */

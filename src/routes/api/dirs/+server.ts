@@ -1,7 +1,7 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { allowedRoots, listDirs } from '#lib/server/repo.ts';
 
-/** Sous-dossiers d'un dossier du serveur (sélecteur « Ajouter projet »). */
+/** Sous-dossiers d'un dossier du serveur (sélecteur « Ajouter un dépôt »). */
 export const GET: RequestHandler = ({ url }) => {
   try {
     return json(listDirs(url.searchParams.get('path'), allowedRoots()));

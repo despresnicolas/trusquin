@@ -21,13 +21,13 @@ export interface FreshAnalysis extends AnalysisRecord {
   context: { description: string; stack: string };
 }
 
-export interface ProjectSummary {
+export interface RepoSummary {
   last: AnalysisRun;
   runs: number;
   previousScore: number | null;
 }
 
-/** Contenu d'un dossier du serveur, pour le sélecteur de projet. */
+/** Contenu d'un dossier du serveur, pour le sélecteur de dépôt. */
 export interface DirListing {
   path: string;
   /** Null à la racine du disque ou d'une racine autorisée. */
@@ -46,7 +46,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
 const q = (path: string) => `path=${encodeURIComponent(path)}`;
 
 export const api = {
-  projects: () => call<ProjectSummary[]>('/api/projects'),
+  repos: () => call<RepoSummary[]>('/api/repos'),
   runs: (path: string) => call<AnalysisRun[]>(`/api/analyses?${q(path)}`),
   dirs: (path?: string) => call<DirListing>(`/api/dirs${path ? `?${q(path)}` : ''}`),
   get: (id: number) => call<AnalysisRecord>(`/api/analyses/${id}`),
@@ -58,7 +58,7 @@ export const api = {
     }),
   // Sans content-type, SvelteKit traite le DELETE comme un formulaire et le bloque (CSRF) en production.
   forget: (path: string) =>
-    call<{ deleted: number }>(`/api/projects?${q(path)}`, {
+    call<{ deleted: number }>(`/api/repos?${q(path)}`, {
       method: 'DELETE',
       headers: { 'content-type': 'application/json' },
     }),

@@ -54,9 +54,11 @@
   <section class="card">
     <h3>Boucle de travail</h3>
     <ol>
-      <li><b>Analyse projet</b> : score de départ, import des règles existantes, suivi du score dans l'historique.</li>
+      <li>
+        <b>Analyse de dépôt</b> : score de départ, import des règles existantes, suivi du score dans l'historique.
+      </li>
       <li><b>Règles</b> : pour chaque règle, dire quoi et à quoi elle s'applique.</li>
-      <li><b>Analyse projet › Qualité de l'export</b> : corriger erreurs et avertissements.</li>
+      <li><b>Aperçu &amp; export</b> : corriger erreurs et avertissements.</li>
       <li><b>Aperçu & export</b> : vérifier chaque fichier, exporter le zip, décompresser à la racine.</li>
       <li>Committer <code>sauron.json</code> ; régénérer avec <code>pnpm sauron generate</code>.</li>
     </ol>

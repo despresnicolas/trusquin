@@ -1,19 +1,12 @@
 <script lang="ts">
-  import { starterProject } from '../core/presets';
-  import { checkProject } from '../core/quality';
   import type { Rule } from '../core/types';
   import type { AnalysisRecord, FreshAnalysis } from '../history';
   import { store } from '../state.svelte';
-  import Quality from './Quality.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { record, rules, context }: { record: AnalysisRecord; rules?: Rule[]; context?: FreshAnalysis['context'] } =
     $props();
   const result = $derived(record.result);
-  // Qualité de ce que le générateur exporterait à partir des règles importées du repo.
-  const exportQuality = $derived(
-    rules?.length ? checkProject({ ...starterProject(), ...context, name: record.name, rules }) : null,
-  );
   let imported = $state(0);
 
   function importExisting() {
@@ -87,11 +80,6 @@
       </li>
     {/each}
   </ul>
-{/if}
-
-{#if exportQuality}
-  <h3>Qualité de l'export</h3>
-  <Quality quality={exportQuality} />
 {/if}
 
 <style>

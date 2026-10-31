@@ -9,7 +9,7 @@ Tu gardes `bruno/` aligné avec l'API JSON de `src/routes/api/`.
 ## Sources de vérité
 
 - Routes : `src/routes/api/**/+server.ts` (méthodes exportées `GET`, `POST`, `DELETE`…).
-- Types d'entrée/sortie : `src/lib/history.ts` (`AnalysisRecord`, `AnalysisRun`, `ProjectSummary`).
+- Types d'entrée/sortie : `src/lib/history.ts` (`AnalysisRecord`, `AnalysisRun`, `RepoSummary`).
 - Variables : `bruno/environments/local.bru` (`baseUrl`, `repoPath`…).
 
 ## Étapes
