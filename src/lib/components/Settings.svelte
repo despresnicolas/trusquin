@@ -54,8 +54,7 @@
           <input
             type="checkbox"
             role="switch"
-            aria-labelledby="theme-label"
-            aria-describedby="theme-state"
+            aria-label="Thème clair"
             checked={!dark}
             onchange={(e) => setDark(!e.currentTarget.checked)}
           />
@@ -71,7 +70,6 @@
             </svg>
           </span>
         </label>
-        <span id="theme-state" class="muted">{dark ? 'Sombre' : 'Clair'}</span>
       </div>
     </div>
   {/if}
@@ -118,10 +116,6 @@
   }
   .row #theme-label {
     flex: 1;
-  }
-  .row .muted {
-    width: 4em;
-    font-size: 12px;
   }
   .switch {
     font-size: 14px;
