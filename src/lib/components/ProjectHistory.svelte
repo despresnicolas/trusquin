@@ -29,7 +29,7 @@
   // Le projet en cours est enregistré avant d'être remplacé : rien ne se perd.
   const open = (id: number) =>
     attempt(async () => {
-      await archive();
+      if (store.project.rules.length) await archive();
       store.project = (await api.project(id)).project;
       await goto('/generator');
     });

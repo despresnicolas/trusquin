@@ -116,6 +116,12 @@ describe('quality', () => {
     expect(lintMemoryText('CLAUDE.md', text, true)[0].code).toBe('root-long');
   });
 
+  it('scores an empty project zero', () => {
+    const report = checkProject(project([]));
+    expect(report.score).toBe(0);
+    expect(report.issues[0].code).toBe('no-rules');
+  });
+
   it('gives a minimal complete config a high score', () => {
     expect(checkProject(project(sampleRules())).score).toBeGreaterThanOrEqual(90);
   });

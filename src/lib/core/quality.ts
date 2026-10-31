@@ -381,6 +381,14 @@ function crossRuleIssues(rules: Rule[]): Issue[] {
 function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
   const issues: Issue[] = [];
   const active = project.rules.filter((r) => r.enabled);
+  if (!active.length) {
+    issues.push({
+      severity: 'error',
+      code: 'no-rules',
+      message: 'Aucune règle active : rien à envoyer à Claude.',
+      fix: "Ajouter une règle, partir d'un pattern ou importer un CLAUDE.md.",
+    });
+  }
   if (!active.some((r) => r.kind === 'rule' && r.category === 'commands' && r.scope === 'project')) {
     issues.push({
       severity: 'warning',
@@ -466,5 +474,7 @@ export function checkProject(project: Project, files = generate(project)): Quali
 
   const order = { error: 0, warning: 1, info: 2 };
   issues.sort((a, b) => order[a.severity] - order[b.severity]);
-  return { score: scoreFrom(issues), issues, alwaysLoadedInstructions };
+  // Projet vide : la note part de zéro au lieu de 100 moins quelques manques.
+  const score = project.rules.some((r) => r.enabled) ? scoreFrom(issues) : 0;
+  return { score, issues, alwaysLoadedInstructions };
 }

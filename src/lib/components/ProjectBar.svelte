@@ -60,7 +60,8 @@
   async function reset() {
     resetting = false;
     try {
-      await archive();
+      // Un projet sans règle n'a rien à garder.
+      if (store.project.rules.length) await archive();
     } catch (e) {
       notice = `Projet non enregistré dans l'historique, rien n'est remplacé : ${(e as Error).message}`;
       return;
