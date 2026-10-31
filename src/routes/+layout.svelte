@@ -86,8 +86,6 @@
     vertical-align: middle;
   }
   main {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 20px 16px 60px;
+    padding: 20px 20px 60px;
   }
 </style>
