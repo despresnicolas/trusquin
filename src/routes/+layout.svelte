@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Settings from '#lib/components/Settings.svelte';
   import { persist, store } from '#lib/state.svelte.ts';
   import { page } from '$app/state';
   import '../app.css';
@@ -28,6 +29,7 @@
       </a>
     {/each}
   </nav>
+  <Settings />
 </header>
 
 <main>

@@ -4,6 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SAURON</title>
+    <script>
+      // Thème choisi dans les réglages, appliqué avant le rendu pour éviter un flash.
+      try {
+        const theme = localStorage.getItem('sauron:theme');
+        if (theme) document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

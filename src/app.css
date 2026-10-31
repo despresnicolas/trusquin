@@ -1,37 +1,28 @@
 :root {
-  --bg: #f7f6f3;
-  --surface: #ffffff;
-  --surface-2: #f0eee9;
-  --border: #dedbd3;
-  --text: #1d1c1a;
-  --muted: #6b675f;
-  --accent: #c2410c;
-  --accent-soft: #fde7da;
-  --ok: #15803d;
-  --warn: #b45309;
-  --err: #b91c1c;
-  --info: #1d4ed8;
+  --bg: light-dark(#f7f6f3, #161514);
+  --surface: light-dark(#ffffff, #1f1e1c);
+  --surface-2: light-dark(#f0eee9, #2a2826);
+  --border: light-dark(#dedbd3, #3a3734);
+  --text: light-dark(#1d1c1a, #ece9e3);
+  --muted: light-dark(#6b675f, #a19c93);
+  --accent: light-dark(#c2410c, #fb923c);
+  --accent-soft: light-dark(#fde7da, #3b2417);
+  --ok: light-dark(#15803d, #4ade80);
+  --warn: light-dark(#b45309, #fbbf24);
+  --err: light-dark(#b91c1c, #f87171);
+  --info: light-dark(#1d4ed8, #93c5fd);
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --radius: 8px;
+  /* Suit le système, sauf choix explicite (data-theme, posé par Settings.svelte). */
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161514;
-    --surface: #1f1e1c;
-    --surface-2: #2a2826;
-    --border: #3a3734;
-    --text: #ece9e3;
-    --muted: #a19c93;
-    --accent: #fb923c;
-    --accent-soft: #3b2417;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --err: #f87171;
-    --info: #93c5fd;
-    color-scheme: dark;
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 * {
