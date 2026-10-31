@@ -36,7 +36,7 @@
           <div class="meta">
             <code>{i.code}</code>
             {#if i.file}<code>{i.file}</code>{/if}
-            {#if i.ruleId}<a href="/rules?rule={i.ruleId}">règle « {titleOf(i.ruleId)} »</a>{/if}
+            {#if i.ruleId}<a href="/generator?rule={i.ruleId}">règle « {titleOf(i.ruleId)} »</a>{/if}
           </div>
         </li>
       {/each}

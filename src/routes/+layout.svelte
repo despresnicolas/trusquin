@@ -8,8 +8,7 @@
 
   const tabs = [
     { href: '/', label: 'Analyse de dépôt' },
-    { href: '/rules', label: 'Règles' },
-    { href: '/preview', label: 'Aperçu & export' },
+    { href: '/generator', label: 'Générateur' },
     { href: '/patterns', label: 'Patterns' },
   ];
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
@@ -25,7 +24,7 @@
     {#each tabs as t}
       <a href={t.href} class:active={page.url.pathname === t.href}>
         {t.label}
-        {#if t.href === '/preview' && hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
+        {#if t.href === '/generator' && hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
       </a>
     {/each}
   </nav>

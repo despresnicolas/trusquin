@@ -16,12 +16,11 @@ pnpm build         # serveur Node dans build/ (node build)
 
 ## Onglets
 
-| Route                    | Rôle                                                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Analyse de dépôt** `/` | Chemin d'un dossier local : note A–E, critères, import des règles, historique en base.                                                               |
-| **Règles** `/rules`      | Projet, permissions, règles / skills / commandes / agents / hooks. Destination en direct.                                                            |
-| **Aperçu** `/preview`    | Arborescence groupée par mode de chargement, contenu de chaque fichier, qualité de l'export (score /100, les erreurs bloquent l'export), export zip. |
-| **Patterns** `/patterns` | Situation → élément Claude Code et emplacement, avec les modèles à ajouter au projet ; arborescence de référence.                                    |
+| Route                       | Rôle                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Analyse de dépôt** `/`    | Chemin d'un dossier local : note A–E, critères, import des règles, historique en base.                                                                                                                                                                                                                           |
+| **Générateur** `/generator` | Onglet **Règles** : projet, permissions, règles / skills / commandes / agents / hooks, destination en direct. Onglet **Aperçu & export** (`?view=export`) : arborescence groupée par mode de chargement, contenu de chaque fichier, qualité de l'export (score /100, les erreurs bloquent l'export), export zip. |
+| **Patterns** `/patterns`    | Situation → élément Claude Code et emplacement, avec les modèles à ajouter au projet ; arborescence de référence.                                                                                                                                                                                                |
 
 ## Où va chaque règle
 

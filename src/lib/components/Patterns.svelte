@@ -6,7 +6,7 @@
   function use(t: Template) {
     const rule = newRule(t.rule);
     store.project.rules.push(rule);
-    goto(`/rules?rule=${rule.id}`);
+    goto(`/generator?rule=${rule.id}`);
   }
 
   const tree = `repo/
@@ -44,7 +44,7 @@
         </div>
       {:else}
         {#if !p.kind}
-          <a href="/rules">Régler dans l'onglet Règles</a>
+          <a href="/generator">Régler dans le Générateur</a>
         {:else}
           <p class="muted">Pas de modèle : partir d'une règle vide.</p>
         {/if}
@@ -81,9 +81,11 @@
       <li>
         <b>Analyse de dépôt</b> : score de départ, import des règles existantes, suivi du score dans l'historique.
       </li>
-      <li><b>Règles</b> : pour chaque règle, dire quoi et à quoi elle s'applique.</li>
-      <li><b>Aperçu &amp; export</b> : corriger erreurs et avertissements.</li>
-      <li><b>Aperçu & export</b> : vérifier chaque fichier, exporter le zip, décompresser à la racine.</li>
+      <li><b>Générateur › Règles</b> : pour chaque règle, dire quoi et à quoi elle s'applique.</li>
+      <li>
+        <b>Générateur › Aperçu &amp; export</b> : corriger erreurs et avertissements, vérifier chaque fichier, exporter le
+        zip, décompresser à la racine.
+      </li>
       <li>Committer <code>sauron.json</code> ; régénérer avec <code>pnpm sauron generate</code>.</li>
     </ol>
   </section>
