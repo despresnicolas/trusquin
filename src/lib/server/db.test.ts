@@ -1,6 +1,20 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { starterProject } from '../core/presets.ts';
 import type { RepoAnalysis } from '../core/types.ts';
-import { connect, databaseUrl, deleteRepo, getAnalysis, listRepos, listRuns, migrate, saveAnalysis } from './db.ts';
+import {
+  connect,
+  databaseUrl,
+  deleteProject,
+  deleteRepo,
+  getAnalysis,
+  getProject,
+  listProjects,
+  listRepos,
+  listRuns,
+  migrate,
+  saveAnalysis,
+  saveProject,
+} from './db.ts';
 import type { Sql } from './db.ts';
 
 const url = databaseUrl();
@@ -44,5 +58,21 @@ describe.skipIf(!url)('historique PostgreSQL', () => {
 
     expect(await deleteRepo(sql, '/a')).toBe(2);
     expect((await listRepos(sql)).map((p) => p.last.path)).toEqual(['/b']);
+  });
+
+  it('versionne les projets du générateur sans doublon', async () => {
+    const a = { ...starterProject(), name: 'a' };
+    const first = await saveProject(sql, a, 80);
+    expect((await saveProject(sql, a, 80)).id).toBe(first.id);
+    const second = await saveProject(sql, { ...a, description: 'v2' }, 85);
+    await saveProject(sql, { ...a, name: 'b' }, 90);
+
+    const projects = await listProjects(sql);
+    expect(projects.map((p) => p.last.name)).toEqual(['b', 'a']);
+    expect(projects[1]).toMatchObject({ versions: 2, last: { id: second.id, score: 85, ruleCount: a.rules.length } });
+    expect((await getProject(sql, second.id))?.project.description).toBe('v2');
+
+    expect(await deleteProject(sql, 'a')).toBe(2);
+    expect((await listProjects(sql)).map((p) => p.last.name)).toEqual(['b']);
   });
 });

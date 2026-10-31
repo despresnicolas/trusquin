@@ -1,0 +1,25 @@
+meta {
+  name: Enregistrer un projet
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/projects
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "project": { "name": "Mon projet", "description": "", "stack": "", "useAgentsMd": false, "permissions": { "allow": [], "deny": [] }, "rules": [] },
+    "score": 80
+  }
+}
+
+docs {
+  Enregistre une version du projet du générateur (contenu de sauron.json) avec son score qualité.
+  Si le contenu est identique à la dernière version du même nom, rien n'est ajouté : renvoie cette version.
+  Réponse : ProjectVersion `{ id, name, ruleCount, score, createdAt }`.
+  400 si `project` (avec name et rules) ou `score` (entier) manque.
+}

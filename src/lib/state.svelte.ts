@@ -2,6 +2,7 @@ import { generate } from './core/placement';
 import { starterProject } from './core/presets';
 import { checkProject } from './core/quality';
 import type { Project } from './core/types';
+import { api } from './history';
 
 const KEY = 'sauron:project';
 const LEGACY_KEYS = ['tars:project', 'claude-kit:project'];
@@ -32,3 +33,6 @@ export function persist(project: Project): void {
     // ignoré : la persistance locale est un confort
   }
 }
+
+/** Enregistre le projet en cours dans l'historique (PostgreSQL), avant de le remplacer. */
+export const archive = () => api.saveProject($state.snapshot(store.project), store.quality.score);

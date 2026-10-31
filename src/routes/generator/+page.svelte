@@ -3,7 +3,8 @@
   import Generator from '#lib/components/Generator.svelte';
 
   const initial = $derived(page.url.searchParams.get('rule') ?? '');
-  const view = $derived(page.url.searchParams.get('view') === 'export' ? 'export' : 'rules');
+  const VIEWS = ['export', 'history'] as const;
+  const view = $derived(VIEWS.find((v) => v === page.url.searchParams.get('view')) ?? 'rules');
 </script>
 
 <Generator {initial} {view} />

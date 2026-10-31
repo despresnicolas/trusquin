@@ -1,0 +1,17 @@
+meta {
+  name: Lister les projets
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/projects
+  body: none
+  auth: none
+}
+
+docs {
+  Historique des projets du générateur : dernière version de chaque projet (par nom), la plus récente en premier.
+  Réponse : ProjectSummary[] `[{ last: { id, name, ruleCount, score, createdAt }, versions }]`.
+  503 si la base est indisponible.
+}

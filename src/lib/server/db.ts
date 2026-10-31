@@ -1,6 +1,13 @@
 import postgres from 'postgres';
-import type { RepoAnalysis } from '../core/types.ts';
-import type { AnalysisRecord, AnalysisRun, RepoSummary } from '../history.ts';
+import type { Project, RepoAnalysis } from '../core/types.ts';
+import type {
+  AnalysisRecord,
+  AnalysisRun,
+  ProjectRecord,
+  ProjectSummary,
+  ProjectVersion,
+  RepoSummary,
+} from '../history.ts';
 
 export type Sql = postgres.Sql;
 
@@ -33,6 +40,16 @@ export async function migrate(sql: Sql): Promise<void> {
       created_at timestamptz NOT NULL DEFAULT now()
     )`;
   await sql`CREATE INDEX IF NOT EXISTS analyses_path_created_idx ON analyses (path, created_at DESC)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS projects (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      rule_count integer NOT NULL,
+      score integer NOT NULL,
+      project jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`;
+  await sql`CREATE INDEX IF NOT EXISTS projects_name_created_idx ON projects (name, created_at DESC)`;
 }
 
 interface Row {
@@ -97,5 +114,61 @@ export async function getAnalysis(sql: Sql, id: number): Promise<AnalysisRecord 
 /** Supprime tout l'historique d'un dossier ; renvoie le nombre d'analyses supprimées. */
 export async function deleteRepo(sql: Sql, path: string): Promise<number> {
   const result = await sql`DELETE FROM analyses WHERE path = ${path}`;
+  return result.count;
+}
+
+interface ProjectRow {
+  id: number;
+  name: string;
+  rule_count: number;
+  score: number;
+  created_at: Date;
+}
+
+const version = (r: ProjectRow): ProjectVersion => ({
+  id: r.id,
+  name: r.name,
+  ruleCount: r.rule_count,
+  score: r.score,
+  createdAt: r.created_at.toISOString(),
+});
+
+/** Enregistre une version d'un projet du générateur, sauf si elle est identique à la dernière du même nom. */
+export async function saveProject(sql: Sql, project: Project, score: number): Promise<ProjectVersion> {
+  const json = sql.json(project as never);
+  const [same] = await sql<ProjectRow[]>`
+    SELECT id, name, rule_count, score, created_at FROM projects
+    WHERE id = (SELECT id FROM projects WHERE name = ${project.name} ORDER BY created_at DESC, id DESC LIMIT 1)
+      AND project = ${json}`;
+  if (same) return version(same);
+  const [row] = await sql<ProjectRow[]>`
+    INSERT INTO projects (name, rule_count, score, project)
+    VALUES (${project.name}, ${project.rules.length}, ${score}, ${json})
+    RETURNING id, name, rule_count, score, created_at`;
+  return version(row);
+}
+
+/** Dernière version de chaque projet (par nom), la plus récente en premier. */
+export async function listProjects(sql: Sql): Promise<ProjectSummary[]> {
+  const rows = await sql<(ProjectRow & { versions: number })[]>`
+    SELECT * FROM (
+      SELECT DISTINCT ON (name) id, name, rule_count, score, created_at,
+        count(*) OVER (PARTITION BY name)::int AS versions
+      FROM projects
+      ORDER BY name, created_at DESC, id DESC
+    ) latest
+    ORDER BY created_at DESC`;
+  return rows.map((r) => ({ last: version(r), versions: r.versions }));
+}
+
+export async function getProject(sql: Sql, id: number): Promise<ProjectRecord | null> {
+  const [row] = await sql<(ProjectRow & { project: Project })[]>`
+    SELECT id, name, rule_count, score, created_at, project FROM projects WHERE id = ${id}`;
+  return row ? { ...version(row), project: row.project } : null;
+}
+
+/** Supprime toutes les versions d'un projet ; renvoie le nombre de versions supprimées. */
+export async function deleteProject(sql: Sql, name: string): Promise<number> {
+  const result = await sql`DELETE FROM projects WHERE name = ${name}`;
   return result.count;
 }

@@ -3,7 +3,7 @@
   import { KIND_LABELS, SCOPE_LABELS, newId, newRule, starterProject } from '../core/presets';
   import type { Project } from '../core/types';
   import { CONFIG_FILE, download, exportZip, zipName } from '../export';
-  import { store } from '../state.svelte';
+  import { archive, store } from '../state.svelte';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
 
@@ -68,7 +68,14 @@
     download(zipName(store.project), await exportZip($state.snapshot(store.project), store.files, store.quality));
   }
 
-  function reset() {
+  async function reset() {
+    try {
+      await archive();
+    } catch (e) {
+      notice = `Projet non enregistré dans l'historique, rien n'est remplacé : ${(e as Error).message}`;
+      resetting = false;
+      return;
+    }
     store.project = starterProject();
     selectedId = store.project.rules[0]?.id ?? '';
     resetting = false;
@@ -149,7 +156,7 @@
     {#if notice}<p class="muted">{notice}</p>{/if}
     {#if resetting}
       <div class="card confirm" role="alert">
-        <p>Le projet en cours sera remplacé. Exporter le zip avant ?</p>
+        <p>Le projet en cours sera enregistré dans l'historique puis remplacé.</p>
         <div class="actions">
           <button onclick={exportCurrent}>Exporter le zip</button>
           <button class="primary" onclick={reset}>Nouveau projet</button>

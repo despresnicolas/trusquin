@@ -1,9 +1,10 @@
 <script lang="ts">
   import { store } from '../state.svelte';
   import Preview from './Preview.svelte';
+  import ProjectHistory from './ProjectHistory.svelte';
   import RulesEditor from './RulesEditor.svelte';
 
-  let { initial = '', view = 'rules' }: { initial?: string; view?: 'rules' | 'export' } = $props();
+  let { initial = '', view = 'rules' }: { initial?: string; view?: 'rules' | 'export' | 'history' } = $props();
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 </script>
 
@@ -13,10 +14,13 @@
     Aperçu & export
     {#if hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
   </a>
+  <a href="/generator?view=history" aria-current={view === 'history' ? 'page' : undefined}>Historique</a>
 </nav>
 
 {#if view === 'export'}
   <Preview files={store.files} quality={store.quality} />
+{:else if view === 'history'}
+  <ProjectHistory />
 {:else}
   {#key initial}
     <RulesEditor {initial} />
