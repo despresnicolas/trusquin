@@ -1,4 +1,4 @@
-import type { RepoAnalysis, Rule } from './core/types';
+import type { ClaudeFile, RepoAnalysis, Rule } from './core/types';
 
 /** Une analyse enregistrée, sans le détail des critères. */
 export interface AnalysisRun {
@@ -48,6 +48,7 @@ const q = (path: string) => `path=${encodeURIComponent(path)}`;
 export const api = {
   repos: () => call<RepoSummary[]>('/api/repos'),
   runs: (path: string) => call<AnalysisRun[]>(`/api/analyses?${q(path)}`),
+  files: (path: string) => call<ClaudeFile[]>(`/api/repos/files?${q(path)}`),
   dirs: (path?: string) => call<DirListing>(`/api/dirs${path ? `?${q(path)}` : ''}`),
   get: (id: number) => call<AnalysisRecord>(`/api/analyses/${id}`),
   analyze: (path: string) =>

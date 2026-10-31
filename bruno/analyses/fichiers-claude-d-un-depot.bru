@@ -1,0 +1,22 @@
+meta {
+  name: Fichiers Claude d'un dépôt
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/repos/files?path={{repoPath}}
+  body: none
+  auth: none
+}
+
+params:query {
+  path: {{repoPath}}
+}
+
+docs {
+  Fichiers Claude Code actuels du dépôt, relus sur le disque à chaque appel (onglet « Fichiers Claude » de l'analyse).
+  Réponse : ClaudeFile[] `[{ path, group, content }]`, group ∈ memory | rules | skills | agents | commands | settings.
+  Ordre : par groupe, puis racine d'abord. Fichiers de plus de 256 Ko exclus.
+  400 si `path` absent, relatif, introuvable ou hors SAURON_ROOTS.
+}

@@ -107,6 +107,15 @@ export interface RepoSnapshot {
   contents: Record<string, string>;
 }
 
+export type ClaudeFileGroup = 'memory' | 'rules' | 'skills' | 'agents' | 'commands' | 'settings';
+
+/** Fichier de configuration Claude Code lu dans un dépôt, pour lecture. */
+export interface ClaudeFile {
+  path: string;
+  group: ClaudeFileGroup;
+  content: string;
+}
+
 export type CriterionStatus = 'pass' | 'partial' | 'fail' | 'na';
 
 export interface Criterion {

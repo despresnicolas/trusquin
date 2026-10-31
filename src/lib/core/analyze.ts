@@ -1,5 +1,16 @@
 import { lintMemoryText, LIMITS } from './quality';
-import type { Category, Criterion, CriterionStatus, HookEvent, Issue, RepoAnalysis, RepoSnapshot, Rule } from './types';
+import type {
+  Category,
+  ClaudeFile,
+  ClaudeFileGroup,
+  Criterion,
+  CriterionStatus,
+  HookEvent,
+  Issue,
+  RepoAnalysis,
+  RepoSnapshot,
+  Rule,
+} from './types';
 
 export const IGNORED_DIRS = new Set([
   'node_modules',
@@ -443,6 +454,35 @@ export function importContext(repo: RepoSnapshot): { description: string; stack:
     }
   }
   return { description, stack };
+}
+
+export const CLAUDE_FILE_LABELS: Record<ClaudeFileGroup, string> = {
+  memory: 'Mémoire',
+  rules: 'Règles',
+  skills: 'Skills',
+  agents: 'Agents',
+  commands: 'Commandes',
+  settings: 'Réglages',
+};
+
+const CLAUDE_FILE_GROUPS: [ClaudeFileGroup, RegExp][] = [
+  ['memory', /(^|\/)(CLAUDE(\.local)?|AGENTS)\.md$/],
+  ['rules', /^\.claude\/rules\/.+\.md$/],
+  ['skills', /^\.claude\/skills\/.+\.md$/],
+  ['agents', /^\.claude\/agents\/.+\.md$/],
+  ['commands', /^\.claude\/commands\/.+\.md$/],
+  ['settings', /^\.claude\/settings(\.local)?\.json$/],
+];
+
+/** Fichiers Claude Code lisibles d'un dépôt, par groupe (ordre de CLAUDE_FILE_LABELS), racine d'abord. */
+export function claudeFiles(repo: RepoSnapshot): ClaudeFile[] {
+  const depth = (p: string) => p.split('/').length;
+  return CLAUDE_FILE_GROUPS.flatMap(([group, re]) =>
+    Object.keys(repo.contents)
+      .filter((path) => re.test(path))
+      .sort((a, b) => depth(a) - depth(b) || a.localeCompare(b))
+      .map((path) => ({ path, group, content: repo.contents[path] })),
+  );
 }
 
 /** Reconstruit des règles à partir des fichiers mémoire existants d'un repo. */

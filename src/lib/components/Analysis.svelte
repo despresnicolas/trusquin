@@ -3,6 +3,7 @@
   import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type RepoSummary } from '../history';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
+  import RepoFiles from './RepoFiles.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let path = $state('');
@@ -11,6 +12,7 @@
   let record = $state<AnalysisRecord | null>(null);
   let rules = $state<Rule[] | undefined>();
   let context = $state<FreshAnalysis['context'] | undefined>();
+  let view = $state<'report' | 'files'>('report');
   let loading = $state(false);
   let failure = $state('');
   let picker: DirPicker;
@@ -136,9 +138,19 @@
           {/each}
         </div>
       {/if}
-      {#key record.id}
-        <AnalysisReport {record} {rules} {context} />
-      {/key}
+      <div class="views" role="tablist">
+        <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
+        <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>Fichiers Claude</button>
+      </div>
+      {#if view === 'report'}
+        {#key record.id}
+          <AnalysisReport {record} {rules} {context} />
+        {/key}
+      {:else}
+        {#key record.path}
+          <RepoFiles path={record.path} />
+        {/key}
+      {/if}
     {/if}
   </section>
 </div>
@@ -248,6 +260,23 @@
   .run {
     font-size: 12px;
     padding: 2px 8px;
+  }
+  .views {
+    display: flex;
+    gap: 4px;
+    margin: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .views button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+  }
+  .views button[aria-selected='true'] {
+    border-bottom-color: var(--accent);
+    color: var(--text);
   }
   .run.active {
     background: var(--accent-soft);

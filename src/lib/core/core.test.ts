@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeRepo, importContext, importRules } from './analyze';
+import { analyzeRepo, claudeFiles, importContext, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
 import { newRule, PATTERNS, starterProject, TEMPLATES, templatesFor } from './presets';
 import { checkProject, lintMemoryText } from './quality';
@@ -200,5 +200,25 @@ describe('patterns', () => {
     for (const t of TEMPLATES) {
       expect(PATTERNS.filter((p) => templatesFor(p).includes(t)).length, t.label).toBe(1);
     }
+  });
+});
+
+describe('claudeFiles', () => {
+  it('groups readable Claude files, root first', () => {
+    const contents = {
+      'apps/web/CLAUDE.md': 'w',
+      'CLAUDE.md': 'r',
+      '.claude/rules/api.md': 'a',
+      '.claude/skills/release/SKILL.md': 's',
+      '.claude/settings.json': '{}',
+      'README.md': 'x',
+    };
+    expect(claudeFiles({ paths: Object.keys(contents), contents }).map((f) => [f.group, f.path])).toEqual([
+      ['memory', 'CLAUDE.md'],
+      ['memory', 'apps/web/CLAUDE.md'],
+      ['rules', '.claude/rules/api.md'],
+      ['skills', '.claude/skills/release/SKILL.md'],
+      ['settings', '.claude/settings.json'],
+    ]);
   });
 });
