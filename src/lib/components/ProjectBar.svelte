@@ -3,7 +3,7 @@
   import { importContext, importedPath, importRules } from '../core/analyze';
   import { newId, starterProject } from '../core/presets';
   import type { Project } from '../core/types';
-  import { CONFIG_FILE, download, exportZip, zipName } from '../export';
+  import { download, exportZip, zipName } from '../export';
   import { archive, store } from '../state.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
@@ -80,9 +80,6 @@
     >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
   >
   <button onclick={save}>Enregistrer</button>
-  <button onclick={() => download(CONFIG_FILE, JSON.stringify($state.snapshot(store.project), null, 2))}
-    >{CONFIG_FILE}</button
-  >
   {#if errors && !confirmed}
     <button class="sev-error" onclick={() => (confirmed = true)}>{errors} erreur(s) · exporter quand même…</button>
   {:else}
