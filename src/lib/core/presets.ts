@@ -167,7 +167,7 @@ export function starterProject(): Project {
     stack: '',
     useAgentsMd: false,
     permissions: { allow: ['Bash(pnpm test:*)', 'Bash(pnpm lint:*)'], deny: ['Read(./.env)', 'Read(./.env.*)'] },
-    rules: [TEMPLATES[0], TEMPLATES[1], TEMPLATES[7]].map((t) => newRule(t.rule)),
+    rules: [],
   };
 }
 

@@ -5,6 +5,9 @@ import { newRule, PATTERNS, starterProject, TEMPLATES, templatesFor } from './pr
 import { checkProject, lintMemoryText } from './quality';
 import type { Project } from './types';
 
+// Commandes, architecture et hook Prettier : une config minimale mais complète.
+const sampleRules = () => [TEMPLATES[0], TEMPLATES[1], TEMPLATES[7]].map((t) => newRule(t.rule));
+
 function project(rules: Project['rules'], extra: Partial<Project> = {}): Project {
   return { ...starterProject(), description: 'd', stack: 's', rules, ...extra };
 }
@@ -113,8 +116,8 @@ describe('quality', () => {
     expect(lintMemoryText('CLAUDE.md', text, true)[0].code).toBe('root-long');
   });
 
-  it('gives a clean starter a high score', () => {
-    expect(checkProject(project(starterProject().rules)).score).toBeGreaterThanOrEqual(90);
+  it('gives a minimal complete config a high score', () => {
+    expect(checkProject(project(sampleRules())).score).toBeGreaterThanOrEqual(90);
   });
 });
 
@@ -123,7 +126,7 @@ describe('analyze', () => {
     const empty = analyzeRepo({ paths: ['index.js'], contents: {} });
     expect(empty.grade).toBe('E');
 
-    const files = generate(project(starterProject().rules));
+    const files = generate(project(sampleRules()));
     const contents: Record<string, string> = Object.fromEntries(files.map((f) => [f.path, f.content]));
     contents['CLAUDE.md'] += '\n## Architecture\n\n- `pnpm build`\n- `pnpm lint`\n';
     contents['.gitignore'] = 'CLAUDE.local.md\nsettings.local.json\n.env\n';
