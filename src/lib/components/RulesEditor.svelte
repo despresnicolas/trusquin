@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { KIND_LABELS, SCOPE_LABELS, TEMPLATES, newRule } from '../core/presets';
+  import { KIND_LABELS, SCOPE_LABELS, newRule } from '../core/presets';
   import type { Project } from '../core/types';
   import { CONFIG_FILE, download } from '../export';
   import { store } from '../state.svelte';
@@ -96,14 +96,7 @@
 
     <div class="actions">
       <button onclick={() => add()}>+ Règle vide</button>
-      <details class="templates">
-        <summary>+ Depuis un modèle</summary>
-        {#each TEMPLATES as t}
-          <button class="ghost tpl" onclick={() => add(t.rule)}>
-            <b>{t.label}</b><span class="muted">{t.hint}</span>
-          </button>
-        {/each}
-      </details>
+      <a class="from-pattern" href="/patterns">+ Depuis un pattern</a>
     </div>
 
     <div class="actions">
@@ -189,24 +182,13 @@
     display: grid;
     gap: 6px;
   }
-  .templates {
+  .from-pattern {
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 6px 10px;
     background: var(--surface);
-  }
-  .templates summary {
-    font-size: 14px;
     color: var(--text);
-  }
-  .tpl {
-    display: grid;
-    text-align: left;
-    width: 100%;
-    padding: 6px 4px;
-  }
-  .tpl span {
-    font-size: 12px;
+    text-decoration: none;
   }
   .file {
     border: 1px dashed var(--border);

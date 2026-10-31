@@ -10,7 +10,7 @@
     { href: '/', label: 'Analyse de dépôt' },
     { href: '/rules', label: 'Règles' },
     { href: '/preview', label: 'Aperçu & export' },
-    { href: '/guide', label: 'Où mettre quoi ?' },
+    { href: '/patterns', label: 'Patterns' },
   ];
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeRepo, importContext, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
-import { newRule, starterProject } from './presets';
+import { newRule, PATTERNS, starterProject, TEMPLATES, templatesFor } from './presets';
 import { checkProject, lintMemoryText } from './quality';
 import type { Project } from './types';
 
@@ -192,5 +192,13 @@ describe('analyze', () => {
         contents: { 'CLAUDE.md': '# P\n\n## Cmd\n\n- x', 'package.json': '{"description":"Pkg."}' },
       }),
     ).toEqual({ description: 'Pkg.', stack: '' });
+  });
+});
+
+describe('patterns', () => {
+  it('files every template under exactly one pattern', () => {
+    for (const t of TEMPLATES) {
+      expect(PATTERNS.filter((p) => templatesFor(p).includes(t)).length, t.label).toBe(1);
+    }
   });
 });

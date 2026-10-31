@@ -196,36 +196,85 @@ export const LOADING_LABELS: Record<Loading, string> = {
   deterministic: 'Exécuté par le harness',
 };
 
-/** Arbre de décision affiché dans l'onglet Guide. */
-export const GUIDE: { question: string; answer: string; where: string }[] = [
-  { question: 'Vrai pour tout le projet, utile à chaque tâche ?', answer: 'Règle « Projet »', where: 'CLAUDE.md' },
+/** Situation type → élément Claude Code et emplacement. `kind` / `scope` relient le pattern à ses modèles. */
+export interface Pattern {
+  question: string;
+  answer: string;
+  where: string;
+  kind?: Kind;
+  scope?: Scope;
+}
+
+/** Patterns affichés dans l'onglet Patterns, du plus courant au plus spécialisé. */
+export const PATTERNS: Pattern[] = [
+  {
+    question: 'Vrai pour tout le projet, utile à chaque tâche ?',
+    answer: 'Règle « Projet »',
+    where: 'CLAUDE.md',
+    kind: 'rule',
+    scope: 'project',
+  },
   {
     question: 'Vrai pour tout le projet mais long (tests, sécu…) ?',
     answer: 'Règle « Thème »',
     where: '.claude/rules/<thème>.md',
+    kind: 'rule',
+    scope: 'topic',
   },
   {
     question: 'Vrai seulement pour certains fichiers (API, migrations, front) ?',
     answer: 'Règle « Chemins »',
     where: '.claude/rules/*.md + paths:',
+    kind: 'rule',
+    scope: 'path',
   },
-  { question: 'Spécifique à un sous-projet de monorepo ?', answer: 'Règle « Dossier »', where: '<dossier>/CLAUDE.md' },
+  {
+    question: 'Spécifique à un sous-projet de monorepo ?',
+    answer: 'Règle « Dossier »',
+    where: '<dossier>/CLAUDE.md',
+    kind: 'rule',
+    scope: 'directory',
+  },
   {
     question: 'Ma préférence perso, pas celle de l’équipe ?',
     answer: 'Règle « Perso »',
     where: 'CLAUDE.local.md ou ~/.claude/CLAUDE.md',
+    kind: 'rule',
+    scope: 'local',
   },
   {
     question: 'Procédure ponctuelle (release, migration, audit) ?',
     answer: 'Skill',
     where: '.claude/skills/<nom>/SKILL.md',
+    kind: 'skill',
   },
-  { question: 'Prompt que je lance moi-même ?', answer: 'Slash command', where: '.claude/commands/<nom>.md' },
+  {
+    question: 'Prompt que je lance moi-même ?',
+    answer: 'Slash command',
+    where: '.claude/commands/<nom>.md',
+    kind: 'command',
+  },
   {
     question: 'Tâche à déléguer avec contexte et outils séparés ?',
     answer: 'Sous-agent',
     where: '.claude/agents/<nom>.md',
+    kind: 'agent',
   },
-  { question: 'Doit arriver à 100 % (format, lint, blocage) ?', answer: 'Hook', where: '.claude/settings.json' },
+  {
+    question: 'Doit arriver à 100 % (format, lint, blocage) ?',
+    answer: 'Hook',
+    where: '.claude/settings.json',
+    kind: 'hook',
+  },
   { question: 'Accès à autoriser ou interdire ?', answer: 'Permission', where: '.claude/settings.json' },
 ];
+
+/** Modèles qui répondent à un pattern (même type, et même portée pour une règle). */
+export function templatesFor(pattern: Pattern): Template[] {
+  if (!pattern.kind) return [];
+  return TEMPLATES.filter(
+    (t) =>
+      (t.rule.kind ?? 'rule') === pattern.kind &&
+      (pattern.kind !== 'rule' || (t.rule.scope ?? 'project') === pattern.scope),
+  );
+}
