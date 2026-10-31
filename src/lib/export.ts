@@ -34,6 +34,10 @@ export async function exportZip(project: Project, files: GeneratedFile[], qualit
   return zip.generateAsync({ type: 'blob' });
 }
 
+/** Nom du zip d'export, tiré du nom du projet. */
+export const zipName = (project: Project) =>
+  `${project.name.replace(/\W+/g, '-').toLowerCase() || 'claude'}-sauron.zip`;
+
 export function download(name: string, data: Blob | string): void {
   const blob = typeof data === 'string' ? new Blob([data], { type: 'application/json' }) : data;
   const url = URL.createObjectURL(blob);

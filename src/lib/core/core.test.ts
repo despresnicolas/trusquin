@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeRepo, claudeFiles, importContext, importRules } from './analyze';
+import { analyzeRepo, claudeFiles, importContext, importedPath, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
 import { newRule, PATTERNS, starterProject, TEMPLATES, templatesFor } from './presets';
 import { checkProject, lintMemoryText } from './quality';
@@ -219,6 +219,17 @@ describe('claudeFiles', () => {
       ['rules', '.claude/rules/api.md'],
       ['skills', '.claude/skills/release/SKILL.md'],
       ['settings', '.claude/settings.json'],
+    ]);
+  });
+});
+
+describe('importedPath', () => {
+  it('maps a lone uploaded file to the path importRules expects', () => {
+    expect(['CLAUDE.md', 'AGENTS.md', 'settings.json', 'api.md'].map(importedPath)).toEqual([
+      'CLAUDE.md',
+      'AGENTS.md',
+      '.claude/settings.json',
+      '.claude/rules/api.md',
     ]);
   });
 });

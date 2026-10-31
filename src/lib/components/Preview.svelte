@@ -2,7 +2,7 @@
   import { countInstructions } from '../core/quality';
   import { LOADING_LABELS } from '../core/presets';
   import type { GeneratedFile, Loading, QualityReport } from '../core/types';
-  import { download, exportZip } from '../export';
+  import { download, exportZip, zipName } from '../export';
   import { store } from '../state.svelte';
   import FileView from './FileView.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
@@ -18,7 +18,7 @@
 
   async function exportAll() {
     const blob = await exportZip($state.snapshot(store.project), files, quality);
-    download(`${store.project.name.replace(/\W+/g, '-').toLowerCase() || 'claude'}-sauron.zip`, blob);
+    download(zipName(store.project), blob);
   }
 </script>
 

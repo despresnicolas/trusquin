@@ -485,6 +485,13 @@ export function claudeFiles(repo: RepoSnapshot): ClaudeFile[] {
   );
 }
 
+/** Chemin supposé d'un fichier importé seul (sans son dossier) : la mémoire et settings.json gardent leur rôle, tout autre .md devient une règle. */
+export function importedPath(name: string): string {
+  if (/^(CLAUDE(\.local)?|AGENTS)\.md$/.test(name)) return name;
+  if (name === 'settings.json') return '.claude/settings.json';
+  return `.claude/rules/${name}`;
+}
+
 /** Reconstruit des règles à partir des fichiers mémoire existants d'un repo. */
 export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
   const rules: Rule[] = [];

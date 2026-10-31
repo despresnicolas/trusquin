@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { KIND_LABELS, SCOPE_LABELS, newRule } from '../core/presets';
+  import { importContext, importedPath, importRules } from '../core/analyze';
+  import { KIND_LABELS, SCOPE_LABELS, newId, newRule, starterProject } from '../core/presets';
   import type { Project } from '../core/types';
-  import { CONFIG_FILE, download } from '../export';
+  import { CONFIG_FILE, download, exportZip, zipName } from '../export';
   import { store } from '../state.svelte';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
@@ -26,15 +27,52 @@
     selectedId = project.rules[0]?.id ?? '';
   }
 
-  async function importConfig(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (!file) return;
-    try {
-      store.project = JSON.parse(await file.text()) as Project;
-      selectedId = store.project.rules[0]?.id ?? '';
-    } catch {
-      alert(`${file.name} n'est pas un ${CONFIG_FILE} valide.`);
+  let notice = $state('');
+  let resetting = $state(false);
+
+  /** sauron.json remplace le projet ; les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles. */
+  async function importFiles(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const contents: Record<string, string> = {};
+    for (const file of input.files ?? []) {
+      const text = await file.text();
+      if (file.name.endsWith('.json')) {
+        try {
+          const data = JSON.parse(text);
+          if (Array.isArray(data.rules)) {
+            store.project = { ...starterProject(), ...data } as Project;
+            selectedId = store.project.rules[0]?.id ?? '';
+            notice = `Projet chargé depuis ${file.name}.`;
+            continue;
+          }
+        } catch {
+          notice = `${file.name} n'est pas un JSON valide.`;
+          continue;
+        }
+      }
+      contents[importedPath(file.name)] = text;
     }
+    input.value = '';
+    const repo = { paths: Object.keys(contents), contents };
+    if (!repo.paths.length) return;
+    const rules = importRules(repo, newId);
+    const context = importContext(repo);
+    store.project.description ||= context.description;
+    store.project.stack ||= context.stack;
+    store.project.rules.push(...rules);
+    selectedId = rules[0]?.id ?? selectedId;
+    notice = rules.length ? `${rules.length} règle(s) importée(s).` : 'Aucune règle trouvée dans ces fichiers.';
+  }
+
+  async function exportCurrent() {
+    download(zipName(store.project), await exportZip($state.snapshot(store.project), store.files, store.quality));
+  }
+
+  function reset() {
+    store.project = starterProject();
+    selectedId = store.project.rules[0]?.id ?? '';
+    resetting = false;
+    notice = '';
   }
 </script>
 
@@ -103,8 +141,22 @@
       <button onclick={() => download(CONFIG_FILE, JSON.stringify($state.snapshot(project), null, 2))}
         >Sauver {CONFIG_FILE}</button
       >
-      <label class="file">Charger un {CONFIG_FILE}<input type="file" accept=".json" onchange={importConfig} /></label>
+      <label class="file"
+        >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
+      >
+      <button onclick={() => (resetting = true)}>Nouveau projet</button>
     </div>
+    {#if notice}<p class="muted">{notice}</p>{/if}
+    {#if resetting}
+      <div class="card confirm" role="alert">
+        <p>Le projet en cours sera remplacé. Exporter le zip avant ?</p>
+        <div class="actions">
+          <button onclick={exportCurrent}>Exporter le zip</button>
+          <button class="primary" onclick={reset}>Nouveau projet</button>
+          <button class="ghost" onclick={() => (resetting = false)}>Annuler</button>
+        </div>
+      </div>
+    {/if}
   </aside>
 
   <section>
@@ -133,6 +185,9 @@
   aside {
     display: grid;
     gap: 12px;
+  }
+  .confirm p {
+    margin: 0 0 8px;
   }
   .project {
     display: grid;

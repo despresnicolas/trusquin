@@ -7,7 +7,7 @@ Transforme des règles en fichiers Claude Code placés au bon endroit, et note d
 ### Générateur
 
 **Projet** :
-La configuration Claude Code en cours de construction dans le générateur : nom, description, stack, règles et permissions.
+La configuration Claude Code d'un nouveau projet, construite dans le générateur : nom, description, stack, règles et permissions. Peut partir de règles importées (fichiers .md ou .json, ou un dépôt analysé).
 _À éviter_ : configuration, dépôt
 
 **Export** :
