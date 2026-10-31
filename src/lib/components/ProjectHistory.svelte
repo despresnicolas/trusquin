@@ -7,7 +7,6 @@
   let projects = $state<ProjectSummary[]>([]);
   let loading = $state(false);
   let failure = $state('');
-  let notice = $state('');
 
   const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -27,13 +26,6 @@
     projects = await api.projects();
   };
 
-  const save = () =>
-    attempt(async () => {
-      const saved = await archive();
-      notice = `« ${saved.name} » enregistré.`;
-      await refresh();
-    });
-
   // Le projet en cours est enregistré avant d'être remplacé : rien ne se perd.
   const open = (id: number) =>
     attempt(async () => {
@@ -50,19 +42,15 @@
     });
 
   $effect(() => {
+    void store.saved;
     attempt(refresh);
   });
 </script>
 
-<div class="toolbar">
-  <button class="primary" onclick={save} disabled={loading}>Enregistrer « {store.project.name} »</button>
-  {#if notice}<span class="muted">{notice}</span>{/if}
-</div>
-
 {#if failure}<p class="sev-error">{failure}</p>{/if}
 
 {#if !projects.length}
-  <p class="muted">Aucun projet enregistré. « Nouveau projet » enregistre aussi le projet en cours.</p>
+  <p class="muted">Aucun projet enregistré. « Enregistrer » et « Nouveau projet » (en haut) l'ajoutent ici.</p>
 {:else}
   <table>
     <tbody>
@@ -83,12 +71,6 @@
 {/if}
 
 <style>
-  .toolbar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 12px;
-  }
   table {
     width: 100%;
     border-collapse: collapse;

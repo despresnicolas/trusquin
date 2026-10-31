@@ -1,9 +1,6 @@
 <script lang="ts">
-  import { importContext, importedPath, importRules } from '../core/analyze';
-  import { KIND_LABELS, SCOPE_LABELS, newId, newRule, starterProject } from '../core/presets';
-  import type { Project } from '../core/types';
-  import { CONFIG_FILE, download, exportZip, zipName } from '../export';
-  import { archive, store } from '../state.svelte';
+  import { KIND_LABELS, SCOPE_LABELS, newRule } from '../core/presets';
+  import { store } from '../state.svelte';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
 
@@ -13,7 +10,8 @@
   const project = $derived(store.project);
   const files = $derived(store.files);
   const quality = $derived(store.quality);
-  const selected = $derived(project.rules.find((r) => r.id === selectedId));
+  // Repli sur la première règle : après un import ou un nouveau projet, l'ancienne sélection n'existe plus.
+  const selected = $derived(project.rules.find((r) => r.id === selectedId) ?? project.rules[0]);
   const issuesFor = (id: string) => quality.issues.filter((i) => i.ruleId === id);
 
   function add(partial = {}) {
@@ -26,105 +24,16 @@
     project.rules = project.rules.filter((r) => r.id !== id);
     selectedId = project.rules[0]?.id ?? '';
   }
-
-  let notice = $state('');
-  let resetting = $state(false);
-
-  /** sauron.json remplace le projet ; les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles. */
-  async function importFiles(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const contents: Record<string, string> = {};
-    for (const file of input.files ?? []) {
-      const text = await file.text();
-      if (file.name.endsWith('.json')) {
-        try {
-          const data = JSON.parse(text);
-          if (Array.isArray(data.rules)) {
-            store.project = { ...starterProject(), ...data } as Project;
-            selectedId = store.project.rules[0]?.id ?? '';
-            notice = `Projet chargé depuis ${file.name}.`;
-            continue;
-          }
-        } catch {
-          notice = `${file.name} n'est pas un JSON valide.`;
-          continue;
-        }
-      }
-      contents[importedPath(file.name)] = text;
-    }
-    input.value = '';
-    const repo = { paths: Object.keys(contents), contents };
-    if (!repo.paths.length) return;
-    const rules = importRules(repo, newId);
-    const context = importContext(repo);
-    store.project.description ||= context.description;
-    store.project.stack ||= context.stack;
-    store.project.rules.push(...rules);
-    selectedId = rules[0]?.id ?? selectedId;
-    notice = rules.length ? `${rules.length} règle(s) importée(s).` : 'Aucune règle trouvée dans ces fichiers.';
-  }
-
-  async function exportCurrent() {
-    download(zipName(store.project), await exportZip($state.snapshot(store.project), store.files, store.quality));
-  }
-
-  async function reset() {
-    try {
-      await archive();
-    } catch (e) {
-      notice = `Projet non enregistré dans l'historique, rien n'est remplacé : ${(e as Error).message}`;
-      resetting = false;
-      return;
-    }
-    store.project = starterProject();
-    selectedId = store.project.rules[0]?.id ?? '';
-    resetting = false;
-    notice = '';
-  }
 </script>
 
 <div class="layout">
   <aside>
-    <div class="card project">
-      <label>Nom du projet<input bind:value={project.name} /></label>
-      <label>Description (le quoi, en une phrase)<textarea rows="2" bind:value={project.description}></textarea></label>
-      <label>Stack<input bind:value={project.stack} placeholder="SvelteKit, Fastify, PostgreSQL, pnpm" /></label>
-      <label class="check"
-        ><input type="checkbox" bind:checked={project.useAgentsMd} /> Écrire dans AGENTS.md (multi-outils) + import dans CLAUDE.md</label
-      >
-      <details>
-        <summary>Permissions</summary>
-        <label
-          >Autoriser (une par ligne)
-          <textarea
-            rows="3"
-            value={project.permissions.allow.join('\n')}
-            oninput={(e) =>
-              (project.permissions.allow = e.currentTarget.value
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean))}></textarea>
-        </label>
-        <label
-          >Refuser (une par ligne)
-          <textarea
-            rows="3"
-            value={project.permissions.deny.join('\n')}
-            oninput={(e) =>
-              (project.permissions.deny = e.currentTarget.value
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean))}></textarea>
-        </label>
-      </details>
-    </div>
-
     <ul class="list">
       {#each project.rules as rule (rule.id)}
         {@const n = issuesFor(rule.id)}
         <li>
           <button
-            class:active={rule.id === selectedId}
+            class:active={rule.id === selected?.id}
             class:off={!rule.enabled}
             onclick={() => (selectedId = rule.id)}
           >
@@ -143,27 +52,6 @@
       <button onclick={() => add()}>+ Règle vide</button>
       <a class="from-pattern" href="/patterns">+ Depuis un pattern</a>
     </div>
-
-    <div class="actions">
-      <button onclick={() => download(CONFIG_FILE, JSON.stringify($state.snapshot(project), null, 2))}
-        >Sauver {CONFIG_FILE}</button
-      >
-      <label class="file"
-        >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
-      >
-      <button onclick={() => (resetting = true)}>Nouveau projet</button>
-    </div>
-    {#if notice}<p class="muted">{notice}</p>{/if}
-    {#if resetting}
-      <div class="card confirm" role="alert">
-        <p>Le projet en cours sera enregistré dans l'historique puis remplacé.</p>
-        <div class="actions">
-          <button onclick={exportCurrent}>Exporter le zip</button>
-          <button class="primary" onclick={reset}>Nouveau projet</button>
-          <button class="ghost" onclick={() => (resetting = false)}>Annuler</button>
-        </div>
-      </div>
-    {/if}
   </aside>
 
   <section>
@@ -192,26 +80,6 @@
   aside {
     display: grid;
     gap: 12px;
-  }
-  .confirm p {
-    margin: 0 0 8px;
-  }
-  .project {
-    display: grid;
-    gap: 10px;
-  }
-  .check {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-  .check input {
-    width: auto;
-  }
-  summary {
-    cursor: pointer;
-    color: var(--muted);
-    font-size: 12px;
   }
   .list {
     list-style: none;
@@ -251,16 +119,5 @@
     background: var(--surface);
     color: var(--text);
     text-decoration: none;
-  }
-  .file {
-    border: 1px dashed var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 14px;
-  }
-  .file input {
-    display: none;
   }
 </style>

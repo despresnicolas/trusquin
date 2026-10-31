@@ -22,6 +22,8 @@ class Kit {
   project = $state(load());
   files = $derived(generate(this.project));
   quality = $derived(checkProject(this.project, this.files));
+  /** Incrémenté à chaque enregistrement dans l'historique, pour rafraîchir la liste. */
+  saved = $state(0);
 }
 
 export const store = new Kit();
@@ -35,4 +37,8 @@ export function persist(project: Project): void {
 }
 
 /** Enregistre le projet en cours dans l'historique (PostgreSQL), avant de le remplacer. */
-export const archive = () => api.saveProject($state.snapshot(store.project), store.quality.score);
+export async function archive() {
+  const version = await api.saveProject($state.snapshot(store.project), store.quality.score);
+  store.saved++;
+  return version;
+}

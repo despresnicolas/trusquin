@@ -3,7 +3,7 @@
   import Generator from '#lib/components/Generator.svelte';
 
   const initial = $derived(page.url.searchParams.get('rule') ?? '');
-  const VIEWS = ['export', 'history'] as const;
+  const VIEWS = ['project', 'export', 'history'] as const;
   const view = $derived(VIEWS.find((v) => v === page.url.searchParams.get('view')) ?? 'rules');
 </script>
 

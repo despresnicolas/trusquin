@@ -1,15 +1,23 @@
 <script lang="ts">
   import { store } from '../state.svelte';
   import Preview from './Preview.svelte';
+  import ProjectBar from './ProjectBar.svelte';
+  import ProjectForm from './ProjectForm.svelte';
   import ProjectHistory from './ProjectHistory.svelte';
   import RulesEditor from './RulesEditor.svelte';
 
-  let { initial = '', view = 'rules' }: { initial?: string; view?: 'rules' | 'export' | 'history' } = $props();
+  let { initial = '', view = 'rules' }: { initial?: string; view?: 'project' | 'rules' | 'export' | 'history' } =
+    $props();
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 </script>
 
+<ProjectBar />
+
 <nav class="views">
-  <a href="/generator" aria-current={view === 'rules' ? 'page' : undefined}>Règles</a>
+  <a href="/generator?view=project" aria-current={view === 'project' ? 'page' : undefined}>Projet</a>
+  <a href="/generator" aria-current={view === 'rules' ? 'page' : undefined}>
+    Règles <span class="muted">{store.project.rules.length}</span>
+  </a>
   <a href="/generator?view=export" aria-current={view === 'export' ? 'page' : undefined}>
     Aperçu & export
     {#if hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
@@ -19,6 +27,8 @@
 
 {#if view === 'export'}
   <Preview files={store.files} quality={store.quality} />
+{:else if view === 'project'}
+  <ProjectForm />
 {:else if view === 'history'}
   <ProjectHistory />
 {:else}
@@ -31,7 +41,7 @@
   .views {
     display: flex;
     gap: 4px;
-    margin-bottom: 16px;
+    margin: 16px 0;
     border-bottom: 1px solid var(--border);
   }
   .views a {

@@ -44,7 +44,7 @@
         </div>
       {:else}
         {#if !p.kind}
-          <a href="/generator">Régler dans le Générateur</a>
+          <a href="/generator?view=project">Régler dans Générateur › Projet</a>
         {:else}
           <p class="muted">Pas de modèle : partir d'une règle vide.</p>
         {/if}

@@ -2,40 +2,27 @@
   import { countInstructions } from '../core/quality';
   import { LOADING_LABELS } from '../core/presets';
   import type { GeneratedFile, Loading, QualityReport } from '../core/types';
-  import { download, exportZip, zipName } from '../export';
-  import { store } from '../state.svelte';
   import FileView from './FileView.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { files, quality }: { files: GeneratedFile[]; quality: QualityReport } = $props();
 
   let selectedPath = $state('CLAUDE.md');
-  let confirmed = $state(false);
   const selected = $derived(files.find((f) => f.path === selectedPath) ?? files[0]);
   const errors = $derived(quality.issues.filter((i) => i.severity === 'error'));
   const order: Loading[] = ['always', 'on-path', 'on-demand', 'deterministic', 'personal'];
   const fileIssues = $derived(quality.issues.filter((i) => i.file === selected?.path));
-
-  async function exportAll() {
-    const blob = await exportZip($state.snapshot(store.project), files, quality);
-    download(zipName(store.project), blob);
-  }
 </script>
 
 <div class="bar card">
   <ScoreBadge score={quality.score} />
   <span><b>{files.length}</b> fichiers · <b>{quality.alwaysLoadedInstructions}</b> instructions toujours chargées</span>
-  <span class="spacer"></span>
-  {#if errors.length && !confirmed}
-    <span class="sev-error">{errors.length} erreur(s) bloquante(s)</span>
-    <button onclick={() => (confirmed = true)}>Exporter quand même…</button>
-  {:else}
-    <button class="primary" onclick={exportAll}>Exporter le zip</button>
-  {/if}
+  {#if errors.length}<span class="sev-error">{errors.length} erreur(s) bloquante(s)</span>{/if}
 </div>
 <p class="muted hint">
-  Décompresser à la racine du repo. Le zip contient aussi <code>sauron.json</code> (source, rechargeable et utilisable
-  en CLI) et <code>_sauron-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code>
+  « Exporter le zip » (en haut) : décompresser à la racine du repo. Le zip contient aussi <code>sauron.json</code>
+  (source, rechargeable et utilisable en CLI) et <code>_sauron-report.md</code> (rapport, à ne pas committer). Les
+  fichiers <code>~/</code>
   sont rangés dans <code>_home/</code>.
 </p>
 
