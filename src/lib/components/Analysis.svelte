@@ -12,7 +12,7 @@
   let record = $state<AnalysisRecord | null>(null);
   let rules = $state<Rule[] | undefined>();
   let context = $state<FreshAnalysis['context'] | undefined>();
-  let view = $state<'report' | 'files'>('report');
+  let view = $state<'report' | 'files' | 'history'>('report');
   let loading = $state(false);
   let failure = $state('');
   let picker: DirPicker;
@@ -98,7 +98,7 @@
 
 <div class="layout">
   <aside>
-    <h3>Historique</h3>
+    <h3>Dépôts</h3>
     {#if !repos.length}
       <p class="muted">Aucun dépôt analysé.</p>
     {/if}
@@ -127,29 +127,49 @@
       <div class="toolbar">
         <code class="path">{record.path}</code>
         <button onclick={() => analyze(record!.path)} disabled={loading}>Ré-analyser</button>
-        <button class="danger" onclick={() => forget(record!.path)} disabled={loading}>Supprimer l'historique</button>
       </div>
-      {#if runs.length > 1}
-        <div class="runs">
-          {#each runs as r (r.id)}
-            <button class="run" class:active={r.id === record.id} onclick={() => open(r.id)}>
-              {date(r.createdAt)} · <b>{r.score}</b>
-            </button>
-          {/each}
-        </div>
-      {/if}
       <div class="views" role="tablist">
         <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
         <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>Fichiers Claude</button>
+        <button role="tab" aria-selected={view === 'history'} onclick={() => (view = 'history')}>
+          Historique <span class="muted">{runs.length}</span>
+        </button>
       </div>
       {#if view === 'report'}
         {#key record.id}
           <AnalysisReport {record} {rules} {context} />
         {/key}
-      {:else}
+      {:else if view === 'files'}
         {#key record.path}
           <RepoFiles path={record.path} />
         {/key}
+      {:else}
+        <table class="history">
+          <tbody>
+            {#each runs as r, i (r.id)}
+              {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
+              <tr class:active={r.id === record.id}>
+                <td>
+                  <button
+                    class="ghost"
+                    onclick={async () => {
+                      await open(r.id);
+                      view = 'report';
+                    }}>{date(r.createdAt)}</button
+                  >
+                </td>
+                <td><ScoreBadge score={r.score} label={r.grade} /></td>
+                <td>
+                  {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
+                    >{/if}
+                </td>
+                <td class="muted">{r.fileCount} fichiers</td>
+                <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+        <button class="danger" onclick={() => forget(record!.path)} disabled={loading}>Supprimer l'historique</button>
       {/if}
     {/if}
   </section>
@@ -251,35 +271,19 @@
   .danger {
     color: var(--err);
   }
-  .runs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 10px;
+  .history {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
   }
-  .run {
-    font-size: 12px;
-    padding: 2px 8px;
-  }
-  .views {
-    display: flex;
-    gap: 4px;
-    margin: 14px 0;
+  .history td {
+    padding: 6px 10px;
     border-bottom: 1px solid var(--border);
   }
-  .views button {
-    border: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: none;
-    color: var(--muted);
-  }
-  .views button[aria-selected='true'] {
-    border-bottom-color: var(--accent);
-    color: var(--text);
-  }
-  .run.active {
+  .history tr.active {
     background: var(--accent-soft);
-    color: var(--accent);
   }
 </style>
