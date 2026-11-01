@@ -5,6 +5,7 @@
   import type { Project } from '../core/types';
   import { download, exportZip, zipName } from '../export';
   import { archive, store } from '../state.svelte';
+  import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let notice = $state('');
@@ -77,19 +78,31 @@
   <ScoreBadge score={store.quality.score} />
   <span class="spacer"></span>
   <button onclick={() => (resetting = true)}>Nouveau projet</button>
+  <Hint
+    text="Repart d'un projet vide. Le projet en cours est enregistré dans l'historique, sauf s'il a des erreurs bloquantes."
+  />
   <label class="file"
     >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
   >
+  <Hint
+    text="sauron.json remplace tout le projet. CLAUDE.md : une règle par section ##. Un autre .md devient une règle .claude/rules/. settings.json : ses hooks."
+  />
   <button
     onclick={save}
     disabled={errors > 0}
     title={errors ? `${errors} erreur(s) bloquante(s) à corriger avant d'enregistrer` : undefined}>Enregistrer</button
   >
+  <Hint
+    text="Ajoute une version dans l'onglet Historique (en base). Rien n'est ajouté si rien n'a changé ; refusé tant qu'il reste des erreurs bloquantes."
+  />
   {#if errors && !confirmed}
     <button class="sev-error" onclick={() => (confirmed = true)}>{errors} erreur(s) · exporter quand même…</button>
   {:else}
     <button class="primary" onclick={exportCurrent}>Exporter le zip</button>
   {/if}
+  <Hint
+    text="Fichiers prêts à décompresser à la racine du dépôt, plus sauron.json (la source, à committer) et un rapport. Vérifier d'abord l'onglet Aperçu & export."
+  />
 </div>
 
 {#if resetting}

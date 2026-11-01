@@ -3,7 +3,9 @@
   import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type RepoSummary } from '../history';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
+  import Proposals from './Proposals.svelte';
   import RepoFiles from './RepoFiles.svelte';
+  import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let path = $state('');
@@ -12,8 +14,13 @@
   let record = $state<AnalysisRecord | null>(null);
   let rules = $state<Rule[] | undefined>();
   let context = $state<FreshAnalysis['context'] | undefined>();
-  let view = $state<'report' | 'files' | 'history'>('report');
+  // Propositions conçues dans la modale, à enregistrer dans un nouveau projet (rien n'est écrit sur le disque).
+  let drafts = $state<{ criterion: string; rule: Rule }[]>([]);
+  let view = $state<'report' | 'proposals' | 'files' | 'history'>('report');
   let loading = $state(false);
+  const proposals = $derived(
+    record ? record.result.criteria.filter((c) => c.fix).length + record.result.memoryIssues.length : 0,
+  );
   let failure = $state('');
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
@@ -38,6 +45,7 @@
   };
 
   async function show(next: AnalysisRecord, fresh?: FreshAnalysis) {
+    if (next.path !== record?.path) drafts = [];
     record = next;
     rules = fresh?.rules;
     context = fresh?.context;
@@ -88,6 +96,9 @@
     <button type="button" class="primary" disabled={loading} onclick={() => picker.open()}>
       {loading ? 'Analyse…' : 'Ajouter un dépôt'}
     </button>
+    <Hint
+      text="Choisir un dossier du serveur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
+    />
   </form>
 </div>
 
@@ -133,10 +144,24 @@
       <div class="toolbar">
         <code class="path">{record.path}</code>
         <button onclick={() => analyze(record!.path)} disabled={loading}>Ré-analyser</button>
+        <Hint
+          text="Relit le dépôt après tes changements et ajoute une analyse : l'onglet Historique montre l'évolution du score."
+        />
       </div>
       <div class="views" role="tablist">
         <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
-        <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>Fichiers Claude</button>
+        <button
+          role="tab"
+          aria-selected={view === 'proposals'}
+          title="Ce qu'il faut corriger, trié par points gagnés"
+          onclick={() => (view = 'proposals')}
+        >
+          Propositions <span class="muted">{proposals}</span>
+        </button>
+        <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>
+          Fichiers Claude
+          {#if drafts.length}<span class="pill">{drafts.length} nouveau{drafts.length > 1 ? 'x' : ''}</span>{/if}
+        </button>
         <button role="tab" aria-selected={view === 'history'} onclick={() => (view = 'history')}>
           Historique <span class="muted">{runs.length}</span>
         </button>
@@ -145,9 +170,23 @@
         {#key record.id}
           <AnalysisReport {record} {rules} {context} />
         {/key}
+      {:else if view === 'proposals'}
+        <Proposals
+          result={record.result}
+          sent={drafts.map((d) => d.criterion)}
+          onadd={(criterion, rule) => {
+            drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];
+            view = 'files';
+          }}
+        />
       {:else if view === 'files'}
         {#key record.path}
-          <RepoFiles path={record.path} />
+          <RepoFiles
+            path={record.path}
+            name={record.name}
+            drafts={drafts.map((d) => d.rule)}
+            onremove={(id) => (drafts = drafts.filter((d) => d.rule.id !== id))}
+          />
         {/key}
       {:else}
         <table class="history">

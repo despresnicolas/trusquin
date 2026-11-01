@@ -1,17 +1,38 @@
 <script lang="ts">
   import { store } from '../state.svelte';
+  import Hint from './Hint.svelte';
 
   const project = $derived(store.project);
 </script>
 
 <div class="card project">
-  <label>Nom du projet<input bind:value={project.name} /></label>
-  <label>Description (le quoi, en une phrase)<textarea rows="2" bind:value={project.description}></textarea></label>
-  <label>Stack<input bind:value={project.stack} placeholder="SvelteKit, Fastify, PostgreSQL, pnpm" /></label>
-  <label class="check"
-    ><input type="checkbox" bind:checked={project.useAgentsMd} /> Écrire dans AGENTS.md (multi-outils) + import dans CLAUDE.md</label
+  <label
+    >Nom du projet <Hint
+      text="Titre du CLAUDE.md et nom dans l'historique : deux projets du même nom partagent le même historique."
+    /><input bind:value={project.name} /></label
   >
-  <h4>Permissions <span class="muted">(.claude/settings.json)</span></h4>
+  <label
+    >Description (le quoi, en une phrase) <Hint
+      text="Une phrase sur ce que fait le dépôt, en tête du CLAUDE.md. Aide Claude à trancher les cas ambigus."
+    /><textarea rows="2" bind:value={project.description}></textarea></label
+  >
+  <label
+    >Stack <Hint
+      text="Langages, frameworks, base, gestionnaire de paquets. Évite que Claude propose npm dans un projet pnpm."
+    /><input bind:value={project.stack} placeholder="SvelteKit, Fastify, PostgreSQL, pnpm" /></label
+  >
+  <label class="check"
+    ><input type="checkbox" bind:checked={project.useAgentsMd} /> Écrire dans AGENTS.md (multi-outils) + import dans
+    CLAUDE.md <Hint
+      text="À cocher si l'équipe utilise aussi Codex, Cursor… : la mémoire va dans AGENTS.md, que CLAUDE.md importe."
+    /></label
+  >
+  <h4>
+    Permissions <span class="muted">(.claude/settings.json)</span>
+    <Hint
+      text="Autoriser évite les confirmations pour les commandes sûres (Bash(pnpm test:*)). Refuser protège les secrets (Read(./.env)). Un refus l'emporte toujours."
+    />
+  </h4>
   <div class="perms">
     <label
       >Autoriser (une par ligne)

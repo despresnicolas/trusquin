@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeRepo, claudeFiles, importContext, importedPath, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
-import { newRule, PATTERNS, starterProject, TEMPLATES, templatesFor } from './presets';
+import { newRule, PATTERNS, starterProject, templateForCriterion, TEMPLATES, templatesFor } from './presets';
 import { checkProject, lintMemoryText } from './quality';
 import type { Project } from './types';
 
@@ -240,5 +240,14 @@ describe('importedPath', () => {
       '.claude/settings.json',
       '.claude/rules/api.md',
     ]);
+  });
+});
+
+describe('templateForCriterion', () => {
+  it('resolves a template for every mapped criterion', () => {
+    for (const id of ['root-memory', 'commands', 'architecture', 'modular', 'hooks', 'on-demand', 'agents']) {
+      expect(templateForCriterion(id), id).toBeDefined();
+    }
+    expect(templateForCriterion('readme')).toBeUndefined();
   });
 });

@@ -68,7 +68,11 @@
           <td class="muted">{p.last.ruleCount} règle{p.last.ruleCount > 1 ? 's' : ''}</td>
           <td class="muted">{date(p.last.createdAt)} · {p.versions} version{p.versions > 1 ? 's' : ''}</td>
           <td class="actions">
-            <button onclick={() => open(p.last.id)} disabled={loading}>Ouvrir</button>
+            <button
+              onclick={() => open(p.last.id)}
+              disabled={loading}
+              title="Charge la dernière version. Le projet en cours est d'abord enregistré.">Ouvrir</button
+            >
             <button class="danger" onclick={() => forget(p.last.name)} disabled={loading}>Supprimer</button>
           </td>
         </tr>

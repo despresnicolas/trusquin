@@ -99,6 +99,19 @@ label {
   color: var(--muted);
 }
 
+/* Libellé suivi d'une infobulle (Hint) : le « ? » reste sur la ligne du libellé, le champ passe dessous. */
+label:has(> .hint) {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 6px;
+}
+label:has(> .hint) > .hint {
+  justify-self: start;
+}
+label:has(> .hint) > :is(input, select, textarea) {
+  grid-column: 1 / -1;
+}
+
 code,
 pre {
   font-family: var(--mono);
