@@ -7,6 +7,11 @@
   import RepoFiles from './RepoFiles.svelte';
   import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
+  import { untrack } from 'svelte';
+
+  type View = 'report' | 'proposals' | 'files' | 'history';
+  // Lien profond (/analyze?path=…&view=…) : ouvre la dernière analyse de ce dépôt sur l'onglet voulu.
+  let { initialPath = '', initialView = 'report' }: { initialPath?: string; initialView?: View } = $props();
 
   let path = $state('');
   let repos = $state<RepoSummary[]>([]);
@@ -16,7 +21,7 @@
   let context = $state<FreshAnalysis['context'] | undefined>();
   // Propositions conçues dans la modale, à enregistrer dans un nouveau projet (rien n'est écrit sur le disque).
   let drafts = $state<{ criterion: string; rule: Rule }[]>([]);
-  let view = $state<'report' | 'proposals' | 'files' | 'history'>('report');
+  let view = $state<View>('report');
   let loading = $state(false);
   const proposals = $derived(
     record ? record.result.criteria.filter((c) => c.fix).length + record.result.memoryIssues.length : 0,
@@ -78,7 +83,15 @@
     });
 
   $effect(() => {
-    attempt(refresh);
+    const target = untrack(() => initialPath);
+    const tab = untrack(() => initialView);
+    attempt(async () => {
+      await refresh();
+      const repo = repos.find((r) => r.last.path === target);
+      if (!repo) return;
+      await show(await api.get(repo.last.id));
+      view = tab;
+    });
   });
 </script>
 

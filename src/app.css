@@ -7,6 +7,7 @@
   --muted: light-dark(#6b675f, #a19c93);
   --accent: light-dark(#c2410c, #fb923c);
   --accent-soft: light-dark(#fde7da, #3b2417);
+  --on-accent: #fff;
   --ok: light-dark(#15803d, #4ade80);
   --warn: light-dark(#b45309, #fbbf24);
   --err: light-dark(#b91c1c, #f87171);
@@ -84,7 +85,7 @@ button:hover {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 button.ghost {
