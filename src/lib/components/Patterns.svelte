@@ -79,14 +79,18 @@
     <h3>Boucle de travail</h3>
     <ol>
       <li>
-        <b>Analyse de dépôt</b> : score de départ, import des règles existantes, suivi du score dans l'historique.
+        <b>Analyse de dépôt</b> : score de départ, puis onglet <b>Propositions</b> trié par points gagnés ; « Concevoir…
+        » prépare un fichier, visible dans <b>Fichiers Claude</b> comme nouveau. « Créer un nouveau projet » y ouvre le Générateur
+        avec les règles du dépôt et ces ajouts.
       </li>
+      <li><b>Générateur › Projet</b> : nom, description, stack, permissions (ou « Nouveau projet » / « Importer »).</li>
       <li><b>Générateur › Règles</b> : pour chaque règle, dire quoi et à quoi elle s'applique.</li>
       <li>
-        <b>Générateur › Aperçu &amp; export</b> : corriger erreurs et avertissements, vérifier chaque fichier, exporter le
-        zip, décompresser à la racine.
+        <b>Générateur › Aperçu &amp; export</b> : corriger erreurs et avertissements, vérifier chaque fichier ; puis « Exporter
+        le zip » (barre du haut) et décompresser à la racine du dépôt. « Enregistrer » garde une version dans l'Historique.
       </li>
       <li>Committer <code>sauron.json</code> ; régénérer avec <code>pnpm sauron generate</code>.</li>
+      <li><b>Analyse de dépôt › Ré-analyser</b> : vérifier que le score monte (onglet Historique).</li>
     </ol>
   </section>
 </div>
