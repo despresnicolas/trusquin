@@ -117,7 +117,22 @@ function rootMemory(project: Project, rules: Rule[], hooks: Rule[]): string {
         '',
       ]
     : [];
-  return finalize([...head, sections(rules), ...automation].join('\n'));
+  // Ancrage : les règles critiques ouvrent le fichier et sont rappelées à la fin (biais de primauté et de récence).
+  const critical = rules.filter((r) => r.critical);
+  const top = critical.length
+    ? [
+        '## Règles critiques',
+        '',
+        ...critical.flatMap((r) => [
+          ...(critical.length > 1 && r.title ? [`### ${r.title}`, ''] : []),
+          toBullets(r.body),
+          '',
+        ]),
+      ]
+    : [];
+  const bottom = critical.length ? ['## Rappels', '', ...critical.map((r) => toBullets(r.body)), ''] : [];
+  const others = rules.filter((r) => !r.critical);
+  return finalize([...head, ...top, sections(others), ...automation, ...bottom].join('\n'));
 }
 
 function settingsFile(project: Project, hooks: Rule[]): string | null {

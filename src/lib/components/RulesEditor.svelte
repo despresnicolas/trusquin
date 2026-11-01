@@ -38,6 +38,8 @@
             onclick={() => (selectedId = rule.id)}
           >
             <span class="title">{rule.title || rule.name || 'Sans titre'}</span>
+            {#if rule.critical && rule.kind === 'rule' && rule.scope === 'project'}<span class="pill">critique</span
+              >{/if}
             <span class="pill"
               >{rule.kind === 'rule' ? SCOPE_LABELS[rule.scope].split(' (')[0] : KIND_LABELS[rule.kind]}</span
             >

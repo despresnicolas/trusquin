@@ -251,3 +251,54 @@ describe('templateForCriterion', () => {
     expect(templateForCriterion('readme')).toBeUndefined();
   });
 });
+
+describe('bonnes pratiques', () => {
+  it('flags prohibitions without a positive alternative', () => {
+    const issues = lintMemoryText(
+      'CLAUDE.md',
+      '- Ne jamais utiliser `any`\n- Pas de console.log : utiliser `logger`\n- Lancer `pnpm test`\n- Never push to main',
+    );
+    const negative = issues.filter((i) => i.code === 'negative-phrasing');
+    expect(negative).toHaveLength(1);
+    expect(negative[0].message).toContain('2');
+  });
+
+  it('anchors critical rules at the top and bottom of the root memory', () => {
+    const files = generate(
+      project([
+        newRule({ title: 'Archi', category: 'architecture', body: 'x' }),
+        newRule({
+          title: 'Tests',
+          category: 'testing',
+          body: 'Lancer `pnpm test` avant de rendre la main',
+          critical: true,
+        }),
+      ]),
+    );
+    const root = files.find((f) => f.path === 'CLAUDE.md')!.content;
+    expect(root.indexOf('## Règles critiques')).toBeLessThan(root.indexOf('## Architecture'));
+    expect(root.trimEnd().endsWith('- Lancer `pnpm test` avant de rendre la main')).toBe(true);
+    expect(root.match(/Lancer `pnpm test`/g)).toHaveLength(2);
+  });
+
+  it('warns when too many rules are critical', () => {
+    const rules = [1, 2, 3, 4].map((n) => newRule({ title: `R${n}`, body: `Règle ${n}`, critical: true }));
+    expect(checkProject(project(rules)).issues.map((i) => i.code)).toContain('too-many-critical');
+  });
+
+  it('rewards memory that points to exemplary files of the repo', () => {
+    const scored = (root: string) =>
+      analyzeRepo({ paths: ['CLAUDE.md', 'src/Button.svelte'], contents: { 'CLAUDE.md': root } }).criteria.find(
+        (c) => c.id === 'examples',
+      )!.status;
+    expect(scored('- Nouveau composant : suivre `src/Button.svelte`')).toBe('pass');
+    expect(scored('- Composants propres')).toBe('fail');
+    expect(templateForCriterion('examples')).toBeDefined();
+  });
+
+  it('ships workflow templates for planning and debugging', () => {
+    const names = TEMPLATES.map((t) => t.rule.name);
+    expect(names).toContain('plan');
+    expect(names).toContain('debug');
+  });
+});

@@ -58,6 +58,7 @@ export const LIMITS = {
   alwaysInstructions: 150,
   ruleLines: 15,
   codeBlock: 10,
+  criticalRules: 3,
 };
 
 /** Instructions = puces et lignes numérotées hors blocs de code. */
@@ -76,6 +77,11 @@ function codeSpans(line: string): string[] {
 }
 
 /** Contrôles applicables à n'importe quel fichier mémoire (générateur et analyse). */
+// Consigne qui commence par une interdiction ; l'alternative éventuelle suit (« : utiliser X », « plutôt »…).
+const NEGATIVE =
+  /^\s*(?:[-*+]|\d+\.)\s+(?:\*\*[^*]+\*\*\s*:?\s*)?(?:ne\s+(?:jamais|pas)\b|n['’]|jamais\b|pas\s+d[e'’]|aucun|interdit|never\b|don['’]t\b|do\s+not\b|avoid\b|évite[rz]?\b)/i;
+const ALTERNATIVE = /[:→;—]|\bplutôt\b|\bà la place\b|\binstead\b|\bprefer|\bpréférer\b/i;
+
 export function lintMemoryText(file: string, text: string, isRoot = false): Issue[] {
   const issues: Issue[] = [];
   const lines = text.split('\n');
@@ -128,6 +134,22 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
         fix: 'Retirer la valeur, la mettre dans .env (gitignoré) et ne référencer que le nom de variable.',
       });
     }
+  }
+
+  const negative: number[] = [];
+  let inside = false;
+  lines.forEach((line, i) => {
+    if (line.trim().startsWith('```')) inside = !inside;
+    else if (!inside && NEGATIVE.test(line) && !ALTERNATIVE.test(line.replace(NEGATIVE, ''))) negative.push(i + 1);
+  });
+  if (negative.length) {
+    issues.push({
+      severity: 'info',
+      code: 'negative-phrasing',
+      file,
+      message: `${negative.length} consigne(s) formulée(s) en interdiction sans alternative (ligne ${negative.slice(0, 5).join(', ')}${negative.length > 5 ? '…' : ''}).`,
+      fix: "Dire quoi faire : « Utiliser TypeScript strict » plutôt que « Pas de any ». Garder l'interdiction seulement suivie de l'alternative (« … : utiliser X »).",
+    });
   }
 
   let inFence = false;
@@ -419,6 +441,16 @@ function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
       code: 'no-deny',
       message: 'Aucune permission refusée.',
       fix: 'Ex. refuser `Read(./.env)` et `Read(./secrets/**)`.',
+    });
+  }
+  const critical = active.filter((r) => r.kind === 'rule' && r.scope === 'project' && r.critical);
+  if (critical.length > LIMITS.criticalRules) {
+    issues.push({
+      severity: 'warning',
+      code: 'too-many-critical',
+      file: 'CLAUDE.md',
+      message: `${critical.length} règles critiques : au-delà de ${LIMITS.criticalRules}, plus rien ne ressort.`,
+      fix: 'Garder critiques seulement les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits).',
     });
   }
   if (active.some((r) => r.kind === 'rule' && r.scope === 'local')) {

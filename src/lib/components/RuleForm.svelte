@@ -65,6 +65,14 @@
           {#each Object.entries(CATEGORY_LABELS) as [value, label]}<option {value}>{label}</option>{/each}
         </select>
       </label>
+      {#if rule.scope === 'project'}
+        <label class="toggle"
+          ><input type="checkbox" bind:checked={rule.critical} /> Critique
+          <Hint
+            text="Pour les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits) : placée en tête du CLAUDE.md et rappelée à la fin, là où Claude y prête le plus attention. 3 au maximum."
+          /></label
+        >
+      {/if}
     </div>
     {#if rule.scope === 'path'}
       <label

@@ -58,6 +58,17 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    label: 'Exemple de référence (few-shot)',
+    hint: 'Montrer plutôt qu’expliquer : Claude reproduit la structure d’un fichier exemplaire du dépôt.',
+    rule: {
+      title: 'Composants : suivre l’exemple',
+      category: 'conventions',
+      scope: 'path',
+      targets: ['src/components/**'],
+      body: 'Nouveau composant : partir de `src/components/Button.svelte` (props typées, styles via variables CSS)\nSon test : suivre `src/components/Button.test.ts`',
+    },
+  },
+  {
     label: 'Tests',
     hint: 'Où sont les tests, comment les lancer, ce qui est attendu.',
     rule: {
@@ -134,6 +145,19 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    label: 'Slash command : /plan',
+    hint: 'Planifier en tranches testables (balles traçantes) et faire valider plan.md avant de coder.',
+    rule: {
+      kind: 'command',
+      title: 'Plan',
+      name: 'plan',
+      description: 'Découpe une fonctionnalité en tranches testables dans plan.md, sans coder',
+      argumentHint: '[fonctionnalité]',
+      tools: 'Read, Grep, Glob, Write',
+      body: 'Rédige `plan.md` pour : $ARGUMENTS\n\nDécoupe en tranches verticales (« balles traçantes ») : chaque tranche traverse base, API et UI et se termine par un test qui passe.\nPour chaque tranche : objectif, fichiers touchés, test d’acceptation.\nArrête-toi après `plan.md` et attends ma validation avant de coder.\nUne fonctionnalité par session ; pour travailler en parallèle, un worktree git par fonctionnalité.',
+    },
+  },
+  {
     label: 'Skill : release',
     hint: 'Procédure ponctuelle chargée seulement quand elle sert.',
     rule: {
@@ -143,6 +167,18 @@ export const TEMPLATES: Template[] = [
       description:
         'Prépare une release : changelog, bump de version, tag. Use when the user asks to release, publish or bump the version.',
       body: '# Release\n\n1. Lire les commits depuis le dernier tag : `git log $(git describe --tags --abbrev=0)..HEAD --oneline`\n2. Mettre à jour `CHANGELOG.md`\n3. `pnpm version <patch|minor|major> --no-git-tag-version`\n4. Proposer les commandes git, ne pas les lancer',
+    },
+  },
+  {
+    label: 'Skill : debug',
+    hint: 'Méthode en 4 étapes : reproduire, isoler, diagnostiquer, corriger.',
+    rule: {
+      kind: 'skill',
+      title: 'Debug',
+      name: 'debug',
+      description:
+        'Corrige un bug méthodiquement : reproduire, isoler, diagnostiquer, corriger. Use when the user reports a bug, an error, a failing test or a stack trace.',
+      body: '# Debug\n\n1. Reproduire : obtenir le message d’erreur complet et la stack trace, et une commande qui échoue à coup sûr\n2. Isoler : réduire au plus petit cas, idéalement un test qui échoue\n3. Diagnostiquer : remonter à la cause racine avant de modifier quoi que ce soit\n4. Corriger : changer la cause, garder le test comme non-régression, relancer toute la suite',
     },
   },
   {
@@ -169,6 +205,7 @@ const CRITERION_TEMPLATES: Record<string, string> = {
   hooks: 'Hook : formatter après édition',
   'on-demand': 'Skill : release',
   agents: 'Agent : test-runner',
+  examples: 'Exemple de référence (few-shot)',
 };
 
 export function templateForCriterion(id: string): Template | undefined {

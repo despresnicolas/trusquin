@@ -74,7 +74,17 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "na",
     },
     {
-      "detail": "2 fichier(s) rules (1 avec paths), 0 CLAUDE.md de sous-dossier.",
+      "detail": "1 fichier(s) du dépôt cité(s) : .claude/settings.json.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "examples",
+      "label": "Fichiers exemplaires cités",
+      "max": 3,
+      "points": 3,
+      "status": "pass",
+    },
+    {
+      "detail": "3 fichier(s) rules (2 avec paths), 0 CLAUDE.md de sous-dossier.",
       "fix": undefined,
       "group": "claude",
       "id": "modular",
@@ -104,7 +114,7 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "pass",
     },
     {
-      "detail": "1 skill(s), 1 commande(s).",
+      "detail": "2 skill(s), 2 commande(s).",
       "fix": undefined,
       "group": "claude",
       "id": "on-demand",
@@ -220,7 +230,7 @@ exports[`non-régression > analyzeRepo 1`] = `
     "CLAUDE.local.md",
   ],
   "memoryIssues": [],
-  "score": 64,
+  "score": 65,
 }
 `;
 
@@ -290,8 +300,8 @@ Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les r
     "sources": [
       "r0",
       "r1",
-      "r4",
       "r5",
+      "r6",
     ],
   },
   {
@@ -307,7 +317,7 @@ Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les r
     "loading": "always",
     "path": ".claude/rules/testing.md",
     "sources": [
-      "r3",
+      "r4",
     ],
   },
   {
@@ -329,6 +339,23 @@ paths:
     ],
   },
   {
+    "content": "---
+paths:
+  - "src/components/**"
+---
+## Conventions
+
+- Nouveau composant : partir de \`src/components/Button.svelte\` (props typées, styles via variables CSS)
+- Son test : suivre \`src/components/Button.test.ts\`
+",
+    "explanation": "Chargée seulement quand Claude lit ou modifie src/components/**.",
+    "loading": "on-path",
+    "path": ".claude/rules/composants-suivre-l-exemple.md",
+    "sources": [
+      "r3",
+    ],
+  },
+  {
     "content": "# Préférences locales
 
 ## Méthode de travail
@@ -340,7 +367,7 @@ paths:
     "loading": "personal",
     "path": "CLAUDE.local.md",
     "sources": [
-      "r6",
+      "r7",
     ],
   },
   {
@@ -357,7 +384,27 @@ Ignore le formatage (géré par hook).
     "loading": "on-demand",
     "path": ".claude/commands/review.md",
     "sources": [
-      "r9",
+      "r10",
+    ],
+  },
+  {
+    "content": "---
+description: Découpe une fonctionnalité en tranches testables dans plan.md, sans coder
+argument-hint: [fonctionnalité]
+allowed-tools: Read, Grep, Glob, Write
+---
+Rédige \`plan.md\` pour : $ARGUMENTS
+
+Découpe en tranches verticales (« balles traçantes ») : chaque tranche traverse base, API et UI et se termine par un test qui passe.
+Pour chaque tranche : objectif, fichiers touchés, test d’acceptation.
+Arrête-toi après \`plan.md\` et attends ma validation avant de coder.
+Une fonctionnalité par session ; pour travailler en parallèle, un worktree git par fonctionnalité.
+",
+    "explanation": "Slash command /plan, lancée explicitement par l’utilisateur.",
+    "loading": "on-demand",
+    "path": ".claude/commands/plan.md",
+    "sources": [
+      "r11",
     ],
   },
   {
@@ -376,7 +423,26 @@ description: Prépare une release : changelog, bump de version, tag. Use when th
     "loading": "on-demand",
     "path": ".claude/skills/release/SKILL.md",
     "sources": [
-      "r10",
+      "r12",
+    ],
+  },
+  {
+    "content": "---
+name: debug
+description: Corrige un bug méthodiquement : reproduire, isoler, diagnostiquer, corriger. Use when the user reports a bug, an error, a failing test or a stack trace.
+---
+# Debug
+
+1. Reproduire : obtenir le message d’erreur complet et la stack trace, et une commande qui échoue à coup sûr
+2. Isoler : réduire au plus petit cas, idéalement un test qui échoue
+3. Diagnostiquer : remonter à la cause racine avant de modifier quoi que ce soit
+4. Corriger : changer la cause, garder le test comme non-régression, relancer toute la suite
+",
+    "explanation": "Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.",
+    "loading": "on-demand",
+    "path": ".claude/skills/debug/SKILL.md",
+    "sources": [
+      "r13",
     ],
   },
   {
@@ -393,7 +459,7 @@ Tu ne modifies aucun fichier. Tu rends : test, cause, fichier:ligne, correction 
     "loading": "on-demand",
     "path": ".claude/agents/test-runner.md",
     "sources": [
-      "r11",
+      "r14",
     ],
   },
   {
@@ -438,8 +504,8 @@ Tu ne modifies aucun fichier. Tu rends : test, cause, fichier:ligne, correction 
     "loading": "deterministic",
     "path": ".claude/settings.json",
     "sources": [
-      "r7",
       "r8",
+      "r9",
     ],
   },
 ]
@@ -539,11 +605,24 @@ exports[`non-régression > importRules 1`] = `
     "title": "Conventions",
   },
   {
+    "body": "- Nouveau composant : partir de \`src/components/Button.svelte\` (props typées, styles via variables CSS)
+- Son test : suivre \`src/components/Button.test.ts\`",
+    "category": "other",
+    "enabled": true,
+    "id": "i7",
+    "kind": "rule",
+    "scope": "path",
+    "targets": [
+      "src/components/**",
+    ],
+    "title": "Conventions",
+  },
+  {
     "body": "- Répondre en français
 - Montrer le diff avant de modifier plus de 3 fichiers",
     "category": "workflow",
     "enabled": true,
-    "id": "i7",
+    "id": "i8",
     "kind": "rule",
     "scope": "local",
     "targets": [],
@@ -555,7 +634,7 @@ exports[`non-régression > importRules 1`] = `
     "command": "jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write --ignore-unknown",
     "enabled": true,
     "event": "PostToolUse",
-    "id": "i8",
+    "id": "i9",
     "kind": "hook",
     "matcher": "Edit|Write|MultiEdit",
     "scope": "project",
@@ -568,7 +647,7 @@ exports[`non-régression > importRules 1`] = `
     "command": "jq -r '.tool_input.file_path' | grep -qE '(^|/)\\.env' && { echo "Fichier protégé" >&2; exit 2; } || exit 0",
     "enabled": true,
     "event": "PreToolUse",
-    "id": "i9",
+    "id": "i10",
     "kind": "hook",
     "matcher": "Edit|Write|MultiEdit",
     "scope": "project",

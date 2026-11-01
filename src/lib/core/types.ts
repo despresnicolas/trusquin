@@ -59,6 +59,8 @@ export interface Rule {
   matcher?: string;
   /** hook : commande shell exécutée. */
   command?: string;
+  /** Règle projet critique : placée en tête du CLAUDE.md et rappelée en fin de fichier. */
+  critical?: boolean;
 }
 
 export interface Project {

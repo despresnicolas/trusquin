@@ -189,6 +189,24 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     ),
   );
 
+  // Few-shot : la mémoire pointe vers des fichiers existants du dépôt à prendre pour modèle.
+  const memoryText = [...memoryFiles, ...find(/^\.claude\/rules\/.*\.md$/)].map(read).join('\n');
+  const referenced = [...memoryText.matchAll(/`([\w@./-]+\.\w+)(?::\d+)?`/g)].map((m) => m[1]);
+  const examples = [...new Set(referenced.filter((p) => paths.includes(p)))];
+  criteria.push(
+    crit(
+      'examples',
+      'claude',
+      'Fichiers exemplaires cités',
+      3,
+      !memoryFiles.length ? 'na' : examples.length ? 'pass' : 'fail',
+      examples.length
+        ? `${examples.length} fichier(s) du dépôt cité(s) : ${examples.slice(0, 3).join(', ')}.`
+        : 'Aucun fichier du dépôt cité en exemple.',
+      'Pointer vers un composant, un test ou un endpoint exemplaire (« suivre `src/…` ») plutôt que décrire le style.',
+    ),
+  );
+
   const ruleFiles = find(/^\.claude\/rules\/.*\.md$/);
   const scoped = ruleFiles.filter((p) => /^paths:/m.test(frontmatterOf(read(p)) ?? ''));
   const subMemory = memoryFiles.filter((p) => p.includes('/'));
@@ -510,7 +528,8 @@ export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
 
   for (const [path, text] of Object.entries(repo.contents)) {
     if (path === 'CLAUDE.md' || path === 'AGENTS.md') {
-      for (const s of splitSections(text)) add(s.title, s.body, 'project');
+      // « Rappels » répète les règles critiques déjà importées ailleurs dans le fichier.
+      for (const s of splitSections(text)) if (s.title !== 'Rappels') add(s.title, s.body, 'project');
     } else if (path === 'CLAUDE.local.md') {
       for (const s of splitSections(text)) add(s.title, s.body, 'local');
     } else if (/\/CLAUDE\.md$/.test(path)) {

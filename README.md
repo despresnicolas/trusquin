@@ -41,15 +41,17 @@ pnpm build         # serveur Node dans build/ (node build)
 
 Barème : erreur −15, avertissement −5, suggestion −1.
 
-- Erreurs : secret probable, portée sans cible, nom de skill/agent invalide, skill sans description, hook sans commande, collision de fichiers.
-- Avertissements : racine > 100 lignes (erreur > 200), formulations vagues, doublons, contradictions (`X` demandé et interdit), plusieurs gestionnaires de paquets, commandes sans backticks, budget de ~150 instructions toujours chargées dépassé.
-- Suggestions : style qu'un linter devrait gérer, règle longue à passer en skill, gros bloc de code copié, pas de hook, pas de `deny`.
+- Erreurs : aucune règle active (score 0), secret probable, portée sans cible, nom de skill/agent invalide, skill sans description, hook sans commande, collision de fichiers.
+- Avertissements : racine > 100 lignes (erreur > 200), formulations vagues, doublons, contradictions (`X` demandé et interdit), plusieurs gestionnaires de paquets, commandes sans backticks, budget de ~150 instructions toujours chargées dépassé, plus de 3 règles critiques.
+- Suggestions : style qu'un linter devrait gérer, règle longue à passer en skill, gros bloc de code copié, interdiction sans alternative (« Ne jamais… » → dire quoi faire), pas de hook, pas de `deny`.
+
+Une règle projet marquée **Critique** est placée en tête du `CLAUDE.md` et rappelée dans une section « Rappels » en fin de fichier (biais de primauté et de récence).
 
 ## Analyse de dépôt
 
 Note sur 100 (A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, E). Les critères non applicables sont exclus du calcul.
 
-- **Préparation Claude** : mémoire racine, concision, commandes exactes, architecture, secrets, règles vagues, imports `@` valides, règles modulaires, permissions, hooks, skills/commandes, agents, fichiers perso gitignorés.
+- **Préparation Claude** : mémoire racine, concision, commandes exactes, architecture, secrets, règles vagues, imports `@` valides, fichiers exemplaires cités (few-shot), règles modulaires, permissions, hooks, skills/commandes, agents, fichiers perso gitignorés.
 - **Bonnes pratiques** : README, tests, linter, formatter, typage, CI, lockfile, `.gitignore` / `.env.example`.
 
 Le serveur Node lit le dossier (chemin absolu saisi dans l'interface) et enregistre chaque analyse dans PostgreSQL : historique par dépôt, évolution du score, ré-analyse en un clic. `SAURON_ROOTS` (chemins séparés par `:`) limite les dossiers lisibles.
