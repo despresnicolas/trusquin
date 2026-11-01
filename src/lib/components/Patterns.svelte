@@ -9,6 +9,80 @@
     goto(`/generator?rule=${rule.id}`);
   }
 
+  /** Principes d'une bonne règle : contre-exemple, version réussie et contrôle qui le vérifie. */
+  const PRINCIPLES = [
+    {
+      title: 'Vérifiable',
+      why: 'Claude doit pouvoir savoir s’il l’a respectée.',
+      bad: '« Écrire des tests »',
+      good: '« Test à côté du code : foo.ts → foo.test.ts, lancé par pnpm test »',
+      check: 'formulations vagues',
+    },
+    {
+      title: 'Formulée en positif',
+      why: 'Dire quoi faire : une interdiction seule laisse Claude deviner l’alternative.',
+      bad: '« Pas de any »',
+      good: '« TypeScript strict ; valeur inconnue typée unknown »',
+      check: 'interdiction sans alternative',
+    },
+    {
+      title: 'Non déductible',
+      why: 'Test de suppression : sans cette ligne, Claude se tromperait-il ? Sinon, la retirer.',
+      bad: '« Le projet utilise Git »',
+      good: '« Branches : feat/<ticket>-<slug> »',
+      check: '',
+    },
+    {
+      title: 'Montrer un exemple',
+      why: 'Un fichier exemplaire du dépôt vaut mieux qu’une description de style (few-shot).',
+      bad: '« Composants propres et cohérents »',
+      good: '« Nouveau composant : suivre src/components/Button.svelte »',
+      check: 'fichiers exemplaires cités',
+    },
+    {
+      title: 'Pointer plutôt que copier',
+      why: 'Un extrait recopié vieillit ; le chemin reste juste.',
+      bad: 'Un bloc de 20 lignes de code dans CLAUDE.md',
+      good: '« Erreurs HTTP : httpError() de src/errors.ts:12 »',
+      check: 'bloc de code copié',
+    },
+    {
+      title: 'Confiée au hook si elle doit arriver à 100 %',
+      why: 'Le texte dépend de la bonne volonté du modèle ; un hook s’exécute à chaque fois.',
+      bad: '« Toujours formater avec Prettier »',
+      good: 'Hook PostToolUse Edit|Write qui lance Prettier',
+      check: 'travail de linter, aucun hook',
+    },
+    {
+      title: 'Au bon endroit',
+      why: 'Chargée seulement quand elle sert : la racine reste un index court.',
+      bad: '40 lignes sur l’API dans le CLAUDE.md racine',
+      good: '.claude/rules/api.md avec paths: apps/api/**',
+      check: 'racine longue, règle lourde, budget d’instructions',
+    },
+    {
+      title: 'Critique : ancrée en haut et en bas',
+      why: 'Les 3 consignes les plus oubliées ouvrent le CLAUDE.md et sont rappelées à la fin.',
+      bad: '« Lancer les tests » perdu au milieu de 80 lignes',
+      good: 'Règle cochée « Critique » : en tête et dans « Rappels »',
+      check: 'plus de 3 règles critiques',
+    },
+    {
+      title: 'Sûre et cohérente',
+      why: 'Les secrets restent dans .env ; une consigne n’a qu’une seule version.',
+      bad: '« Clé API : sk-… » ; « pnpm » ici, « npm » ailleurs',
+      good: '« Clé API dans .env : OPENAI_API_KEY » ; un seul gestionnaire',
+      check: 'secret, contradiction, doublon',
+    },
+    {
+      title: 'Vivante',
+      why: 'Ajouter une règle quand Claude répète une erreur, retirer celles devenues inutiles.',
+      bad: 'Un CLAUDE.md écrit une fois puis oublié',
+      good: 'Ré-analyser le dépôt et suivre le score dans l’historique',
+      check: '',
+    },
+  ];
+
   const tree = `repo/
 ├── CLAUDE.md                 # toujours chargé · index court (< 100 lignes)
 ├── CLAUDE.local.md           # perso, gitignoré
@@ -59,20 +133,20 @@
     <pre>{tree}</pre>
   </section>
 
-  <section class="card">
+  <section class="card good-rules">
     <h3>Ce qui fait une bonne règle</h3>
-    <ul>
-      <li>
-        <b>Vérifiable</b> : « tests dans <code>foo.test.ts</code> à côté de <code>foo.ts</code> », pas « écrire des tests
-        ».
-      </li>
-      <li><b>Non déductible</b> : test de suppression — sans la ligne, Claude se tromperait-il ? Sinon, supprimer.</li>
-      <li><b>Pointer, pas copier</b> : <code>src/errors.ts:12</code> plutôt qu'un extrait qui vieillit.</li>
-      <li><b>Pas de travail de linter</b> : indentation, quotes, points-virgules → formatter + hook.</li>
-      <li><b>WHAT / WHY / HOW</b> : stack et structure, raisons des choix, commandes exactes.</li>
-      <li><b>Pas de secret</b>, pas de contradiction entre fichiers.</li>
-      <li><b>Vivant</b> : ajouter une règle quand Claude répète une erreur, retirer celles devenues inutiles.</li>
-    </ul>
+    <p class="muted">Chaque principe avec un contre-exemple, sa version réussie et le contrôle qui le vérifie.</p>
+    <div class="principles">
+      {#each PRINCIPLES as p}
+        <article>
+          <h4>{p.title}</h4>
+          <p class="muted">{p.why}</p>
+          <p class="bad"><span aria-hidden="true">✗</span> {p.bad}</p>
+          <p class="good"><span aria-hidden="true">✓</span> {p.good}</p>
+          {#if p.check}<span class="pill">Contrôle : {p.check}</span>{/if}
+        </article>
+      {/each}
+    </div>
   </section>
 
   <section class="card">
@@ -134,13 +208,39 @@
   h3 {
     margin-top: 0;
   }
+  .good-rules {
+    grid-column: 1 / -1;
+  }
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+  }
+  .principles article {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+  .principles h4 {
+    margin: 0 0 4px;
+  }
+  .principles p {
+    margin: 0 0 6px;
+    font-size: 13px;
+  }
+  .bad {
+    color: var(--err);
+  }
+  .good {
+    color: var(--ok);
+  }
   pre {
     background: var(--surface-2);
     padding: 12px;
     border-radius: 6px;
     overflow-x: auto;
   }
-  ul,
   ol {
     padding-left: 18px;
     display: grid;
