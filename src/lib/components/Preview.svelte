@@ -20,10 +20,9 @@
   {#if errors.length}<span class="sev-error">{errors.length} erreur(s) bloquante(s)</span>{/if}
 </div>
 <p class="muted hint">
-  « Exporter le zip » (en haut) : décompresser à la racine du repo. Le zip contient aussi <code>sauron.json</code>
-  (source, rechargeable et utilisable en CLI) et <code>_sauron-report.md</code> (rapport, à ne pas committer). Les
-  fichiers <code>~/</code>
-  sont rangés dans <code>_home/</code>.
+  « Exporter le zip » (en haut) : décompresser à la racine du repo. Le zip contient aussi
+  <code>_sauron-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code> sont rangés dans
+  <code>_home/</code>.
 </p>
 
 <div class="layout">

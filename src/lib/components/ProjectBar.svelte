@@ -2,7 +2,6 @@
   import { goto } from '$app/navigation';
   import { importContext, importedPath, importRules } from '../core/analyze';
   import { newId, starterProject } from '../core/presets';
-  import type { Project } from '../core/types';
   import { download, exportZip, zipName } from '../export';
   import { archive, store } from '../state.svelte';
   import Hint from './Hint.svelte';
@@ -13,26 +12,12 @@
   let confirmed = $state(false);
   const errors = $derived(store.errors);
 
-  /** sauron.json remplace le projet ; les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles. */
+  /** Les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles au projet en cours. */
   async function importFiles(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const contents: Record<string, string> = {};
     for (const file of input.files ?? []) {
-      const text = await file.text();
-      if (file.name.endsWith('.json')) {
-        try {
-          const data = JSON.parse(text);
-          if (Array.isArray(data.rules)) {
-            store.project = { ...starterProject(), ...data } as Project;
-            notice = `Projet chargé depuis ${file.name}.`;
-            continue;
-          }
-        } catch {
-          notice = `${file.name} n'est pas un JSON valide.`;
-          continue;
-        }
-      }
-      contents[importedPath(file.name)] = text;
+      contents[importedPath(file.name)] = await file.text();
     }
     input.value = '';
     const repo = { paths: Object.keys(contents), contents };
@@ -55,7 +40,7 @@
   }
 
   async function exportCurrent() {
-    download(zipName(store.project), await exportZip($state.snapshot(store.project), store.files, store.quality));
+    download(zipName(store.project), await exportZip(store.files, store.quality));
   }
 
   async function reset() {
@@ -82,10 +67,10 @@
     text="Repart d'un projet vide. Le projet en cours est enregistré dans l'historique, sauf s'il a des erreurs bloquantes."
   />
   <label class="file"
-    >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
+    >Importer (.md, settings.json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
   >
   <Hint
-    text="sauron.json remplace tout le projet. CLAUDE.md : une règle par section ##. Un autre .md devient une règle .claude/rules/. settings.json : ses hooks."
+    text="CLAUDE.md / AGENTS.md : une règle par section ##. Un autre .md devient une règle .claude/rules/. settings.json : ses hooks. Les règles s'ajoutent au projet en cours."
   />
   <button
     onclick={save}
@@ -101,7 +86,7 @@
     <button class="primary" onclick={exportCurrent}>Exporter le zip</button>
   {/if}
   <Hint
-    text="Fichiers prêts à décompresser à la racine du dépôt, plus sauron.json (la source, à committer) et un rapport. Vérifier d'abord l'onglet Aperçu & export."
+    text="Fichiers prêts à décompresser à la racine du dépôt, plus un rapport de qualité. Vérifier d'abord l'onglet Aperçu & export."
   />
 </div>
 

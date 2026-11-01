@@ -3,20 +3,14 @@
  * sauron CLI : mêmes règles que l'interface, sur des dossiers locaux.
  *
  *   analyze  <dossier>              (enregistré en base si DATABASE_URL est défini)
- *   check    <sauron.json>
- *   generate <sauron.json> <dossier> [--dry-run] [--force]
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { analyzeRepo } from '../src/lib/core/analyze.ts';
-import { USER_PREFIX, generate } from '../src/lib/core/placement.ts';
-import { checkProject } from '../src/lib/core/quality.ts';
-import type { Issue, Project } from '../src/lib/core/types.ts';
+import type { Issue } from '../src/lib/core/types.ts';
 import { connect, databaseUrl, migrate, saveAnalysis } from '../src/lib/server/db.ts';
 import { resolveRepoPath, snapshot } from '../src/lib/server/repo.ts';
 
 const [command, ...rest] = process.argv.slice(2);
-const flags = new Set(rest.filter((a) => a.startsWith('--')));
 const positional = rest.filter((a) => !a.startsWith('--'));
 
 const color = (code: number) => (s: string) => (process.stdout.isTTY ? `\x1b[${code}m${s}\x1b[0m` : s);
@@ -33,15 +27,9 @@ function printIssues(issues: Issue[]) {
   }
 }
 
-function loadProject(path: string): Project {
-  return JSON.parse(readFileSync(path, 'utf8')) as Project;
-}
-
 function usage(): never {
   console.log(`Usage :
-  sauron analyze  <dossier>
-  sauron check    <sauron.json>
-  sauron generate <sauron.json> <dossier> [--dry-run] [--force]`);
+  sauron analyze <dossier>`);
   process.exit(1);
 }
 
@@ -77,47 +65,6 @@ if (command === 'analyze') {
       await sql.end();
     }
   }
-} else if (command === 'check') {
-  if (!positional[0]) usage();
-  const report = checkProject(loadProject(positional[0]));
-  printIssues(report.issues);
-  console.log(
-    `\nScore qualité : ${report.score}/100 · ${report.alwaysLoadedInstructions} instructions toujours chargées`,
-  );
-  process.exit(report.issues.some((i) => i.severity === 'error') ? 1 : 0);
-} else if (command === 'generate') {
-  if (!positional[0] || !positional[1]) usage();
-  const project = loadProject(positional[0]);
-  const root = resolve(positional[1]);
-  const files = generate(project);
-  const report = checkProject(project, files);
-  if (report.issues.some((i) => i.severity === 'error') && !flags.has('--force')) {
-    printIssues(report.issues.filter((i) => i.severity === 'error'));
-    console.log(red('\nErreurs qualité : génération annulée (--force pour passer outre).'));
-    process.exit(1);
-  }
-  for (const file of files) {
-    if (file.path.startsWith(USER_PREFIX)) {
-      console.log(dim(`skip  ${file.path} (fichier utilisateur, à fusionner à la main)`));
-      continue;
-    }
-    const target = join(root, file.path);
-    const exists = existsSync(target);
-    if (exists && readFileSync(target, 'utf8') === file.content) {
-      console.log(dim(`same  ${file.path}`));
-      continue;
-    }
-    if (exists && !flags.has('--force')) {
-      console.log(yellow(`keep  ${file.path} (existe déjà, --force pour écraser)`));
-      continue;
-    }
-    console.log(`${exists ? 'write' : 'new  '} ${file.path}`);
-    if (!flags.has('--dry-run')) {
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, file.content);
-    }
-  }
-  console.log(`\nScore qualité : ${report.score}/100${flags.has('--dry-run') ? ' (dry-run, rien écrit)' : ''}`);
 } else {
   usage();
 }

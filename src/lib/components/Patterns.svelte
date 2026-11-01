@@ -89,7 +89,7 @@
         <b>Générateur › Aperçu &amp; export</b> : corriger erreurs et avertissements, vérifier chaque fichier ; puis « Exporter
         le zip » (barre du haut) et décompresser à la racine du dépôt. « Enregistrer » garde une version dans l'Historique.
       </li>
-      <li>Committer <code>sauron.json</code> ; régénérer avec <code>pnpm sauron generate</code>.</li>
+      <li>Committer les fichiers générés (<code>CLAUDE.md</code>, <code>.claude/</code>).</li>
       <li><b>Analyse de dépôt › Ré-analyser</b> : vérifier que le score monte (onglet Historique).</li>
     </ol>
   </section>

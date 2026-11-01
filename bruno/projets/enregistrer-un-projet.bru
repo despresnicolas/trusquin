@@ -17,7 +17,7 @@ body:json {
 }
 
 docs {
-  Enregistre une version du projet du générateur (contenu de sauron.json). Le score qualité est recalculé par le serveur.
+  Enregistre une version du projet du générateur (nom, description, stack, permissions, règles). Le score qualité est recalculé par le serveur.
   Si le contenu est identique à la dernière version du même nom, rien n'est ajouté : renvoie cette version.
   Réponse : ProjectVersion `{ id, name, ruleCount, score, createdAt }`.
   400 si `project` (avec name et rules) manque ou est illisible.

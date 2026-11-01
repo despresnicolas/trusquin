@@ -77,18 +77,9 @@ API JSON (collection Bruno dans `bruno/`) :
 
 ## CLI (dossiers locaux)
 
-`sauron.json` est la source de vérité : exporté dans le zip, rechargeable dans l'interface, utilisable en ligne de commande.
-
 ```bash
 pnpm sauron analyze ../mon-repo                  # note le dossier local (enregistré si DATABASE_URL)
-pnpm sauron check sauron.json                      # exit 1 si erreur qualité
-pnpm sauron generate sauron.json ../mon-repo --dry-run
-pnpm sauron generate sauron.json ../mon-repo --force   # écrase les fichiers existants
 ```
-
-Sans `--force`, `generate` n'écrase aucun fichier existant et refuse de générer s'il y a des erreurs qualité.
-
-Ce repo applique sa propre méthode : `sauron.json` génère `CLAUDE.md`, `.claude/rules/`, la skill `add-quality-check` et `.claude/settings.json`.
 
 ## Docker
 
@@ -97,7 +88,6 @@ docker compose up --build web          # interface + API sur http://localhost:80
 docker compose up --build dev          # hot reload sur http://localhost:5173 (sources montées)
 REPOS_DIR=$HOME/Code docker compose up --build web   # dossier monté (défaut : $HOME/Dev)
 REPO=../mon-repo docker compose run --rm cli analyze .
-REPO=../mon-repo docker compose run --rm cli generate sauron.json . --dry-run
 ```
 
 - Cible `dev` : `vite dev` avec hot reload. Les sources sont montées dans `/app`, `node_modules` et `.svelte-kit` restent ceux du conteneur. Après un changement de dépendances : `docker compose up --build -V dev`. Si les modifications ne sont pas détectées : `CHOKIDAR_USEPOLLING=1 docker compose up dev`.
