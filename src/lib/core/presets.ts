@@ -353,3 +353,80 @@ export function templatesFor(pattern: Pattern): Template[] {
       (pattern.kind !== 'rule' || (t.rule.scope ?? 'project') === pattern.scope),
   );
 }
+
+/** Étape de l'arbre de décision de l'onglet Patterns : chaque choix mène à une autre étape ou à un pattern. */
+export interface Step {
+  question: string;
+  hint?: string;
+  choices: { label: string; next: Step | Pattern }[];
+}
+
+export function isStep(node: Step | Pattern): node is Step {
+  return 'choices' in node;
+}
+
+function pattern(answer: string): Pattern {
+  const p = PATTERNS.find((p) => p.answer === answer);
+  if (!p) throw new Error(`Pattern inconnu : ${answer}`);
+  return p;
+}
+
+/** Du plus contraignant (déterministe) au plus courant (règle), comme on trancherait à la main. */
+export const DECISION_TREE: Step = {
+  question: 'Doit-il arriver à 100 %, sans dépendre du modèle ?',
+  hint: 'Une consigne est suivie la plupart du temps ; seul le harness garantit une exécution systématique.',
+  choices: [
+    {
+      label: 'Oui',
+      next: {
+        question: 'Il s’agit de…',
+        choices: [
+          { label: 'Lancer une action (format, lint, blocage d’un fichier)', next: pattern('Hook') },
+          { label: 'Autoriser ou interdire un accès (commande, fichier)', next: pattern('Permission') },
+        ],
+      },
+    },
+    {
+      label: 'Non',
+      next: {
+        question: 'Tu le lances toi-même, à la demande ?',
+        choices: [
+          { label: 'Oui, par /nom', next: pattern('Slash command') },
+          {
+            label: 'Non, Claude s’en sert seul',
+            next: {
+              question: 'C’est une tâche à déléguer, avec son propre contexte et ses outils ?',
+              hint: 'Seul le résumé revient dans la conversation principale.',
+              choices: [
+                { label: 'Oui', next: pattern('Sous-agent') },
+                {
+                  label: 'Non',
+                  next: {
+                    question: 'C’est une procédure ponctuelle (release, migration, audit) ?',
+                    hint: 'Chargée seulement quand la demande correspond : ne coûte rien le reste du temps.',
+                    choices: [
+                      { label: 'Oui', next: pattern('Skill') },
+                      {
+                        label: 'Non, une consigne à suivre',
+                        next: {
+                          question: 'C’est une règle. Elle vaut pour…',
+                          choices: [
+                            { label: 'Tout le projet, utile à chaque tâche', next: pattern('Règle « Projet »') },
+                            { label: 'Tout le projet, mais longue (tests, sécu…)', next: pattern('Règle « Thème »') },
+                            { label: 'Certains fichiers seulement', next: pattern('Règle « Chemins »') },
+                            { label: 'Un sous-projet de monorepo', next: pattern('Règle « Dossier »') },
+                            { label: 'Moi seulement', next: pattern('Règle « Perso »') },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+};

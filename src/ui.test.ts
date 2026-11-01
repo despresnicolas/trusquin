@@ -19,7 +19,7 @@ describe('ui smoke', () => {
     expect(render(Preview, { props: { files: store.files, quality: store.quality } }).body).toContain('CLAUDE.md');
     expect(render(Quality, { props: { quality: store.quality } }).body).toContain('/100');
     expect(render(Analysis).body).toContain('Analyser un projet');
-    expect(render(Patterns).body).toContain('Ajouter au projet');
+    expect(render(Patterns).body).toContain('Doit-il arriver à 100 %');
     expect(render(Home).body).toContain('Ce qui fait une bonne règle');
     const empty = { score: 100, grade: 'A' as const, criteria: [], memoryIssues: [], memoryFiles: [] };
     expect(render(Proposals, { props: { result: empty, sent: [], onadd: () => {} } }).body).toContain(

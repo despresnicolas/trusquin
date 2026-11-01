@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeRepo, claudeFiles, importContext, importedPath, importRules } from './analyze';
 import { generate, slug, toBullets } from './placement';
-import { newRule, PATTERNS, starterProject, templateForCriterion, TEMPLATES, templatesFor } from './presets';
+import {
+  DECISION_TREE,
+  isStep,
+  newRule,
+  PATTERNS,
+  starterProject,
+  type Pattern,
+  type Step,
+  templateForCriterion,
+  TEMPLATES,
+  templatesFor,
+} from './presets';
 import { checkProject, lintMemoryText } from './quality';
 import type { Project } from './types';
 
@@ -209,6 +220,13 @@ describe('patterns', () => {
     for (const t of TEMPLATES) {
       expect(PATTERNS.filter((p) => templatesFor(p).includes(t)).length, t.label).toBe(1);
     }
+  });
+
+  it('reaches every pattern exactly once in the decision tree', () => {
+    const leaves = (s: Step): Pattern[] => s.choices.flatMap((c) => (isStep(c.next) ? leaves(c.next) : [c.next]));
+    expect(leaves(DECISION_TREE).toSorted((a, b) => a.answer.localeCompare(b.answer))).toEqual(
+      PATTERNS.toSorted((a, b) => a.answer.localeCompare(b.answer)),
+    );
   });
 });
 
