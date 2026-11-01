@@ -40,6 +40,7 @@
 <style>
   .views {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     margin: 16px 0;
     border-bottom: 1px solid var(--border);

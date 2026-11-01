@@ -102,7 +102,7 @@ label {
 
 /* Libellé suivi d'une infobulle (Hint) : le « ? » reste sur la ligne du libellé, le champ passe dessous. */
 label:has(> .hint) {
-  grid-template-columns: auto 1fr;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
   align-items: center;
   column-gap: 6px;
 }
@@ -117,6 +117,16 @@ code,
 pre {
   font-family: var(--mono);
   font-size: 12.5px;
+}
+
+/* Un chemin long se coupe au lieu d'élargir sa carte ou sa colonne. */
+code {
+  overflow-wrap: anywhere;
+}
+
+/* Tableau plus large que son conteneur : il défile au lieu de déborder de la page. */
+.scroll-x {
+  overflow-x: auto;
 }
 
 .card {

@@ -26,7 +26,7 @@
   }
   .line {
     display: grid;
-    grid-template-columns: 3.5em 1fr;
+    grid-template-columns: 3.5em minmax(0, 1fr);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }

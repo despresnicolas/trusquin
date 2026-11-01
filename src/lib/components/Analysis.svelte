@@ -202,25 +202,27 @@
           />
         {/key}
       {:else}
-        <table class="history">
-          <tbody>
-            {#each runs as r, i (r.id)}
-              {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
-              <tr class:active={r.id === record.id}>
-                <td>
-                  <button class="ghost" onclick={() => open(r.id)}>{date(r.createdAt)}</button>
-                </td>
-                <td><ScoreBadge score={r.score} label={r.grade} /></td>
-                <td>
-                  {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
-                    >{/if}
-                </td>
-                <td class="muted">{r.fileCount} fichiers</td>
-                <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+        <div class="scroll-x">
+          <table class="history">
+            <tbody>
+              {#each runs as r, i (r.id)}
+                {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
+                <tr class:active={r.id === record.id}>
+                  <td>
+                    <button class="ghost" onclick={() => open(r.id)}>{date(r.createdAt)}</button>
+                  </td>
+                  <td><ScoreBadge score={r.score} label={r.grade} /></td>
+                  <td>
+                    {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
+                      >{/if}
+                  </td>
+                  <td class="muted">{r.fileCount} fichiers</td>
+                  <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
         <button class="danger" onclick={() => forget(record!.path)} disabled={loading}>Supprimer l'historique</button>
       {/if}
     {/if}
@@ -272,7 +274,7 @@
     gap: 20px;
     align-items: start;
   }
-  @media (max-width: 760px) {
+  @media (max-width: 900px) {
     .layout {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -364,5 +366,23 @@
     align-items: center;
     padding: 10px 8px 10px 16px;
     box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  }
+  .views {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .views button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+  }
+  .views button[aria-selected='true'] {
+    border-bottom-color: var(--accent);
+    color: var(--text);
   }
 </style>

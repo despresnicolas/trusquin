@@ -353,7 +353,7 @@
   }
   dl {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 4px 10px;
     margin: 0;
     padding: 8px 10px;
@@ -367,6 +367,7 @@
   }
   dd {
     margin: 0;
+    overflow-wrap: anywhere;
   }
   .bad {
     color: var(--err);
@@ -388,7 +389,7 @@
   }
   .steps li {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 14px;
     align-items: center;
     padding: 12px 16px;

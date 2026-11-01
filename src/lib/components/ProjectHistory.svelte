@@ -59,26 +59,28 @@
 {#if !projects.length}
   <p class="muted">Aucun projet enregistré. « Enregistrer » et « Nouveau projet » (en haut) l'ajoutent ici.</p>
 {:else}
-  <table>
-    <tbody>
-      {#each projects as p (p.last.name)}
-        <tr class:current={p.last.name === store.project.name}>
-          <td><b>{p.last.name}</b></td>
-          <td><ScoreBadge score={p.last.score} /></td>
-          <td class="muted">{p.last.ruleCount} règle{p.last.ruleCount > 1 ? 's' : ''}</td>
-          <td class="muted">{date(p.last.createdAt)} · {p.versions} version{p.versions > 1 ? 's' : ''}</td>
-          <td class="actions">
-            <button
-              onclick={() => open(p.last.id)}
-              disabled={loading}
-              title="Charge la dernière version. Le projet en cours est d'abord enregistré.">Ouvrir</button
-            >
-            <button class="danger" onclick={() => forget(p.last.name)} disabled={loading}>Supprimer</button>
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <div class="scroll-x">
+    <table>
+      <tbody>
+        {#each projects as p (p.last.name)}
+          <tr class:current={p.last.name === store.project.name}>
+            <td><b>{p.last.name}</b></td>
+            <td><ScoreBadge score={p.last.score} /></td>
+            <td class="muted">{p.last.ruleCount} règle{p.last.ruleCount > 1 ? 's' : ''}</td>
+            <td class="muted">{date(p.last.createdAt)} · {p.versions} version{p.versions > 1 ? 's' : ''}</td>
+            <td class="actions">
+              <button
+                onclick={() => open(p.last.id)}
+                disabled={loading}
+                title="Charge la dernière version. Le projet en cours est d'abord enregistré.">Ouvrir</button
+              >
+              <button class="danger" onclick={() => forget(p.last.name)} disabled={loading}>Supprimer</button>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 {/if}
 
 <style>

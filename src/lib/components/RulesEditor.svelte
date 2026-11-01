@@ -70,13 +70,13 @@
 <style>
   .layout {
     display: grid;
-    grid-template-columns: minmax(260px, 340px) 1fr;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
     gap: 20px;
     align-items: start;
   }
   @media (max-width: 800px) {
     .layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   aside {
