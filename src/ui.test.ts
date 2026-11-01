@@ -1,6 +1,7 @@
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import Analysis from './lib/components/Analysis.svelte';
+import Home from './lib/components/Home.svelte';
 import Patterns from './lib/components/Patterns.svelte';
 import Preview from './lib/components/Preview.svelte';
 import ProjectBar from './lib/components/ProjectBar.svelte';
@@ -19,6 +20,7 @@ describe('ui smoke', () => {
     expect(render(Quality, { props: { quality: store.quality } }).body).toContain('/100');
     expect(render(Analysis).body).toContain('Analyser un projet');
     expect(render(Patterns).body).toContain('Ajouter au projet');
+    expect(render(Home).body).toContain('Ce qui fait une bonne règle');
     const empty = { score: 100, grade: 'A' as const, criteria: [], memoryIssues: [], memoryFiles: [] };
     expect(render(Proposals, { props: { result: empty, sent: [], onadd: () => {} } }).body).toContain(
       'Pas de proposition',

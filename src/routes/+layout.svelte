@@ -7,7 +7,8 @@
   let { children } = $props();
 
   const tabs = [
-    { href: '/', label: 'Analyse de dépôt' },
+    { href: '/', label: 'Accueil' },
+    { href: '/analyze', label: 'Analyse de dépôt' },
     { href: '/generator', label: 'Générateur' },
     { href: '/patterns', label: 'Patterns' },
   ];
@@ -18,7 +19,7 @@
 
 <header>
   <div class="brand">
-    <strong>SAURON</strong>
+    <a href="/"><strong>SAURON</strong></a>
   </div>
   <nav>
     {#each tabs as t}
@@ -52,8 +53,9 @@
     display: grid;
     line-height: 1.2;
   }
-  .brand span {
-    font-size: 12px;
+  .brand a {
+    color: inherit;
+    text-decoration: none;
   }
   nav {
     display: flex;
