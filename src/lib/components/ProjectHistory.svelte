@@ -26,10 +26,17 @@
     projects = await api.projects();
   };
 
-  // Le projet en cours est enregistré avant d'être remplacé : rien ne se perd.
+  // Le projet en cours est enregistré avant d'être remplacé, sauf s'il a des erreurs bloquantes.
   const open = (id: number) =>
     attempt(async () => {
-      if (store.project.rules.length) await archive();
+      if (store.errors) {
+        if (
+          !confirm(
+            `Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Ouvrir quand même ?`,
+          )
+        )
+          return;
+      } else await archive();
       store.project = (await api.project(id)).project;
       await goto('/generator');
     });

@@ -12,14 +12,14 @@ post {
 
 body:json {
   {
-    "project": { "name": "Mon projet", "description": "", "stack": "", "useAgentsMd": false, "permissions": { "allow": [], "deny": [] }, "rules": [] },
-    "score": 80
+    "project": { "name": "Mon projet", "description": "", "stack": "", "useAgentsMd": false, "permissions": { "allow": [], "deny": [] }, "rules": [] }
   }
 }
 
 docs {
-  Enregistre une version du projet du générateur (contenu de sauron.json) avec son score qualité.
+  Enregistre une version du projet du générateur (contenu de sauron.json). Le score qualité est recalculé par le serveur.
   Si le contenu est identique à la dernière version du même nom, rien n'est ajouté : renvoie cette version.
   Réponse : ProjectVersion `{ id, name, ruleCount, score, createdAt }`.
-  400 si `project` (avec name et rules) ou `score` (entier) manque.
+  400 si `project` (avec name et rules) manque ou est illisible.
+  422 si le projet a des erreurs bloquantes (ex. aucune règle) : rien n'est enregistré.
 }

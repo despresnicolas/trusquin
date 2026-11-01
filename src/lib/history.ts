@@ -83,11 +83,11 @@ export const api = {
     }),
   projects: () => call<ProjectSummary[]>('/api/projects'),
   project: (id: number) => call<ProjectRecord>(`/api/projects/${id}`),
-  saveProject: (project: Project, score: number) =>
+  saveProject: (project: Project) =>
     call<ProjectVersion>('/api/projects', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ project, score }),
+      body: JSON.stringify({ project }),
     }),
   forgetProject: (name: string) =>
     call<{ deleted: number }>(`/api/projects?name=${encodeURIComponent(name)}`, {

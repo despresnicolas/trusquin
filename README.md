@@ -62,18 +62,18 @@ pnpm dev
 
 API JSON (collection Bruno dans `bruno/`) :
 
-| Méthode | Route                                | Rôle                                                        |
-| ------- | ------------------------------------ | ----------------------------------------------------------- |
-| POST    | `/api/analyses` `{ path }`           | analyse et enregistre, renvoie aussi `rules` et `context`   |
-| GET     | `/api/repos`                         | dernier résultat par dépôt, nombre d'analyses               |
-| GET     | `/api/analyses?path=`                | historique d'un dépôt                                       |
-| GET     | `/api/analyses/:id`                  | détail d'une analyse                                        |
-| DELETE  | `/api/repos?path=`                   | supprime l'historique d'un dépôt                            |
-| GET     | `/api/repos/files?path=`             | fichiers Claude actuels du dépôt (lus sur le disque)        |
-| GET     | `/api/projects`                      | dernière version de chaque projet du générateur             |
-| POST    | `/api/projects` `{ project, score }` | enregistre une version (ignorée si identique à la dernière) |
-| GET     | `/api/projects/:id`                  | une version avec son contenu                                |
-| DELETE  | `/api/projects?name=`                | supprime toutes les versions d'un projet                    |
+| Méthode | Route                         | Rôle                                                                         |
+| ------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| POST    | `/api/analyses` `{ path }`    | analyse et enregistre, renvoie aussi `rules` et `context`                    |
+| GET     | `/api/repos`                  | dernier résultat par dépôt, nombre d'analyses                                |
+| GET     | `/api/analyses?path=`         | historique d'un dépôt                                                        |
+| GET     | `/api/analyses/:id`           | détail d'une analyse                                                         |
+| DELETE  | `/api/repos?path=`            | supprime l'historique d'un dépôt                                             |
+| GET     | `/api/repos/files?path=`      | fichiers Claude actuels du dépôt (lus sur le disque)                         |
+| GET     | `/api/projects`               | dernière version de chaque projet du générateur                              |
+| POST    | `/api/projects` `{ project }` | enregistre une version (ignorée si identique, refusée si erreurs bloquantes) |
+| GET     | `/api/projects/:id`           | une version avec son contenu                                                 |
+| DELETE  | `/api/projects?name=`         | supprime toutes les versions d'un projet                                     |
 
 ## CLI (dossiers locaux)
 

@@ -22,6 +22,8 @@ class Kit {
   project = $state(load());
   files = $derived(generate(this.project));
   quality = $derived(checkProject(this.project, this.files));
+  /** Erreurs bloquantes : elles empêchent l'export sans confirmation et l'enregistrement. */
+  errors = $derived(this.quality.issues.filter((i) => i.severity === 'error').length);
   /** Incrémenté à chaque enregistrement dans l'historique, pour rafraîchir la liste. */
   saved = $state(0);
 }
@@ -39,7 +41,7 @@ export function persist(project: Project): void {
 /** Enregistre le projet en cours dans l'historique (PostgreSQL), avant de le remplacer. */
 export async function archive() {
   const project = $state.snapshot(store.project);
-  const version = await api.saveProject({ ...project, name: project.name.trim() || 'Sans nom' }, store.quality.score);
+  const version = await api.saveProject({ ...project, name: project.name.trim() || 'Sans nom' });
   store.saved++;
   return version;
 }

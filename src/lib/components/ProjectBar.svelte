@@ -10,7 +10,7 @@
   let notice = $state('');
   let resetting = $state(false);
   let confirmed = $state(false);
-  const errors = $derived(store.quality.issues.filter((i) => i.severity === 'error').length);
+  const errors = $derived(store.errors);
 
   /** sauron.json remplace le projet ; les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles. */
   async function importFiles(e: Event) {
@@ -60,8 +60,8 @@
   async function reset() {
     resetting = false;
     try {
-      // Un projet sans règle n'a rien à garder.
-      if (store.project.rules.length) await archive();
+      // Avec des erreurs bloquantes (dont « aucune règle »), rien n'est enregistré.
+      if (!errors) await archive();
     } catch (e) {
       notice = `Projet non enregistré dans l'historique, rien n'est remplacé : ${(e as Error).message}`;
       return;
@@ -80,7 +80,11 @@
   <label class="file"
     >Importer (.md, .json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
   >
-  <button onclick={save}>Enregistrer</button>
+  <button
+    onclick={save}
+    disabled={errors > 0}
+    title={errors ? `${errors} erreur(s) bloquante(s) à corriger avant d'enregistrer` : undefined}>Enregistrer</button
+  >
   {#if errors && !confirmed}
     <button class="sev-error" onclick={() => (confirmed = true)}>{errors} erreur(s) · exporter quand même…</button>
   {:else}
@@ -90,7 +94,13 @@
 
 {#if resetting}
   <div class="card confirm" role="alert">
-    <span>Le projet en cours sera enregistré dans l'historique puis remplacé.</span>
+    {#if errors}
+      <span class="sev-error"
+        >Le projet en cours a {errors} erreur(s) bloquante(s) : il ne sera pas enregistré et sera perdu.</span
+      >
+    {:else}
+      <span>Le projet en cours sera enregistré dans l'historique puis remplacé.</span>
+    {/if}
     <button class="primary" onclick={reset}>Nouveau projet</button>
     <button class="ghost" onclick={() => (resetting = false)}>Annuler</button>
   </div>
