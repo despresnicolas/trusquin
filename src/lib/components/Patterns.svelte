@@ -40,7 +40,7 @@
   }
 </script>
 
-<h2>Patterns</h2>
+<h2>Guide</h2>
 <p class="muted">Réponds à quelques questions pour savoir quel élément Claude Code utiliser, et où le placer.</p>
 
 <section class="card tree">
@@ -102,7 +102,7 @@
 </section>
 
 <details>
-  <summary>Tous les patterns</summary>
+  <summary>Tous les cas</summary>
   <div class="scroll-x">
     <table>
       <thead><tr><th>Situation</th><th>Élément</th><th>Emplacement</th></tr></thead>
