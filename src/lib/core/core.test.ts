@@ -174,6 +174,20 @@ describe('analyze', () => {
     expect(result.memoryIssues.map((i) => i.code)).toContain('broken-import');
   });
 
+  it('flags AGENTS.md that no sibling CLAUDE.md imports', () => {
+    const codes = (contents: Record<string, string>) =>
+      analyzeRepo({ paths: Object.keys(contents), contents })
+        .memoryIssues.filter((i) => i.code === 'agents-not-imported')
+        .map((i) => i.file);
+    const alone = analyzeRepo({ paths: ['AGENTS.md'], contents: { 'AGENTS.md': '# P' } });
+    expect(alone.criteria.find((c) => c.id === 'root-memory')?.status).toBe('partial');
+    expect(codes({ 'AGENTS.md': '# P' })).toEqual(['AGENTS.md']);
+    expect(codes({ 'AGENTS.md': '# P', 'CLAUDE.md': '# Autre' })).toEqual(['AGENTS.md']);
+    expect(codes({ 'api/AGENTS.md': '# A', 'CLAUDE.md': '@AGENTS.md' })).toEqual(['api/AGENTS.md']);
+    expect(codes({ 'AGENTS.md': '# P', 'CLAUDE.md': '@AGENTS.md\n\n## Claude' })).toEqual([]);
+    expect(codes({ 'api/AGENTS.md': '# A', 'api/CLAUDE.md': '@./AGENTS.md' })).toEqual([]);
+  });
+
   it('imports existing memory as rules', () => {
     let n = 0;
     const rules = importRules(

@@ -91,9 +91,15 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       'claude',
       'Mémoire racine (CLAUDE.md / AGENTS.md)',
       12,
-      rootPath ? 'pass' : 'fail',
-      rootPath ? `${rootPath} présent (${rootLines} lignes).` : 'Aucun CLAUDE.md ni AGENTS.md à la racine.',
-      'Générer un CLAUDE.md avec le générateur ou `/init`, puis élaguer.',
+      rootPath === 'CLAUDE.md' ? 'pass' : rootPath ? 'partial' : 'fail',
+      rootPath === 'AGENTS.md'
+        ? `AGENTS.md présent (${rootLines} lignes), mais sans CLAUDE.md Claude Code ne le lit pas.`
+        : rootPath
+          ? `${rootPath} présent (${rootLines} lignes).`
+          : 'Aucun CLAUDE.md ni AGENTS.md à la racine.',
+      rootPath
+        ? 'Créer un CLAUDE.md à côté contenant `@AGENTS.md`.'
+        : 'Générer un CLAUDE.md avec le générateur ou `/init`, puis élaguer.',
     ),
   );
   criteria.push(
@@ -150,6 +156,21 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       file: rootPath,
       message: `Import @${p} introuvable.`,
       fix: 'Corriger le chemin ou retirer l’import.',
+    });
+  }
+
+  // Claude Code ne charge que CLAUDE.md : un AGENTS.md doit être importé par un CLAUDE.md voisin.
+  // shortcut: seul l'import depuis le même dossier est reconnu, élargir si des imports croisés apparaissent.
+  for (const file of find(/(^|\/)AGENTS\.md$/)) {
+    const dir = file.slice(0, -'AGENTS.md'.length);
+    const importers = [`${dir}CLAUDE.md`, `${dir}CLAUDE.local.md`].map(read);
+    if (importers.some((c) => /^\s*@(\.\/)?AGENTS\.md\s*$/m.test(c))) continue;
+    memoryIssues.push({
+      severity: 'warning',
+      code: 'agents-not-imported',
+      file,
+      message: 'Aucun CLAUDE.md voisin n’importe ce fichier : Claude Code ne le lit pas.',
+      fix: `Ajouter la ligne \`@AGENTS.md\` en tête de ${dir}CLAUDE.md (le créer si besoin).`,
     });
   }
 
