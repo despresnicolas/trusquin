@@ -10,7 +10,6 @@
     { href: '/', label: 'Accueil' },
     { href: '/analyze', label: 'Analyse de dépôt' },
     { href: '/generator', label: 'Générateur' },
-    { href: '/guide', label: 'Guide' },
   ];
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 

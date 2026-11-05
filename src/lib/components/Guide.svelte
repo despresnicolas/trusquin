@@ -40,8 +40,10 @@
   }
 </script>
 
-<h2>Guide</h2>
-<p class="muted">Réponds à quelques questions pour savoir quel élément Claude Code utiliser, et où le placer.</p>
+<p class="muted">
+  Réponds à quelques questions : le guide indique l'élément Claude Code adapté, où il sera placé, et les modèles à
+  ajouter au projet.
+</p>
 
 <section class="card tree">
   {#if trail.length}
@@ -83,7 +85,7 @@
       </div>
     {:else}
       {#if !p.kind}
-        <a href="/generator?view=project">Régler dans Générateur › Projet</a>
+        <a href="/generator?view=project">Régler dans l'onglet Projet</a>
       {:else}
         <p class="muted">Pas de modèle : partir d'une règle vide.</p>
       {/if}
@@ -120,10 +122,6 @@
 </details>
 
 <style>
-  h2 {
-    margin: 0 0 4px;
-    font-size: 18px;
-  }
   .tree {
     max-width: 760px;
     margin: 12px 0 16px;

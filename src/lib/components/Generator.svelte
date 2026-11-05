@@ -1,21 +1,25 @@
 <script lang="ts">
   import { store } from '../state.svelte';
+  import Guide from './Guide.svelte';
   import Preview from './Preview.svelte';
   import ProjectBar from './ProjectBar.svelte';
   import ProjectForm from './ProjectForm.svelte';
   import ProjectHistory from './ProjectHistory.svelte';
   import RulesEditor from './RulesEditor.svelte';
 
-  let { initial = '', view = 'rules' }: { initial?: string; view?: 'project' | 'rules' | 'export' | 'history' } =
-    $props();
+  let {
+    initial = '',
+    view = 'guide',
+  }: { initial?: string; view?: 'project' | 'guide' | 'rules' | 'export' | 'history' } = $props();
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 </script>
 
 <ProjectBar />
 
 <nav class="views">
+  <a href="/generator?view=guide" aria-current={view === 'guide' ? 'page' : undefined}>Guide</a>
   <a href="/generator?view=project" aria-current={view === 'project' ? 'page' : undefined}>Projet</a>
-  <a href="/generator" aria-current={view === 'rules' ? 'page' : undefined}>
+  <a href="/generator?view=rules" aria-current={view === 'rules' ? 'page' : undefined}>
     Règles <span class="muted">{store.project.rules.length}</span>
   </a>
   <a href="/generator?view=export" aria-current={view === 'export' ? 'page' : undefined}>
@@ -31,10 +35,12 @@
   <ProjectForm />
 {:else if view === 'history'}
   <ProjectHistory />
-{:else}
+{:else if view === 'rules'}
   {#key initial}
     <RulesEditor {initial} />
   {/key}
+{:else}
+  <Guide />
 {/if}
 
 <style>

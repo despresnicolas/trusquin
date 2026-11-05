@@ -38,7 +38,7 @@
           return;
       } else await archive();
       store.project = (await api.project(id)).project;
-      await goto('/generator');
+      await goto('/generator?view=rules');
     });
 
   const forget = (name: string) =>

@@ -52,7 +52,7 @@
 
     <div class="actions">
       <button onclick={() => add()}>+ Règle vide</button>
-      <a class="from-pattern" href="/guide">+ Via le guide</a>
+      <a class="from-pattern" href="/generator?view=guide">+ Via le guide</a>
     </div>
   </aside>
 

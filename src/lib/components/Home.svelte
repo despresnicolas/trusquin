@@ -116,7 +116,11 @@
       href: '',
     },
     { title: 'Décrire le projet', text: 'Nom, description, stack et permissions.', href: '/generator?view=project' },
-    { title: 'Écrire les règles', text: 'Pour chacune : quoi, et à quoi elle s’applique.', href: '/generator' },
+    {
+      title: 'Écrire les règles',
+      text: 'Pour chacune : quoi, et à quoi elle s’applique. Hésitation sur l’élément ? Le Guide tranche.',
+      href: '/generator?view=guide',
+    },
     {
       title: 'Vérifier et exporter',
       text: 'Corriger les erreurs, relire chaque fichier, exporter le zip et le décompresser à la racine.',
@@ -163,11 +167,6 @@
       <a class="button primary" href="/analyze">Analyser un dépôt</a>
       <a class="button" href="/generator?view=project">Créer un projet</a>
     </div>
-    <nav class="toc" aria-label="Sur cette page">
-      <a href="#regles">Ce qui fait une bonne règle</a>
-      <a href="#arborescence">Arborescence générée</a>
-      <a href="#boucle">Boucle de travail</a>
-    </nav>
   </header>
 
   <div class="columns">
@@ -278,16 +277,6 @@
     background: var(--accent);
     border-color: var(--accent);
     color: var(--on-accent);
-  }
-  .toc {
-    display: flex;
-    gap: 6px 16px;
-    flex-wrap: wrap;
-    margin-top: 20px;
-    font-size: 13px;
-  }
-  .toc a {
-    color: var(--muted);
   }
   .columns {
     display: grid;
