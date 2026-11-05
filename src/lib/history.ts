@@ -1,4 +1,4 @@
-import type { ClaudeFile, Project, RepoAnalysis, Rule } from './core/types';
+import type { ClaudeFile, Project, RepoAnalysis } from './core/types';
 
 /** Une analyse enregistrée, sans le détail des critères. */
 export interface AnalysisRun {
@@ -13,12 +13,6 @@ export interface AnalysisRun {
 
 export interface AnalysisRecord extends AnalysisRun {
   result: RepoAnalysis;
-}
-
-/** Réponse d'une nouvelle analyse : les règles importables ne sont pas stockées. */
-export interface FreshAnalysis extends AnalysisRecord {
-  rules: Rule[];
-  context: { description: string; stack: string };
 }
 
 export interface RepoSummary {
@@ -70,7 +64,7 @@ export const api = {
   dirs: (path?: string) => call<DirListing>(`/api/dirs${path ? `?${q(path)}` : ''}`),
   get: (id: number) => call<AnalysisRecord>(`/api/analyses/${id}`),
   analyze: (path: string) =>
-    call<FreshAnalysis>('/api/analyses', {
+    call<AnalysisRecord>('/api/analyses', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ path }),

@@ -18,6 +18,6 @@ body:json {
 
 docs {
   Analyse un dossier local du serveur et l'enregistre.
-  Réponse : AnalysisRecord + `rules` (règles importables) + `context` ({ description, stack } lus dans la mémoire racine ou le package.json), non stockés.
+  Réponse : AnalysisRecord (l'analyse enregistrée).
   400 si chemin relatif, introuvable, pas un dossier ou hors SAURON_ROOTS ; 503 si base indisponible.
 }

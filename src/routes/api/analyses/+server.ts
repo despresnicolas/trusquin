@@ -1,8 +1,6 @@
 import { basename } from 'node:path';
 import { error, json, type RequestHandler } from '@sveltejs/kit';
-import { analyzeRepo, importContext, importRules } from '#lib/core/analyze.ts';
-import { newId } from '#lib/core/presets.ts';
-import type { FreshAnalysis } from '#lib/history.ts';
+import { analyzeRepo } from '#lib/core/analyze.ts';
 import { listRuns, saveAnalysis } from '#lib/server/db.ts';
 import { allowedRoots, resolveRepoPath, snapshot } from '#lib/server/repo.ts';
 import { db } from '#lib/server/store.ts';
@@ -26,6 +24,5 @@ export const POST: RequestHandler = async ({ request }) => {
   const sql = await db();
   const repo = snapshot(root);
   const result = analyzeRepo(repo);
-  const record = await saveAnalysis(sql, { path: root, name: basename(root), fileCount: repo.paths.length, result });
-  return json({ ...record, rules: importRules(repo, newId), context: importContext(repo) } satisfies FreshAnalysis);
+  return json(await saveAnalysis(sql, { path: root, name: basename(root), fileCount: repo.paths.length, result }));
 };

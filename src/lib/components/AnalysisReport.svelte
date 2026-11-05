@@ -1,22 +1,9 @@
 <script lang="ts">
-  import type { Rule } from '../core/types';
-  import type { AnalysisRecord, FreshAnalysis } from '../history';
-  import { store } from '../state.svelte';
+  import type { AnalysisRecord } from '../history';
   import ScoreBadge from './ScoreBadge.svelte';
 
-  let { record, rules, context }: { record: AnalysisRecord; rules?: Rule[]; context?: FreshAnalysis['context'] } =
-    $props();
+  let { record }: { record: AnalysisRecord } = $props();
   const result = $derived(record.result);
-  let imported = $state(0);
-
-  function importExisting() {
-    if (!rules) return;
-    store.project.rules.push(...rules);
-    if (store.project.name === 'Mon projet') store.project.name = record.name;
-    store.project.description ||= context?.description ?? '';
-    store.project.stack ||= context?.stack ?? '';
-    imported = rules.length;
-  }
 
   const groups = [
     { id: 'claude', label: 'Préparation pour Claude Code' },
@@ -42,13 +29,6 @@
       {/each}
     </div>
   </div>
-  {#if rules?.length}
-    <button onclick={importExisting} disabled={imported > 0}>
-      {imported
-        ? `${imported} règle(s) importée(s)`
-        : `Importer ${rules.length} règle(s) existante(s) dans le générateur`}
-    </button>
-  {/if}
 </div>
 
 {#each groups as g}

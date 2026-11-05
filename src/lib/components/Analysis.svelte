@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Rule } from '../core/types';
-  import { api, type AnalysisRecord, type AnalysisRun, type FreshAnalysis, type RepoSummary } from '../history';
+  import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '../history';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
   import Proposals from './Proposals.svelte';
@@ -17,8 +17,6 @@
   let repos = $state<RepoSummary[]>([]);
   let runs = $state<AnalysisRun[]>([]);
   let record = $state<AnalysisRecord | null>(null);
-  let rules = $state<Rule[] | undefined>();
-  let context = $state<FreshAnalysis['context'] | undefined>();
   // Propositions conçues dans la modale, à enregistrer dans un nouveau projet (rien n'est écrit sur le disque).
   let drafts = $state<{ criterion: string; rule: Rule }[]>([]);
   let view = $state<View>('report');
@@ -49,11 +47,9 @@
     repos = await api.repos();
   };
 
-  async function show(next: AnalysisRecord, fresh?: FreshAnalysis) {
+  async function show(next: AnalysisRecord) {
     if (next.path !== record?.path) drafts = [];
     record = next;
-    rules = fresh?.rules;
-    context = fresh?.context;
     path = next.path;
     runs = await api.runs(next.path);
     view = 'report';
@@ -62,7 +58,7 @@
   const analyze = (target: string) =>
     attempt(async () => {
       const fresh = await api.analyze(target);
-      await show(fresh, fresh);
+      await show(fresh);
       toast = { run: fresh, delta: runs[1] ? fresh.score - runs[1].score : null };
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => (toast = null), 5000);
@@ -181,7 +177,7 @@
       </div>
       {#if view === 'report'}
         {#key record.id}
-          <AnalysisReport {record} {rules} {context} />
+          <AnalysisReport {record} />
         {/key}
       {:else if view === 'proposals'}
         <Proposals
