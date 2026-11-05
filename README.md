@@ -51,7 +51,7 @@ Une règle projet marquée **Critique** est placée en tête du `CLAUDE.md` et r
 
 Note sur 100 (A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, E). Les critères non applicables sont exclus du calcul.
 
-- **Préparation Claude** : mémoire racine, concision, commandes exactes, architecture, secrets, règles vagues, imports `@` valides, fichiers exemplaires cités (few-shot), règles modulaires, permissions, hooks, skills/commandes, agents, fichiers perso gitignorés.
+- **Préparation Claude** : mémoire racine, concision, commandes exactes, architecture, secrets, règles vagues, imports `@` valides, fichiers exemplaires cités (few-shot), règles modulaires, en monorepo (workspace pnpm ou `workspaces` npm/yarn) mémoire par paquet et commandes ciblées, permissions, hooks, skills/commandes, agents, fichiers perso gitignorés.
 - **Bonnes pratiques** : README, tests, linter, formatter, typage, CI, lockfile, `.gitignore` / `.env.example`.
 
 Le serveur Node lit le dossier (chemin absolu saisi dans l'interface) et enregistre chaque analyse dans PostgreSQL : historique par dépôt, évolution du score, ré-analyse en un clic. `SAURON_ROOTS` (chemins séparés par `:`) limite les dossiers lisibles.

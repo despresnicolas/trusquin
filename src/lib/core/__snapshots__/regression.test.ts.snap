@@ -4,7 +4,7 @@ exports[`non-régression > analyzeRepo 1`] = `
 {
   "criteria": [
     {
-      "detail": "CLAUDE.md présent (41 lignes).",
+      "detail": "CLAUDE.md présent (54 lignes).",
       "fix": undefined,
       "group": "claude",
       "id": "root-memory",
@@ -14,7 +14,7 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "pass",
     },
     {
-      "detail": "41 lignes (cible < 100, max 200).",
+      "detail": "54 lignes (cible < 100, max 200).",
       "fix": undefined,
       "group": "claude",
       "id": "root-length",
@@ -24,7 +24,7 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "pass",
     },
     {
-      "detail": "7 commande(s) exacte(s) trouvée(s).",
+      "detail": "10 commande(s) exacte(s) trouvée(s).",
       "fix": undefined,
       "group": "claude",
       "id": "commands",
@@ -84,7 +84,7 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "pass",
     },
     {
-      "detail": "3 fichier(s) rules (2 avec paths), 0 CLAUDE.md de sous-dossier.",
+      "detail": "3 fichier(s) rules (2 avec paths), 1 CLAUDE.md de sous-dossier.",
       "fix": undefined,
       "group": "claude",
       "id": "modular",
@@ -92,6 +92,26 @@ exports[`non-régression > analyzeRepo 1`] = `
       "max": 6,
       "points": 6,
       "status": "pass",
+    },
+    {
+      "detail": "Pas de workspace détecté.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "package-memory",
+      "label": "Mémoire par paquet (monorepo)",
+      "max": 5,
+      "points": 0,
+      "status": "na",
+    },
+    {
+      "detail": "Pas de workspace détecté.",
+      "fix": undefined,
+      "group": "claude",
+      "id": "targeted-commands",
+      "label": "Commandes ciblées sur un paquet",
+      "max": 3,
+      "points": 0,
+      "status": "na",
     },
     {
       "detail": "2 allow, 2 deny.",
@@ -114,7 +134,7 @@ exports[`non-régression > analyzeRepo 1`] = `
       "status": "pass",
     },
     {
-      "detail": "2 skill(s), 2 commande(s).",
+      "detail": "3 skill(s), 2 commande(s).",
       "fix": undefined,
       "group": "claude",
       "id": "on-demand",
@@ -227,6 +247,7 @@ exports[`non-régression > analyzeRepo 1`] = `
   "grade": "C",
   "memoryFiles": [
     "CLAUDE.md",
+    "packages/api/CLAUDE.md",
     "CLAUDE.local.md",
   ],
   "memoryIssues": [],
@@ -236,7 +257,7 @@ exports[`non-régression > analyzeRepo 1`] = `
 
 exports[`non-régression > checkProject 1`] = `
 {
-  "alwaysLoadedInstructions": 19,
+  "alwaysLoadedInstructions": 27,
   "issues": [
     {
       "code": "local-gitignore",
@@ -271,10 +292,23 @@ Projet de référence
 
 ## Architecture
 
+### Architecture
+
 - \`apps/api\` : API REST (Fastify), seule à parler à la base
 - \`apps/web\` : front SvelteKit, appelle l’API via \`src/lib/api.ts\`
 - \`packages/shared\` : types partagés, aucune dépendance runtime
 - Pourquoi : la base n’est jamais exposée au front (contrainte RGPD)
+
+### Monorepo
+
+- Workspace pnpm : \`apps/*\` et \`packages/*\` ; lancer Claude depuis la racine
+- \`apps/web\` : front, dépend de \`packages/ui\`
+- \`packages/api\` : API, seule à parler à la base
+- \`packages/ui\` : composants, sans dépendance interne
+- Tests d’un paquet : \`pnpm --filter <paquet> test\`
+- Un seul test : \`pnpm --filter <paquet> exec vitest run <fichier>\`
+- Paquets touchés depuis main : \`pnpm turbo run lint test --filter=...[origin/main]\`
+- Ce qui ne vaut que pour un paquet va dans son CLAUDE.md
 
 ## Git & workflow
 
@@ -300,8 +334,9 @@ Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les r
     "sources": [
       "r0",
       "r1",
-      "r5",
-      "r6",
+      "r2",
+      "r7",
+      "r8",
     ],
   },
   {
@@ -317,7 +352,7 @@ Ces contrôles tournent via des hooks (\`.claude/settings.json\`) : ne pas les r
     "loading": "always",
     "path": ".claude/rules/testing.md",
     "sources": [
-      "r4",
+      "r6",
     ],
   },
   {
@@ -335,7 +370,7 @@ paths:
     "loading": "on-path",
     "path": ".claude/rules/endpoints-api.md",
     "sources": [
-      "r2",
+      "r4",
     ],
   },
   {
@@ -352,6 +387,24 @@ paths:
     "loading": "on-path",
     "path": ".claude/rules/composants-suivre-l-exemple.md",
     "sources": [
+      "r5",
+    ],
+  },
+  {
+    "content": "# packages/api
+
+## Commandes
+
+- Tests : \`pnpm --filter @app/api test\`
+- Un seul test : \`pnpm --filter @app/api exec vitest run src/x.test.ts\`
+- Point d’entrée : \`src/server.ts\` ; routes dans \`src/routes/\`
+- Nouvelle route : suivre \`src/routes/users.ts\`
+- Dépendances internes autorisées : \`packages/db\` uniquement
+",
+    "explanation": "Mémoire de sous-dossier : chargée quand Claude travaille dans packages/api/. Prime sur la racine.",
+    "loading": "on-path",
+    "path": "packages/api/CLAUDE.md",
+    "sources": [
       "r3",
     ],
   },
@@ -367,7 +420,7 @@ paths:
     "loading": "personal",
     "path": "CLAUDE.local.md",
     "sources": [
-      "r7",
+      "r9",
     ],
   },
   {
@@ -384,7 +437,7 @@ Ignore le formatage (géré par hook).
     "loading": "on-demand",
     "path": ".claude/commands/review.md",
     "sources": [
-      "r10",
+      "r12",
     ],
   },
   {
@@ -404,7 +457,7 @@ Une fonctionnalité par session ; pour travailler en parallèle, un worktree git
     "loading": "on-demand",
     "path": ".claude/commands/plan.md",
     "sources": [
-      "r11",
+      "r13",
     ],
   },
   {
@@ -417,13 +470,14 @@ description: Prépare une release : changelog, bump de version, tag. Use when th
 1. Lire les commits depuis le dernier tag : \`git log $(git describe --tags --abbrev=0)..HEAD --oneline\`
 2. Mettre à jour \`CHANGELOG.md\`
 3. \`pnpm version <patch|minor|major> --no-git-tag-version\`
-4. Proposer les commandes git, ne pas les lancer
+4. Vérifier : \`pnpm test\` passe et le CHANGELOG cite chaque commit
+5. Proposer les commandes git, ne pas les lancer
 ",
     "explanation": "Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.",
     "loading": "on-demand",
     "path": ".claude/skills/release/SKILL.md",
     "sources": [
-      "r12",
+      "r14",
     ],
   },
   {
@@ -442,7 +496,40 @@ description: Corrige un bug méthodiquement : reproduire, isoler, diagnostiquer,
     "loading": "on-demand",
     "path": ".claude/skills/debug/SKILL.md",
     "sources": [
-      "r13",
+      "r15",
+    ],
+  },
+  {
+    "content": "---
+name: db-migration
+description: Crée et applique une migration de base de données sans perte de données. Use when the user asks to change the schema, add a column or a table, or write a migration.
+---
+# Migration de base
+
+Principe : une migration se rejoue sur la base de production sans perte de données.
+
+## Erreurs fréquentes
+
+- Renommer une colonne en une étape casse les instances encore déployées : ajouter, copier, puis supprimer en trois migrations
+- Modifier une migration déjà appliquée fait diverger les environnements : créer une nouvelle migration
+
+## Étapes
+
+1. Lire le schéma actuel (\`db/schema.sql\`) et la dernière migration de \`db/migrations/\`
+2. Créer le fichier : \`pnpm db:new <nom>\`
+3. Écrire \`up\` et \`down\` en suivant \`db/migrations/0042_add_orders.sql\`
+4. Appliquer en local : \`pnpm db:migrate\`, puis \`pnpm db:rollback\` et \`pnpm db:migrate\`
+5. Vérifier : \`pnpm test\` passe et le rollback ne perd aucune ligne
+
+## À la demande
+
+- Table de plus d’un million de lignes : lire \`references/gros-volumes.md\` avant l’étape 3
+",
+    "explanation": "Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.",
+    "loading": "on-demand",
+    "path": ".claude/skills/db-migration/SKILL.md",
+    "sources": [
+      "r16",
     ],
   },
   {
@@ -459,7 +546,7 @@ Tu ne modifies aucun fichier. Tu rends : test, cause, fichier:ligne, correction 
     "loading": "on-demand",
     "path": ".claude/agents/test-runner.md",
     "sources": [
-      "r14",
+      "r17",
     ],
   },
   {
@@ -504,8 +591,8 @@ Tu ne modifies aucun fichier. Tu rends : test, cause, fichier:ligne, correction 
     "loading": "deterministic",
     "path": ".claude/settings.json",
     "sources": [
-      "r8",
-      "r9",
+      "r10",
+      "r11",
     ],
   },
 ]
@@ -543,12 +630,29 @@ exports[`non-régression > importRules 1`] = `
     "title": "Architecture",
   },
   {
+    "body": "- Workspace pnpm : \`apps/*\` et \`packages/*\` ; lancer Claude depuis la racine
+- \`apps/web\` : front, dépend de \`packages/ui\`
+- \`packages/api\` : API, seule à parler à la base
+- \`packages/ui\` : composants, sans dépendance interne
+- Tests d’un paquet : \`pnpm --filter <paquet> test\`
+- Un seul test : \`pnpm --filter <paquet> exec vitest run <fichier>\`
+- Paquets touchés depuis main : \`pnpm turbo run lint test --filter=...[origin/main]\`
+- Ce qui ne vaut que pour un paquet va dans son CLAUDE.md",
+    "category": "other",
+    "enabled": true,
+    "id": "i2",
+    "kind": "rule",
+    "scope": "project",
+    "targets": [],
+    "title": "Monorepo",
+  },
+  {
     "body": "- Commits au format Conventional Commits (\`feat:\`, \`fix:\`, \`chore:\`)
 - Ne jamais lancer \`git push\` ni \`git commit\` : proposer le message
 - Branches : \`feat/<ticket>-<slug>\`",
     "category": "git",
     "enabled": true,
-    "id": "i2",
+    "id": "i3",
     "kind": "rule",
     "scope": "project",
     "targets": [],
@@ -559,7 +663,7 @@ exports[`non-régression > importRules 1`] = `
 **Lot** : sous-ensemble d’un chantier, unité de planning",
     "category": "domain",
     "enabled": true,
-    "id": "i3",
+    "id": "i4",
     "kind": "rule",
     "scope": "project",
     "targets": [],
@@ -572,7 +676,7 @@ exports[`non-régression > importRules 1`] = `
 - Protéger .env (PreToolUse · Edit|Write|MultiEdit)",
     "category": "other",
     "enabled": true,
-    "id": "i4",
+    "id": "i5",
     "kind": "rule",
     "scope": "project",
     "targets": [],
@@ -584,7 +688,7 @@ exports[`non-régression > importRules 1`] = `
 - Tout bug corrigé arrive avec un test qui échouait avant",
     "category": "testing",
     "enabled": true,
-    "id": "i5",
+    "id": "i6",
     "kind": "rule",
     "scope": "topic",
     "targets": [],
@@ -596,7 +700,7 @@ exports[`non-régression > importRules 1`] = `
 - Toute nouvelle route : ajouter le fichier Bruno correspondant dans \`bruno/\`",
     "category": "other",
     "enabled": true,
-    "id": "i6",
+    "id": "i7",
     "kind": "rule",
     "scope": "path",
     "targets": [
@@ -609,7 +713,7 @@ exports[`non-régression > importRules 1`] = `
 - Son test : suivre \`src/components/Button.test.ts\`",
     "category": "other",
     "enabled": true,
-    "id": "i7",
+    "id": "i8",
     "kind": "rule",
     "scope": "path",
     "targets": [
@@ -618,11 +722,27 @@ exports[`non-régression > importRules 1`] = `
     "title": "Conventions",
   },
   {
+    "body": "- Tests : \`pnpm --filter @app/api test\`
+- Un seul test : \`pnpm --filter @app/api exec vitest run src/x.test.ts\`
+- Point d’entrée : \`src/server.ts\` ; routes dans \`src/routes/\`
+- Nouvelle route : suivre \`src/routes/users.ts\`
+- Dépendances internes autorisées : \`packages/db\` uniquement",
+    "category": "commands",
+    "enabled": true,
+    "id": "i9",
+    "kind": "rule",
+    "scope": "directory",
+    "targets": [
+      "packages/api",
+    ],
+    "title": "Commandes",
+  },
+  {
     "body": "- Répondre en français
 - Montrer le diff avant de modifier plus de 3 fichiers",
     "category": "workflow",
     "enabled": true,
-    "id": "i8",
+    "id": "i10",
     "kind": "rule",
     "scope": "local",
     "targets": [],
@@ -634,7 +754,7 @@ exports[`non-régression > importRules 1`] = `
     "command": "jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write --ignore-unknown",
     "enabled": true,
     "event": "PostToolUse",
-    "id": "i9",
+    "id": "i11",
     "kind": "hook",
     "matcher": "Edit|Write|MultiEdit",
     "scope": "project",
@@ -647,7 +767,7 @@ exports[`non-régression > importRules 1`] = `
     "command": "jq -r '.tool_input.file_path' | grep -qE '(^|/)\\.env' && { echo "Fichier protégé" >&2; exit 2; } || exit 0",
     "enabled": true,
     "event": "PreToolUse",
-    "id": "i10",
+    "id": "i12",
     "kind": "hook",
     "matcher": "Edit|Write|MultiEdit",
     "scope": "project",

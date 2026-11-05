@@ -32,7 +32,7 @@ export const IGNORED_DIRS = new Set([
 ]);
 
 const TEXT_FILES =
-  /(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md|README(\.md)?|\.gitignore|package\.json|pyproject\.toml|settings(\.local)?\.json|SKILL\.md|\.env\.example|composer\.json|Cargo\.toml|go\.mod)$|^\.claude\/.*\.md$/i;
+  /(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md|README(\.md)?|\.gitignore|package\.json|pyproject\.toml|settings(\.local)?\.json|SKILL\.md|\.env\.example|composer\.json|Cargo\.toml|go\.mod|pnpm-workspace\.yaml)$|^\.claude\/.*\.md$/i;
 
 /** Indique si le contenu du fichier est utile à l'analyse (le reste : chemin seul). */
 export function needsContent(path: string): boolean {
@@ -54,6 +54,42 @@ function crit(
 ): Criterion {
   const points = status === 'pass' ? max : status === 'partial' ? Math.round(max / 2) : 0;
   return { id, group, label, max, points, status, detail, fix: status === 'pass' || status === 'na' ? undefined : fix };
+}
+
+/** Globs de workspace (pnpm-workspace.yaml ou `workspaces` du package.json racine). */
+// shortcut: Cargo, go.work et Nx (project.json) ne sont pas lus, les ajouter si un dépôt de ce type est analysé.
+function workspaceGlobs(read: (p: string) => string): string[] {
+  const block = read('pnpm-workspace.yaml').match(/^packages:[ \t]*\n((?:[ \t]+.*(?:\n|$))*)/m)?.[1] ?? '';
+  const pnpm = [...block.matchAll(/^\s*-\s*['"]?([^'"\n#]+?)['"]?\s*$/gm)].map((m) => m[1]);
+  if (pnpm.length) return pnpm;
+  try {
+    const ws = JSON.parse(read('package.json') || '{}').workspaces;
+    const list: unknown = Array.isArray(ws) ? ws : ws?.packages;
+    return Array.isArray(list) ? list.filter((g): g is string => typeof g === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function globToRegExp(glob: string): RegExp {
+  const src = glob
+    .replace(/^\.\/|\/$/g, '')
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '\0')
+    .replace(/\*/g, '[^/]+')
+    .replace(/\0/g, '.*');
+  return new RegExp(`^${src}$`);
+}
+
+/** Dossiers des paquets du workspace (ceux qui ont un package.json). Vide hors monorepo. */
+function workspacePackages(paths: string[], read: (p: string) => string): string[] {
+  const globs = workspaceGlobs(read);
+  const include = globs.filter((g) => !g.startsWith('!')).map(globToRegExp);
+  const exclude = globs.filter((g) => g.startsWith('!')).map((g) => globToRegExp(g.slice(1)));
+  return paths
+    .filter((p) => p.endsWith('/package.json'))
+    .map((p) => p.slice(0, -'/package.json'.length))
+    .filter((d) => include.some((re) => re.test(d)) && !exclude.some((re) => re.test(d)));
 }
 
 function frontmatterOf(text: string): string | null {
@@ -240,6 +276,50 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       scoped.length || subMemory.length ? 'pass' : ruleFiles.length ? 'partial' : 'fail',
       `${ruleFiles.length} fichier(s) rules (${scoped.length} avec paths), ${subMemory.length} CLAUDE.md de sous-dossier.`,
       'Isoler les règles spécifiques dans .claude/rules/*.md avec `paths:`.',
+    ),
+  );
+
+  const packages = workspacePackages(paths, read);
+  const covered = packages.filter(
+    (d) =>
+      paths.includes(`${d}/CLAUDE.md`) ||
+      ruleFiles.some((r) => (frontmatterOf(read(r)) ?? '').match(/^paths:.*$/m)?.[0].includes(`${d}/`)),
+  );
+  const uncovered = packages.filter((d) => !covered.includes(d));
+  criteria.push(
+    crit(
+      'package-memory',
+      'claude',
+      'Mémoire par paquet (monorepo)',
+      5,
+      !packages.length ? 'na' : !uncovered.length ? 'pass' : covered.length ? 'partial' : 'fail',
+      !packages.length
+        ? 'Pas de workspace détecté.'
+        : `${covered.length}/${packages.length} paquet(s) avec un CLAUDE.md ou une règle paths:` +
+            (uncovered.length
+              ? ` ; sans : ${uncovered.slice(0, 5).join(', ')}${uncovered.length > 5 ? '…' : ''}.`
+              : '.'),
+      'Ajouter un CLAUDE.md par paquet (commandes, structure, conventions locales) : chargé seulement quand Claude y travaille.',
+    ),
+  );
+  const targeted = (root.match(/`[^`\n]+`/g) ?? []).some((s) =>
+    /--filter|--workspace|\s-F\s|yarn workspace |\b(nx|turbo) (run|affected)\b|lerna .*--scope|cargo \w+ (-p|--package)\b/.test(
+      s,
+    ),
+  );
+  criteria.push(
+    crit(
+      'targeted-commands',
+      'claude',
+      'Commandes ciblées sur un paquet',
+      3,
+      !packages.length ? 'na' : targeted ? 'pass' : 'fail',
+      !packages.length
+        ? 'Pas de workspace détecté.'
+        : targeted
+          ? 'La mémoire racine cite une commande filtrée par paquet.'
+          : 'Aucune commande filtrée (--filter, nx run…) dans la mémoire racine.',
+      'Citer les commandes d’un seul paquet (`pnpm --filter <paquet> test`) : plus rapides et moins de sortie qu’un test global.',
     ),
   );
 

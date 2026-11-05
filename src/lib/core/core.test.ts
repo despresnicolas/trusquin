@@ -17,7 +17,10 @@ import { checkProject, lintMemoryText } from './quality';
 import type { Project } from './types';
 
 // Commandes, architecture et hook Prettier : une config minimale mais complète.
-const sampleRules = () => [TEMPLATES[0], TEMPLATES[1], TEMPLATES[7]].map((t) => newRule(t.rule));
+const sampleRules = () =>
+  ['Commandes du projet', 'Architecture (WHAT / WHY)', 'Hook : formatter après édition'].map((label) =>
+    newRule(TEMPLATES.find((t) => t.label === label)!.rule),
+  );
 
 function project(rules: Project['rules'], extra: Partial<Project> = {}): Project {
   return { ...starterProject(), description: 'd', stack: 's', rules, ...extra };
@@ -122,6 +125,25 @@ describe('quality', () => {
     expect(codes).toEqual(expect.arrayContaining(['bad-name', 'no-description', 'no-paths']));
   });
 
+  it('checks skill triggers, workflow, verification and length', () => {
+    const codes = (rule: Partial<Project['rules'][number]>) =>
+      checkProject(project([newRule({ kind: 'skill', name: 's', ...rule })])).issues.map((i) => i.code);
+    const vague = codes({
+      description: 'Fait plein de choses utiles pour le projet, sans plus de précision.',
+      body: 'x',
+    });
+    expect(vague).toEqual(expect.arrayContaining(['no-trigger', 'no-workflow', 'no-verification']));
+    expect(codes({ description: 'x'.repeat(50) + ' Use when releasing.', body: '1. a\n'.repeat(501) })).toContain(
+      'long-skill',
+    );
+    for (const label of ['Skill : release', 'Skill : debug', 'Skill : modèle complet']) {
+      const rule = TEMPLATES.find((t) => t.label === label)!.rule;
+      expect(codes(rule), label).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/^(no-trigger|no-workflow|no-verification|long-skill)$/)]),
+      );
+    }
+  });
+
   it('warns on long root memory', () => {
     const text = Array.from({ length: 120 }, (_, i) => `- r${i}`).join('\n');
     expect(lintMemoryText('CLAUDE.md', text, true)[0].code).toBe('root-long');
@@ -172,6 +194,40 @@ describe('analyze', () => {
   it('reports broken imports', () => {
     const result = analyzeRepo({ paths: ['CLAUDE.md'], contents: { 'CLAUDE.md': '@docs/missing.md\n' } });
     expect(result.memoryIssues.map((i) => i.code)).toContain('broken-import');
+  });
+
+  it('checks package memory and targeted commands in a monorepo', () => {
+    const status = (contents: Record<string, string>, id: string) =>
+      analyzeRepo({ paths: Object.keys(contents), contents }).criteria.find((c) => c.id === id);
+    const single = { 'CLAUDE.md': '`pnpm test`', 'package.json': '{}' };
+    expect(status(single, 'package-memory')?.status).toBe('na');
+    expect(status(single, 'targeted-commands')?.status).toBe('na');
+
+    const pnpm = {
+      'pnpm-workspace.yaml': "packages:\n  - 'packages/*'\n  - apps/*\n  - '!**/test/**'\n",
+      'package.json': '{}',
+      'packages/api/package.json': '{}',
+      'packages/api/CLAUDE.md': '# API',
+      'packages/ui/package.json': '{}',
+      '.claude/rules/ui.md': '---\npaths: ["packages/ui/**"]\n---\n- x',
+      'apps/web/package.json': '{}',
+      'CLAUDE.md': '- Tests : `pnpm --filter @app/api test`',
+    };
+    const memory = status(pnpm, 'package-memory');
+    expect(memory?.status).toBe('partial');
+    expect(memory?.detail).toContain('apps/web');
+    expect(status(pnpm, 'targeted-commands')?.status).toBe('pass');
+
+    const npm = {
+      'package.json': '{"workspaces":["apps/*"]}',
+      'apps/web/package.json': '{}',
+      'apps/web/CLAUDE.md': '# Web',
+      'CLAUDE.md': '- Tests : `npm test`',
+    };
+    expect(status(npm, 'package-memory')?.status).toBe('pass');
+    expect(status(npm, 'targeted-commands')?.status).toBe('fail');
+    expect(templateForCriterion('package-memory')?.rule.scope).toBe('directory');
+    expect(templateForCriterion('targeted-commands')?.rule.scope).toBe('project');
   });
 
   it('flags AGENTS.md that no sibling CLAUDE.md imports', () => {

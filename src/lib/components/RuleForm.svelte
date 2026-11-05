@@ -120,7 +120,9 @@
     </div>
     <label
       >Description — quoi ET quand (c'est ce que Claude lit pour décider) <Hint
-        text="Ex. « Prépare une release : changelog, version, tag. Use when the user asks to release. » Sans le « quand », Claude ne saura pas l'utiliser au bon moment."
+        text={rule.kind === 'skill'
+          ? "Seule la description est lue tant que la skill ne sert pas. Dire ce qu'elle produit ET quand (« Use when… »), avec les mots qu'emploierait l'utilisateur même sans citer la skill. 1024 caractères max."
+          : "Ex. « Prépare une release : changelog, version, tag. Use when the user asks to release. » Sans le « quand », Claude ne saura pas l'utiliser au bon moment."}
       />
       <textarea rows="2" bind:value={rule.description}></textarea>
     </label>
@@ -159,7 +161,9 @@
       <Hint
         text={rule.kind === 'rule'
           ? 'Une instruction par ligne, vérifiable : « pnpm test avant de rendre la main » plutôt que « bien tester ». Éviter de recopier du code ou ce que le linter fait déjà.'
-          : "Les étapes à suivre, en markdown. Rester concis : ce contenu est chargé quand l'élément sert."}
+          : rule.kind === 'skill'
+            ? 'Principe en une ligne, erreurs fréquentes avec leur raison, étapes numérotées, vérification en dernier. Moins de 500 lignes : le détail va dans des fichiers de référence que Claude ouvre quand une étape le demande.'
+            : "Les étapes à suivre, en markdown. Rester concis : ce contenu est chargé quand l'élément sert."}
       />
       <textarea rows="9" bind:value={rule.body}></textarea>
     </label>

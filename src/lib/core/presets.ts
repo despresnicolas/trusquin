@@ -47,6 +47,27 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    label: 'Monorepo : carte et commandes ciblées',
+    hint: 'Une ligne par paquet et les commandes d’un seul paquet : Claude sait où chercher et ne lance pas tout le dépôt.',
+    rule: {
+      title: 'Monorepo',
+      category: 'architecture',
+      scope: 'project',
+      body: 'Workspace pnpm : `apps/*` et `packages/*` ; lancer Claude depuis la racine\n`apps/web` : front, dépend de `packages/ui`\n`packages/api` : API, seule à parler à la base\n`packages/ui` : composants, sans dépendance interne\nTests d’un paquet : `pnpm --filter <paquet> test`\nUn seul test : `pnpm --filter <paquet> exec vitest run <fichier>`\nPaquets touchés depuis main : `pnpm turbo run lint test --filter=...[origin/main]`\nCe qui ne vaut que pour un paquet va dans son CLAUDE.md',
+    },
+  },
+  {
+    label: 'Monorepo : CLAUDE.md de paquet',
+    hint: 'Chargé seulement quand Claude travaille dans ce paquet : ses commandes, sa structure, son fichier exemplaire.',
+    rule: {
+      title: 'Paquet API',
+      category: 'commands',
+      scope: 'directory',
+      targets: ['packages/api'],
+      body: 'Tests : `pnpm --filter @app/api test`\nUn seul test : `pnpm --filter @app/api exec vitest run src/x.test.ts`\nPoint d’entrée : `src/server.ts` ; routes dans `src/routes/`\nNouvelle route : suivre `src/routes/users.ts`\nDépendances internes autorisées : `packages/db` uniquement',
+    },
+  },
+  {
     label: 'Règles API (ciblées par chemin)',
     hint: 'Chargées seulement quand Claude touche ces fichiers.',
     rule: {
@@ -166,7 +187,7 @@ export const TEMPLATES: Template[] = [
       name: 'release',
       description:
         'Prépare une release : changelog, bump de version, tag. Use when the user asks to release, publish or bump the version.',
-      body: '# Release\n\n1. Lire les commits depuis le dernier tag : `git log $(git describe --tags --abbrev=0)..HEAD --oneline`\n2. Mettre à jour `CHANGELOG.md`\n3. `pnpm version <patch|minor|major> --no-git-tag-version`\n4. Proposer les commandes git, ne pas les lancer',
+      body: '# Release\n\n1. Lire les commits depuis le dernier tag : `git log $(git describe --tags --abbrev=0)..HEAD --oneline`\n2. Mettre à jour `CHANGELOG.md`\n3. `pnpm version <patch|minor|major> --no-git-tag-version`\n4. Vérifier : `pnpm test` passe et le CHANGELOG cite chaque commit\n5. Proposer les commandes git, ne pas les lancer',
     },
   },
   {
@@ -179,6 +200,18 @@ export const TEMPLATES: Template[] = [
       description:
         'Corrige un bug méthodiquement : reproduire, isoler, diagnostiquer, corriger. Use when the user reports a bug, an error, a failing test or a stack trace.',
       body: '# Debug\n\n1. Reproduire : obtenir le message d’erreur complet et la stack trace, et une commande qui échoue à coup sûr\n2. Isoler : réduire au plus petit cas, idéalement un test qui échoue\n3. Diagnostiquer : remonter à la cause racine avant de modifier quoi que ce soit\n4. Corriger : changer la cause, garder le test comme non-régression, relancer toute la suite',
+    },
+  },
+  {
+    label: 'Skill : modèle complet',
+    hint: 'La structure d’une bonne skill : principe, erreurs fréquentes et leur raison, étapes, vérification, détail à la demande.',
+    rule: {
+      kind: 'skill',
+      title: 'Migration de base',
+      name: 'db-migration',
+      description:
+        'Crée et applique une migration de base de données sans perte de données. Use when the user asks to change the schema, add a column or a table, or write a migration.',
+      body: '# Migration de base\n\nPrincipe : une migration se rejoue sur la base de production sans perte de données.\n\n## Erreurs fréquentes\n\n- Renommer une colonne en une étape casse les instances encore déployées : ajouter, copier, puis supprimer en trois migrations\n- Modifier une migration déjà appliquée fait diverger les environnements : créer une nouvelle migration\n\n## Étapes\n\n1. Lire le schéma actuel (`db/schema.sql`) et la dernière migration de `db/migrations/`\n2. Créer le fichier : `pnpm db:new <nom>`\n3. Écrire `up` et `down` en suivant `db/migrations/0042_add_orders.sql`\n4. Appliquer en local : `pnpm db:migrate`, puis `pnpm db:rollback` et `pnpm db:migrate`\n5. Vérifier : `pnpm test` passe et le rollback ne perd aucune ligne\n\n## À la demande\n\n- Table de plus d’un million de lignes : lire `references/gros-volumes.md` avant l’étape 3',
     },
   },
   {
@@ -206,6 +239,8 @@ const CRITERION_TEMPLATES: Record<string, string> = {
   'on-demand': 'Skill : release',
   agents: 'Agent : test-runner',
   examples: 'Exemple de référence (few-shot)',
+  'package-memory': 'Monorepo : CLAUDE.md de paquet',
+  'targeted-commands': 'Monorepo : carte et commandes ciblées',
 };
 
 export function templateForCriterion(id: string): Template | undefined {
