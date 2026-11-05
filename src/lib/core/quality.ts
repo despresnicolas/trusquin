@@ -176,6 +176,50 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
   return issues;
 }
 
+/** Contrôles de conception d'une skill (Générateur et SKILL.md d'un dépôt analysé). */
+export function lintSkill(label: string, description: string, body: string): Issue[] {
+  const issues: Issue[] = [];
+  description = description.trim();
+  // Seule la description est lue avant le déclenchement : sans le « quand », la skill ne sert jamais.
+  if (description.length >= 40 && !SKILL_TRIGGER.test(description)) {
+    issues.push({
+      severity: 'warning',
+      code: 'no-trigger',
+      message: `Description de « ${label} » sans situation déclenchante.`,
+      fix: 'Finir par « Use when… » avec les demandes de l’utilisateur, y compris celles qui ne citent pas le nom de la skill.',
+    });
+  }
+
+  if (body.trim()) {
+    const lines = body.split('\n').length;
+    if (lines > LIMITS.skillLines) {
+      issues.push({
+        severity: 'warning',
+        code: 'long-skill',
+        message: `SKILL.md de « ${label} » : ${lines} lignes (max conseillé ${LIMITS.skillLines}).`,
+        fix: 'Garder les étapes dans SKILL.md et déplacer le détail dans des fichiers de référence, lus seulement quand une étape le demande.',
+      });
+    }
+    if (!/^\s*\d+[.)]\s/m.test(body)) {
+      issues.push({
+        severity: 'info',
+        code: 'no-workflow',
+        message: `« ${label} » : pas d’étapes numérotées.`,
+        fix: 'Écrire la procédure en étapes ordonnées (1., 2., 3.) : Claude les suit dans l’ordre au lieu de deviner.',
+      });
+    }
+    if (!SKILL_VERIFY.test(body)) {
+      issues.push({
+        severity: 'info',
+        code: 'no-verification',
+        message: `« ${label} » : aucune étape de vérification.`,
+        fix: 'Finir par une vérification concrète (commande de test, critère mesurable) pour que Claude contrôle son résultat.',
+      });
+    }
+  }
+  return issues;
+}
+
 function ruleIssues(rule: Rule): Issue[] {
   const issues: Issue[] = [];
   const base = { ruleId: rule.id };
@@ -302,48 +346,10 @@ function ruleIssues(rule: Rule): Issue[] {
         fix: 'Résumer ; mettre le détail dans le corps.',
       });
     }
-    // Seule la description est lue avant le déclenchement : sans le « quand », la skill ne sert jamais.
-    if (rule.kind === 'skill' && description.length >= 40 && !SKILL_TRIGGER.test(description)) {
-      issues.push({
-        ...base,
-        severity: 'warning',
-        code: 'no-trigger',
-        message: `Description de « ${label} » sans situation déclenchante.`,
-        fix: 'Finir par « Use when… » avec les demandes de l’utilisateur, y compris celles qui ne citent pas le nom de la skill.',
-      });
-    }
   }
 
-  if (rule.kind === 'skill' && rule.body.trim()) {
-    const lines = rule.body.split('\n').length;
-    if (lines > LIMITS.skillLines) {
-      issues.push({
-        ...base,
-        severity: 'warning',
-        code: 'long-skill',
-        message: `SKILL.md de « ${label} » : ${lines} lignes (max conseillé ${LIMITS.skillLines}).`,
-        fix: 'Garder les étapes dans SKILL.md et déplacer le détail dans des fichiers de référence, lus seulement quand une étape le demande.',
-      });
-    }
-    if (!/^\s*\d+[.)]\s/m.test(rule.body)) {
-      issues.push({
-        ...base,
-        severity: 'info',
-        code: 'no-workflow',
-        message: `« ${label} » : pas d’étapes numérotées.`,
-        fix: 'Écrire la procédure en étapes ordonnées (1., 2., 3.) : Claude les suit dans l’ordre au lieu de deviner.',
-      });
-    }
-    if (!SKILL_VERIFY.test(rule.body)) {
-      issues.push({
-        ...base,
-        severity: 'info',
-        code: 'no-verification',
-        message: `« ${label} » : aucune étape de vérification.`,
-        fix: 'Finir par une vérification concrète (commande de test, critère mesurable) pour que Claude contrôle son résultat.',
-      });
-    }
-  }
+  if (rule.kind === 'skill')
+    issues.push(...lintSkill(label, rule.description ?? '', rule.body).map((i) => ({ ...base, ...i })));
 
   if (rule.kind === 'hook') {
     if (!rule.command?.trim()) {

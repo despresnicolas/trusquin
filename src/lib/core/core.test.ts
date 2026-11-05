@@ -230,6 +230,21 @@ describe('analyze', () => {
     expect(templateForCriterion('targeted-commands')?.rule.scope).toBe('project');
   });
 
+  it('applies skill design checks to the repo SKILL.md files', () => {
+    const issues = (skill: string) =>
+      analyzeRepo({ paths: ['.claude/skills/x/SKILL.md'], contents: { '.claude/skills/x/SKILL.md': skill } })
+        .memoryIssues.filter((i) => i.file === '.claude/skills/x/SKILL.md')
+        .map((i) => i.code);
+    expect(
+      issues('---\nname: x\ndescription: Fait plein de choses utiles pour le projet, sans précision.\n---\nx'),
+    ).toEqual(expect.arrayContaining(['no-trigger', 'no-workflow', 'no-verification']));
+    expect(
+      issues(
+        '---\nname: x\ndescription: Prépare une release complète du projet. Use when releasing.\n---\n1. a\n2. Vérifier : `pnpm test`',
+      ),
+    ).toEqual([]);
+  });
+
   it('flags AGENTS.md that no sibling CLAUDE.md imports', () => {
     const codes = (contents: Record<string, string>) =>
       analyzeRepo({ paths: Object.keys(contents), contents })

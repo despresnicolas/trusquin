@@ -1,4 +1,4 @@
-import { lintMemoryText, LIMITS } from './quality';
+import { lintMemoryText, lintSkill, LIMITS } from './quality';
 import type {
   Category,
   ClaudeFile,
@@ -366,6 +366,14 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
   const skills = find(/^\.claude\/skills\/[^/]+\/SKILL\.md$/);
   const commands = find(/^\.claude\/commands\/.*\.md$/);
   const badSkills = skills.filter((p) => !/^description:\s*\S.{30,}/m.test(frontmatterOf(read(p)) ?? ''));
+  for (const file of skills) {
+    const text = read(file);
+    // shortcut: description sur une seule ligne ; une description YAML multiligne (> ou |) n'est pas lue.
+    const description = (frontmatterOf(text) ?? '').match(/^description:\s*['"]?(.*?)['"]?\s*$/m)?.[1] ?? '';
+    const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+    const name = file.split('/')[2];
+    memoryIssues.push(...lintSkill(name, description, body).map((i) => ({ ...i, file })));
+  }
   criteria.push(
     crit(
       'on-demand',
