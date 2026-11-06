@@ -100,7 +100,11 @@
     }}
   >
     <input bind:value={path} placeholder="/Users/moi/Dev/mon-repo" aria-label="Chemin du dossier" required />
-    <button type="button" class="primary" disabled={loading} onclick={() =>
+    <button
+      type="button"
+      class="primary"
+      disabled={loading}
+      onclick={() =>
         attempt(async () => {
           const chosen = await api.pickDir(path);
           if (!chosen) return;
