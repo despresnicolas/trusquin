@@ -1,17 +1,20 @@
 # SAURON — Standards for Agents: Unified Rules, Oversight & Nesting
 
-Générateur SvelteKit de configuration Claude Code. On écrit des règles en disant **quoi** et **à quoi elles s'appliquent** ; le générateur place chaque fichier au bon endroit, contrôle la qualité de ce qui sera envoyé à Claude, et note les repos existants.
+Application de bureau (Wails 3 : Go + SvelteKit) qui génère la configuration Claude Code. On écrit des règles en disant **quoi** et **à quoi elles s'appliquent** ; le générateur place chaque fichier au bon endroit, contrôle la qualité de ce qui sera envoyé à Claude, et note les repos existants.
 
 Sources : [laconsole.dev — fichier CLAUDE.md](https://laconsole.dev/blog/fichier-claude-md), [dev.to — The perfect CLAUDE.md](https://dev.to/jangwook_kim_e31e7291ad98/the-perfect-claudemd-how-to-set-up-your-project-for-agentic-coding-d14), guide Medium « The Complete Guide to CLAUDE.md ».
 
 ## Démarrer
 
+Prérequis : Go 1.26+, pnpm, et la CLI Wails 3 (`go install github.com/wailsapp/wails/v3/cmd/wails3@latest`, puis `wails3 doctor`).
+
 ```bash
 pnpm install
-pnpm dev           # interface sur http://localhost:5173
-pnpm test          # tests du cœur
+wails3 dev         # application de bureau, rechargement du Go et du front
+wails3 build       # binaire dans bin/sauron (front compilé dans dist/ et embarqué)
+wails3 package     # application empaquetée (.app, installeur…)
+pnpm test          # tests du cœur (Vitest) puis des services Go
 pnpm check         # types Svelte + TS
-pnpm build         # serveur Node dans build/ (node build)
 ```
 
 ## Onglets
@@ -54,61 +57,21 @@ Note sur 100 (A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, E). Les critères non appl
 - **Préparation Claude** : mémoire racine, concision, commandes exactes, architecture, secrets, règles vagues, imports `@` valides, fichiers exemplaires cités (few-shot), règles modulaires, en monorepo (workspace pnpm ou `workspaces` npm/yarn) mémoire par paquet et commandes ciblées, permissions, hooks, skills/commandes, agents, fichiers perso gitignorés.
 - **Bonnes pratiques** : README, tests, linter, formatter, typage, CI, lockfile, `.gitignore` / `.env.example`.
 
-Le serveur Node lit le dossier (chemin absolu saisi dans l'interface) et enregistre chaque analyse dans PostgreSQL : historique par dépôt, évolution du score, ré-analyse en un clic. `SAURON_ROOTS` (chemins séparés par `:`) limite les dossiers lisibles.
+Le service Go `RepoService` lit le dossier choisi dans l'interface ; l'analyse elle-même est faite par le cœur TypeScript, dans la fenêtre. Chaque analyse est enregistrée par `HistoryService` dans une base SQLite locale : historique par dépôt, évolution du score, ré-analyse en un clic. Les projets du générateur y sont aussi versionnés.
 
-```bash
-cp .env.example .env          # DATABASE_URL vers la base locale
-docker compose up -d db       # PostgreSQL sur localhost:5432
-pnpm dev
-```
-
-API JSON (collection Bruno dans `bruno/`) :
-
-| Méthode | Route                         | Rôle                                                                         |
-| ------- | ----------------------------- | ---------------------------------------------------------------------------- |
-| POST    | `/api/analyses` `{ path }`    | analyse et enregistre, renvoie aussi `rules` et `context`                    |
-| GET     | `/api/repos`                  | dernier résultat par dépôt, nombre d'analyses                                |
-| GET     | `/api/analyses?path=`         | historique d'un dépôt                                                        |
-| GET     | `/api/analyses/:id`           | détail d'une analyse                                                         |
-| DELETE  | `/api/repos?path=`            | supprime l'historique d'un dépôt                                             |
-| GET     | `/api/repos/files?path=`      | fichiers Claude actuels du dépôt (lus sur le disque)                         |
-| GET     | `/api/projects`               | dernière version de chaque projet du générateur                              |
-| POST    | `/api/projects` `{ project }` | enregistre une version (ignorée si identique, refusée si erreurs bloquantes) |
-| GET     | `/api/projects/:id`           | une version avec son contenu                                                 |
-| DELETE  | `/api/projects?name=`         | supprime toutes les versions d'un projet                                     |
-
-## CLI (dossiers locaux)
-
-```bash
-pnpm sauron analyze ../mon-repo                  # note le dossier local (enregistré si DATABASE_URL)
-```
-
-## Docker
-
-```bash
-docker compose up --build web          # interface + API sur http://localhost:8080, base db incluse
-docker compose up --build dev          # hot reload sur http://localhost:5173 (sources montées)
-REPOS_DIR=$HOME/Code docker compose up --build web   # dossier monté (défaut : $HOME/Dev)
-REPO=../mon-repo docker compose run --rm cli analyze .
-```
-
-- Cible `dev` : `vite dev` avec hot reload. Les sources sont montées dans `/app`, `node_modules` et `.svelte-kit` restent ceux du conteneur. Après un changement de dépendances : `docker compose up --build -V dev`. Si les modifications ne sont pas détectées : `CHOKIDAR_USEPOLLING=1 docker compose up dev`.
-- Cible `web` : serveur SvelteKit `adapter-node` (tests inclus au build). `REPOS_DIR` est monté en lecture seule au même chemin que sur l'hôte et sert de `SAURON_ROOTS`.
-- Service `db` : PostgreSQL 17, données dans le volume `pgdata`, table `analyses` créée au premier appel.
-- Cible `cli` : même CLI, le dossier `REPO` est monté sur `/repo`.
-- `pnpm install --frozen-lockfile` respecte `minimumReleaseAge` de pnpm : une dépendance publiée il y a moins d'un jour est refusée.
+La base est dans le dossier de configuration de l'utilisateur (`~/Library/Application Support/sauron/sauron.db` sur macOS, `~/.config/sauron/sauron.db` sur Linux, `%AppData%\sauron\sauron.db` sur Windows) ; `SAURON_DB` en donne un autre chemin.
 
 ## Structure
 
 ```
-src/routes/          une route par onglet (SPA, ssr = false), / = analyse de dépôt
-src/routes/api/      API JSON de l'historique
+main.go              application Wails : fenêtre, services, front embarqué (dist/)
+repo.go              RepoService : lecture d'un dossier local (Snapshot, Dirs)
+history.go           HistoryService : historique des analyses et des projets (SQLite)
+build/               configuration de build Wails (icônes, Info.plist, Taskfiles par plateforme)
+src/routes/          une route par onglet (SPA, ssr = false), / = accueil
 src/lib/components/  contenu des onglets
-src/lib/core/        logique pure, partagée UI + CLI (placement, quality, analyze, presets)
-src/lib/server/      Node seulement : lecture disque (repo.ts), PostgreSQL (db.ts)
-src/lib/history.ts   types + client de l'API
+src/lib/core/        logique pure (placement, quality, analyze, presets)
+src/lib/bindings/    bindings TypeScript des services Go (générés par wails3, versionnés)
+src/lib/history.ts   types + client des services Go
 src/lib/state.svelte.ts  état partagé, persisté en localStorage
-cli/sauron.ts          CLI Node
-Dockerfile           cibles web (serveur Node) et cli
-bruno/               collection Bruno de l'API
 ```

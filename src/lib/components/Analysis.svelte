@@ -106,7 +106,7 @@
       {loading ? 'Analyse…' : 'Ajouter un dépôt'}
     </button>
     <Hint
-      text="Choisir un dossier du serveur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
+      text="Choisir un dossier de l'ordinateur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
     />
   </form>
 </div>

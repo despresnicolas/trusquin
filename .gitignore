@@ -6,9 +6,10 @@ package-lock.json
 yarn.lock
 .pnpm-debug.log
 
-# Build et caches SvelteKit / Vite
-build/
+# Build : front compilé (embarqué par main.go), binaires Wails, caches SvelteKit / Vite
+# (build/ contient la configuration Wails : versionné)
 dist/
+bin/
 .svelte-kit/
 .svelte-check/
 vite.config.js.timestamp-*
@@ -31,3 +32,6 @@ CLAUDE.local.md
 .idea/
 .vscode/
 .DS_Store
+
+# Cache de Task (Taskfiles Wails)
+.task/

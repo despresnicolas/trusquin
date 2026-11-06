@@ -15,7 +15,7 @@ Fichiers `.svelte`, `.svelte.ts` et `src/routes/**` modifiés (voir `git status`
 1. Svelte 5 runes uniquement (`$state`, `$derived`, `$effect`, `$props`) ; aucun `writable`/`readable` ni `export let`.
 2. Imports internes via `#lib/...` ; jamais `$lib` (absent en SvelteKit 3). Les fichiers `.svelte.ts` sont importés avec leur extension.
 3. Routes minces : la logique métier va dans `src/lib/core/` ou `src/lib/components/`.
-4. Aucun import de `#lib/server/*` côté client : passer par `src/routes/api/` et `src/lib/history.ts`.
+4. Aucun import direct de `#lib/bindings/*` dans les composants : passer par `src/lib/history.ts`.
 5. Couleurs via les variables de `src/app.css`, jamais en dur (`#fff`, `rgb(...)`).
 6. État partagé via `store` de `src/lib/state.svelte.ts`, pas d'accès direct à `localStorage` ailleurs.
 7. Textes affichés en français.

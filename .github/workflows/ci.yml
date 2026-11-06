@@ -7,23 +7,19 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
-    services:
-      # Pour les tests d'intégration de db.test.ts (sinon ignorés).
-      db:
-        image: postgres:17-alpine
-        env: { POSTGRES_USER: sauron, POSTGRES_PASSWORD: sauron, POSTGRES_DB: sauron }
-        ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U sauron" --health-interval 2s --health-retries 15
-    env:
-      DATABASE_URL: postgres://sauron:sauron@localhost:5432/sauron
+    # macOS : le paquet application de Wails se compile sans dépendances système (sous Linux : GTK + WebKitGTK).
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
+      - run: test -z "$(gofmt -l .)"
       - run: pnpm check
       - run: pnpm test
+      - run: pnpm build

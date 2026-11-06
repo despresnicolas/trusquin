@@ -12,7 +12,7 @@ Fichiers modifiés sous `src/lib/core/` (voir `git status` et `git diff`). Ignor
 
 ## Points à vérifier
 
-1. Pureté : aucun import de `svelte`, `node:*`, `#lib/server/*` ni d'API DOM (`window`, `document`, `localStorage`). Ce code tourne dans le navigateur et dans la CLI.
+1. Pureté : aucun import de `svelte`, `node:*`, `#lib/bindings/*` ni d'API DOM (`window`, `document`, `localStorage`). Ce code reste pur pour être testé par Vitest sans fenêtre Wails.
 2. Tests : chaque nouveau contrôle (`ruleIssues()`, `lintMemoryText()`) ou critère `crit()` dans `analyzeRepo()` a un test dans `core.test.ts`.
 3. Barème : la somme des `max` des critères de `analyzeRepo()` reste proche de 100.
 4. Messages : textes et corrections affichés en français ; `code` en kebab-case anglais.

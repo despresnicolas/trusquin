@@ -22,7 +22,7 @@
 
   export function open() {
     dialog.showModal();
-    // Chemin saisi invalide : repartir du dossier par défaut du serveur.
+    // Chemin saisi invalide : repartir du dossier personnel.
     go(start.trim() || undefined).then(() => {
       if (failure && start.trim()) go();
     });

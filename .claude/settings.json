@@ -3,9 +3,11 @@
     "allow": [
       "Bash(pnpm test:*)",
       "Bash(pnpm check:*)",
-      "Bash(pnpm sauron:*)",
       "Bash(pnpm exec vitest:*)",
-      "Bash(docker compose build:*)"
+      "Bash(go test:*)",
+      "Bash(go vet:*)",
+      "Bash(wails3 build:*)",
+      "Bash(wails3 generate bindings:*)"
     ],
     "deny": [
       "Read(./.env)",

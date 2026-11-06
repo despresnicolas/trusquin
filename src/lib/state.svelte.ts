@@ -38,7 +38,7 @@ export function persist(project: Project): void {
   }
 }
 
-/** Enregistre le projet en cours dans l'historique (PostgreSQL), avant de le remplacer. */
+/** Enregistre le projet en cours dans l'historique (SQLite), avant de le remplacer. */
 export async function archive() {
   const project = $state.snapshot(store.project);
   const version = await api.saveProject({ ...project, name: project.name.trim() || 'Sans nom' });

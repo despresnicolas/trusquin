@@ -31,17 +31,9 @@ export const IGNORED_DIRS = new Set([
   '.turbo',
 ]);
 
-const TEXT_FILES =
+/** Fichiers dont le contenu est lu pour l'analyse (le reste : chemin seul). */
+export const TEXT_FILES =
   /(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md|README(\.md)?|\.gitignore|package\.json|pyproject\.toml|settings(\.local)?\.json|SKILL\.md|\.env\.example|composer\.json|Cargo\.toml|go\.mod|pnpm-workspace\.yaml)$|^\.claude\/.*\.md$/i;
-
-/** Indique si le contenu du fichier est utile à l'analyse (le reste : chemin seul). */
-export function needsContent(path: string): boolean {
-  return TEXT_FILES.test(path);
-}
-
-export function isIgnored(path: string): boolean {
-  return path.split('/').some((part) => IGNORED_DIRS.has(part));
-}
 
 function crit(
   id: string,

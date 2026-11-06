@@ -1,2 +1,2 @@
-// SPA : l'état du générateur vit dans le navigateur (localStorage) ; seules les routes /api tournent côté serveur.
+// SPA embarquée dans Wails : l'état du générateur vit dans la fenêtre (localStorage), le disque et la base passent par les services Go.
 export const ssr = false;

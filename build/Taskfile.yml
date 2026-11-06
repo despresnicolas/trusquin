@@ -1,0 +1,99 @@
+version: '3'
+
+# Tâches communes, appelées par les Taskfiles de chaque plateforme.
+# Le front SvelteKit est à la racine du dépôt (pas dans frontend/) : `pnpm build` produit dist/, embarqué par main.go.
+
+tasks:
+  go:mod:tidy:
+    summary: Runs `go mod tidy`
+    internal: true
+    run: once
+    cmds:
+      - go mod tidy
+
+  install:frontend:deps:
+    summary: Installe les dépendances du front
+    run: once
+    sources:
+      - package.json
+      - pnpm-lock.yaml
+    generates:
+      - node_modules/.modules.yaml
+    preconditions:
+      - sh: pnpm --version
+        msg: "pnpm introuvable"
+    cmds:
+      - pnpm install
+
+  build:frontend:
+    label: build:frontend (DEV={{.DEV}})
+    summary: Compile le front dans dist/
+    run: once
+    sources:
+      - src/**/*
+      - static/**/*
+      - package.json
+      - vite.config.ts
+      - exclude: src/lib/bindings/**/*
+    generates:
+      - dist/**/*
+    deps:
+      - task: install:frontend:deps
+      - task: generate:bindings
+        vars:
+          BUILD_FLAGS:
+            ref: .BUILD_FLAGS
+          OBFUSCATED:
+            ref: .OBFUSCATED
+    cmds:
+      - pnpm run {{if eq .DEV "true"}}build:dev{{else}}build{{end}}
+    env:
+      PRODUCTION: '{{if eq .DEV "true"}}false{{else}}true{{end}}'
+
+  generate:bindings:
+    summary: Génère les bindings TypeScript des services Go dans src/lib/bindings
+    run: once
+    deps:
+      - task: go:mod:tidy
+    sources:
+      - "*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - src/lib/bindings/**/*
+    cmds:
+      - wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true{{if eq .OBFUSCATED "true"}} -obfuscated{{end}} -ts -i -d src/lib/bindings
+
+  generate:icons:
+    summary: Génère les icônes Windows (.ico) et macOS (.icns, Assets.car) depuis appicon.png / appicon.icon
+    run: once
+    dir: build
+    sources:
+      - "appicon.png"
+      - "appicon.icon"
+    generates:
+      - "darwin/icons.icns"
+      - "windows/icon.ico"
+    cmds:
+      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput appicon.icon -macassetdir darwin
+
+  dev:frontend:
+    summary: Lance le serveur Vite pour `wails3 dev`
+    deps:
+      - task: install:frontend:deps
+    cmds:
+      - pnpm dev --port {{.VITE_PORT}} --strictPort
+
+  update:build-assets:
+    summary: Met à jour les fichiers de build (Info.plist, manifestes…) depuis config.yml
+    dir: build
+    cmds:
+      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config config.yml -dir .
+
+  setup:docker:
+    summary: Construit l'image Docker de compilation croisée (~800 Mo)
+    cmds:
+      - docker build -t wails-cross -f build/docker/Dockerfile.cross build/docker/
+    preconditions:
+      - sh: docker info > /dev/null 2>&1
+        msg: "Docker est requis pour la compilation croisée."
