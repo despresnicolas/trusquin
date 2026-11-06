@@ -1,7 +1,9 @@
 <script lang="ts">
   import Settings from '#lib/components/Settings.svelte';
   import { persist, store } from '#lib/state.svelte.ts';
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { Events } from '@wailsio/runtime';
   import '../app.css';
 
   let { children } = $props();
@@ -14,6 +16,8 @@
   const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
 
   $effect(() => persist($state.snapshot(store.project)));
+  // Menu « Aller » de la barre macOS (menu.go).
+  $effect(() => Events.On('navigate', (e) => goto(String(e.data))));
 </script>
 
 <header>

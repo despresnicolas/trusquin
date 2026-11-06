@@ -127,7 +127,7 @@ func isRepo(dir string) bool {
 // Les messages d'erreur sont affichés tels quels dans l'interface.
 func resolveRepoPath(input string) (string, error) {
 	raw := strings.TrimSpace(input)
-	if raw == "~" || strings.HasPrefix(raw, "~/") {
+	if raw == "~" || strings.HasPrefix(raw, "~/") || strings.HasPrefix(raw, "~"+string(filepath.Separator)) {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", err

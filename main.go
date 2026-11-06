@@ -37,6 +37,8 @@ func main() {
 		},
 	})
 
+	app.Menu.Set(newMenu(app))
+
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:  "SAURON",
 		Width:  1280,

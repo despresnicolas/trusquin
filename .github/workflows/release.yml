@@ -1,0 +1,56 @@
+name: Release
+
+# Un tag v* compile et empaquette l'application sur chaque OS, puis publie une release GitHub.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifacts: bin/*.app
+          - os: windows-latest
+            artifacts: bin/*-installer.exe
+          # Ubuntu 24.04 = même base que Pop!_OS 24.04 (GTK4 + WebKitGTK 6.0 requis par Wails 3.1).
+          - os: ubuntu-24.04
+            artifacts: |
+              bin/*.deb
+              bin/*.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev libfuse2
+      - if: runner.os == 'Windows'
+        run: choco install nsis -y
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+      - run: pnpm install --frozen-lockfile
+      - run: wails3 package
+      # Le .app est un dossier : on le zippe pour l'upload.
+      - if: runner.os == 'macOS'
+        run: cd bin && ditto -c -k --keepParent sauron.app sauron-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sauron-${{ runner.os }}
+          path: ${{ runner.os == 'macOS' && 'bin/sauron-macos.zip' || matrix.artifacts }}
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist, merge-multiple: true }
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes
+        env: { GH_TOKEN: '${{ github.token }}' }
