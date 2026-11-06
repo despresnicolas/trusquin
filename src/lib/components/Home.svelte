@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { LOADING_LABELS } from '../core/presets';
-  import type { Loading } from '../core/types';
-  import { api, type RepoSummary } from '../history';
+  import { LOADING_LABELS } from '#lib/core/presets.ts';
+  import type { Loading } from '#lib/core/types.ts';
+  import { api, type RepoSummary } from '#lib/history.ts';
   import RepoChooser from './RepoChooser.svelte';
 
   // Dépôts déjà analysés : sans eux, l'étape « Concevoir les propositions » n'a rien à ouvrir.

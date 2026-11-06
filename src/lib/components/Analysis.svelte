@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Rule } from '../core/types';
-  import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '../history';
+  import type { Rule } from '#lib/core/types.ts';
+  import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
   import DirPicker from './DirPicker.svelte';
   import Proposals from './Proposals.svelte';

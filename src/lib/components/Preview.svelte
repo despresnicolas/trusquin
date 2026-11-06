@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { countInstructions } from '../core/quality';
-  import { LOADING_LABELS } from '../core/presets';
-  import type { GeneratedFile, Loading, QualityReport } from '../core/types';
+  import { countInstructions } from '#lib/core/quality.ts';
+  import { LOADING_LABELS } from '#lib/core/presets.ts';
+  import type { GeneratedFile, Loading, QualityReport } from '#lib/core/types.ts';
   import FileView from './FileView.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 

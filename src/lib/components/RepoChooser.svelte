@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RepoSummary } from '../history';
+  import type { RepoSummary } from '#lib/history.ts';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { repos, onclose }: { repos: RepoSummary[]; onclose: () => void } = $props();

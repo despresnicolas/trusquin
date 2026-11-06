@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { importContext, importedPath, importRules } from '../core/analyze';
-  import { newId, starterProject } from '../core/presets';
-  import { download, exportZip, zipName } from '../export';
-  import { archive, store } from '../state.svelte';
+  import { importContext, importedPath, importRules } from '#lib/core/analyze.ts';
+  import { newId, starterProject } from '#lib/core/presets.ts';
+  import { download, exportZip, zipName } from '#lib/export.ts';
+  import { archive, store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 

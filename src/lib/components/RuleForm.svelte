@@ -1,22 +1,13 @@
 <script lang="ts">
-  import { CATEGORY_LABELS } from '../core/placement';
-  import { KIND_HINTS, KIND_LABELS, SCOPE_HINTS, SCOPE_LABELS } from '../core/presets';
-  import type { GeneratedFile, HookEvent, Issue, Rule } from '../core/types';
+  import { CATEGORY_LABELS } from '#lib/core/placement.ts';
+  import { KIND_HINTS, KIND_LABELS, SCOPE_HINTS, SCOPE_LABELS } from '#lib/core/presets.ts';
+  import { HOOK_EVENTS } from '#lib/core/quality.ts';
+  import type { GeneratedFile, Issue, Rule } from '#lib/core/types.ts';
   import Hint from './Hint.svelte';
 
   let { rule, files, issues, onremove }: { rule: Rule; files: GeneratedFile[]; issues: Issue[]; onremove: () => void } =
     $props();
 
-  const EVENTS: HookEvent[] = [
-    'PostToolUse',
-    'PreToolUse',
-    'UserPromptSubmit',
-    'Stop',
-    'SubagentStop',
-    'SessionStart',
-    'Notification',
-    'PreCompact',
-  ];
   const destinations = $derived(files.filter((f) => f.sources.includes(rule.id)));
   const named = $derived(rule.kind === 'command' || rule.kind === 'skill' || rule.kind === 'agent');
 
@@ -142,7 +133,7 @@
           text="PostToolUse : après une action (formatter). PreToolUse : avant, peut bloquer (exit 2). Stop : quand Claude rend la main (lancer les tests)."
         />
         <select bind:value={rule.event}
-          >{#each EVENTS as e}<option>{e}</option>{/each}</select
+          >{#each HOOK_EVENTS as e}<option>{e}</option>{/each}</select
         >
       </label>
       <label class="grow"

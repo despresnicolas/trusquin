@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AnalysisRecord } from '../history';
+  import type { AnalysisRecord } from '#lib/history.ts';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { record }: { record: AnalysisRecord } = $props();

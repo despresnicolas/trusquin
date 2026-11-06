@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { api, type ProjectSummary } from '../history';
-  import { archive, store } from '../state.svelte';
+  import { api, type ProjectSummary } from '#lib/history.ts';
+  import { archive, store } from '#lib/state.svelte.ts';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let projects = $state<ProjectSummary[]>([]);
