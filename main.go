@@ -40,10 +40,12 @@ func main() {
 	app.Menu.Set(newMenu(app))
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:  "SAURON",
-		Width:  1280,
-		Height: 820,
-		URL:    "/",
+		Title: "SAURON",
+		// Windows et Linux : la barre de menus native s'affiche dans la fenêtre (sans effet sur macOS).
+		UseApplicationMenu: true,
+		Width:              1280,
+		Height:             820,
+		URL:                "/",
 	})
 
 	if err := app.Run(); err != nil {

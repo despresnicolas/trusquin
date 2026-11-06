@@ -1,3 +1,4 @@
+import { Clipboard, Dialogs } from '@wailsio/runtime';
 import { HistoryService, RepoService } from './bindings/sauron';
 import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
 import { checkProject } from './core/quality';
@@ -42,15 +43,6 @@ export interface ProjectSummary {
   versions: number;
 }
 
-/** Contenu d'un dossier local, pour le sélecteur de dépôt. */
-export interface DirListing {
-  path: string;
-  /** Null à la racine du disque. */
-  parent: string | null;
-  isRepo: boolean;
-  dirs: { name: string; path: string; isRepo: boolean }[];
-}
-
 // Services Go de l'application Wails (bindings générés par `wails3 generate bindings` dans src/lib/bindings).
 // Le Go renvoie toujours des tableaux (jamais null), contrairement à ce que disent les types générés.
 const repoFiles = async (path: string) =>
@@ -64,7 +56,32 @@ export const api = {
   runs: async (path: string) => ((await HistoryService.ListRuns(path)) ?? []) as AnalysisRun[],
   /** Fichiers Claude Code actuels d'un dépôt, lus sur le disque (pas dans l'historique). */
   files: async (path: string): Promise<ClaudeFile[]> => claudeFiles(await repoFiles(path)),
-  dirs: async (path?: string) => (await RepoService.Dirs(path ?? '', [...IGNORED_DIRS])) as DirListing,
+  /** Boîte de choix de dossier du système ; '' si annulée. */
+  pickDir: async (start?: string) =>
+    Dialogs.OpenFile({
+      Title: 'Ajouter un dépôt',
+      ButtonText: 'Analyser',
+      CanChooseDirectories: true,
+      CanChooseFiles: false,
+      Directory: start?.trim() || undefined,
+    }),
+  /** Boîte de confirmation du système ; vrai si l'utilisateur valide `action`. */
+  ask: async (message: string, action = 'Supprimer') =>
+    (await Dialogs.Question({
+      Title: message,
+      Buttons: [
+        { Label: 'Annuler', IsCancel: true },
+        { Label: action, IsDefault: true },
+      ],
+    })) === action,
+  /** Boîte d'enregistrement du système puis écriture côté Go ; faux si annulée. */
+  saveFile: async (name: string, data: Blob) => {
+    const path = await Dialogs.SaveFile({ Filename: name });
+    if (!path) return false;
+    await RepoService.WriteFile(path, await base64(data));
+    return true;
+  },
+  copy: (text: string) => Clipboard.SetText(text),
   get: async (id: number) => (await HistoryService.GetAnalysis(id)) as AnalysisRecord,
   /** Lit le dossier côté Go, l'analyse avec le cœur TS et enregistre le résultat. */
   analyze: async (path: string) => {
@@ -85,3 +102,12 @@ export const api = {
   },
   forgetProject: async (name: string) => ({ deleted: await HistoryService.DeleteProject(name) }),
 };
+
+// FileReader plutôt que btoa : pas de limite de taille, et dispo dans tous les WebView (WebKit, WebView2, WebKitGTK).
+const base64 = (data: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(data);
+  });

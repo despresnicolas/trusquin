@@ -62,7 +62,10 @@
     const repo = { paths: Object.keys(contents), contents };
     if (store.errors) {
       if (
-        !confirm(`Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?`)
+        !(await api.ask(
+          `Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?`,
+          'Continuer',
+        ))
       )
         return;
     } else {

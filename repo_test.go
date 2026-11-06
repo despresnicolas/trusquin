@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"slices"
@@ -67,20 +68,23 @@ func TestResolveRepoPath(t *testing.T) {
 	}
 }
 
-func TestDirs(t *testing.T) {
-	root, repo := fixture(t)
-	listing, err := RepoService{}.Dirs(root, []string{"node_modules"})
-	if err != nil {
+func TestWriteFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "export.zip")
+	if err := (RepoService{}).WriteFile(path, base64.StdEncoding.EncodeToString([]byte("PK\x03\x04"))); err != nil {
 		t.Fatal(err)
 	}
-	if want := []DirEntry{{Name: "mon-repo", Path: repo, IsRepo: true}}; !slices.Equal(listing.Dirs, want) {
-		t.Errorf("dirs = %v, want %v", listing.Dirs, want)
+	if got, _ := os.ReadFile(path); string(got) != "PK\x03\x04" {
+		t.Errorf("contenu = %q", got)
 	}
-	if listing.Parent == nil || *listing.Parent != filepath.Dir(root) {
-		t.Errorf("parent = %v", listing.Parent)
+	for path, want := range map[string]string{
+		"export.zip": "Chemin absolu attendu",
+		filepath.Join(t.TempDir(), "absent", "export.zip"): "Impossible d'enregistrer",
+	} {
+		if err := (RepoService{}).WriteFile(path, ""); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("WriteFile(%q) = %v, want %q", path, err, want)
+		}
 	}
-	sub, _ := RepoService{}.Dirs(repo, []string{"node_modules"})
-	if len(sub.Dirs) != 1 || sub.Dirs[0].Name != "src" || !sub.IsRepo {
-		t.Errorf("sub = %+v", sub)
+	if err := (RepoService{}).WriteFile(path, "pas du base64 !"); err == nil {
+		t.Error("base64 invalide accepté")
 	}
 }

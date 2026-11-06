@@ -31,9 +31,10 @@
     attempt(async () => {
       if (store.errors) {
         if (
-          !confirm(
+          !(await api.ask(
             `Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Ouvrir quand même ?`,
-          )
+            'Ouvrir',
+          ))
         )
           return;
       } else await archive();
@@ -43,7 +44,7 @@
 
   const forget = (name: string) =>
     attempt(async () => {
-      if (!confirm(`Supprimer toutes les versions de « ${name} » ?`)) return;
+      if (!(await api.ask(`Supprimer toutes les versions de « ${name} » ?`))) return;
       await api.forgetProject(name);
       await refresh();
     });

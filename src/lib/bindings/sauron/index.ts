@@ -11,8 +11,6 @@ export {
 export type {
     AnalysisRecord,
     AnalysisRun,
-    DirEntry,
-    DirListing,
     ProjectRecord,
     ProjectSummary,
     ProjectVersion,

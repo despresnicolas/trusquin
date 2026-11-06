@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -19,20 +20,6 @@ type Snapshot struct {
 	Name     string            `json:"name"`
 	Paths    []string          `json:"paths"`
 	Contents map[string]string `json:"contents"`
-}
-
-type DirEntry struct {
-	Name   string `json:"name"`
-	Path   string `json:"path"`
-	IsRepo bool   `json:"isRepo"`
-}
-
-// DirListing : sous-dossiers d'un dossier, pour le sélecteur de dépôt.
-type DirListing struct {
-	Path   string     `json:"path"`
-	Parent *string    `json:"parent"`
-	IsRepo bool       `json:"isRepo"`
-	Dirs   []DirEntry `json:"dirs"`
 }
 
 // RepoService lit le disque. Les listes d'ignorés et le motif des fichiers à lire viennent du cœur TS
@@ -86,41 +73,20 @@ func (RepoService) Snapshot(path string, ignored []string, pattern string) (Snap
 	return snap, err
 }
 
-// Dirs liste les sous-dossiers visibles d'un dossier (dossier personnel par défaut), en repérant les dépôts git.
-func (RepoService) Dirs(path string, ignored []string) (DirListing, error) {
-	if strings.TrimSpace(path) == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return DirListing{}, err
-		}
-		path = home
+// WriteFile enregistre un fichier à l'emplacement choisi dans la boîte d'enregistrement native.
+// data est en base64 : les octets passent ainsi tels quels dans le JSON des bindings.
+func (RepoService) WriteFile(path, data string) error {
+	if !filepath.IsAbs(path) {
+		return fmt.Errorf("Chemin absolu attendu : « %s »", path)
 	}
-	dir, err := resolveRepoPath(path)
+	content, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
-		return DirListing{}, err
+		return errors.New("Contenu du fichier illisible")
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return DirListing{}, err
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		return fmt.Errorf("Impossible d'enregistrer %s : %v", path, err)
 	}
-	listing := DirListing{Path: dir, IsRepo: isRepo(dir), Dirs: []DirEntry{}}
-	for _, e := range entries {
-		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") || slices.Contains(ignored, e.Name()) {
-			continue
-		}
-		p := filepath.Join(dir, e.Name())
-		listing.Dirs = append(listing.Dirs, DirEntry{Name: e.Name(), Path: p, IsRepo: isRepo(p)})
-	}
-	slices.SortFunc(listing.Dirs, func(a, b DirEntry) int { return strings.Compare(a.Name, b.Name) })
-	if parent := filepath.Dir(dir); parent != dir {
-		listing.Parent = &parent
-	}
-	return listing, nil
-}
-
-func isRepo(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, ".git"))
-	return err == nil
+	return nil
 }
 
 // resolveRepoPath valide un chemin saisi par l'utilisateur et renvoie sa forme canonique.

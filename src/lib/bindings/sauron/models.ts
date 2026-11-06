@@ -29,22 +29,6 @@ export interface AnalysisRun {
     "createdAt": string;
 }
 
-export interface DirEntry {
-    "name": string;
-    "path": string;
-    "isRepo": boolean;
-}
-
-/**
- * DirListing : sous-dossiers d'un dossier, pour le sélecteur de dépôt.
- */
-export interface DirListing {
-    "path": string;
-    "parent": string | null;
-    "isRepo": boolean;
-    "dirs": DirEntry[] | null;
-}
-
 export interface ProjectRecord {
     "id": number;
     "name": string;

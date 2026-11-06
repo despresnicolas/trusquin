@@ -33,11 +33,3 @@ export async function exportZip(files: GeneratedFile[], quality: QualityReport):
 
 /** Nom du zip d'export, tiré du nom du projet. */
 export const zipName = (project: Project) => `${slug(project.name.trim() || 'claude')}-sauron.zip`;
-
-export function download(name: string, data: Blob | string): void {
-  const blob = typeof data === 'string' ? new Blob([data], { type: 'application/json' }) : data;
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), { href: url, download: name });
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}

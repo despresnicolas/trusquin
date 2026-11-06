@@ -65,7 +65,7 @@ La base est dans le dossier de configuration de l'utilisateur (`~/Library/Applic
 
 ```
 main.go              application Wails : fenêtre, services, front embarqué (dist/)
-repo.go              RepoService : lecture d'un dossier local (Snapshot, Dirs)
+repo.go              RepoService : lecture d'un dossier local (Snapshot), écriture des exports (WriteFile)
 history.go           HistoryService : historique des analyses et des projets (SQLite)
 build/               configuration de build Wails (icônes, Info.plist, Taskfiles par plateforme)
 src/routes/          une route par onglet (SPA, ssr = false), / = accueil

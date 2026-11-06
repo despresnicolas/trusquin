@@ -16,16 +16,17 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
- * Dirs liste les sous-dossiers visibles d'un dossier (dossier personnel par défaut), en repérant les dépôts git.
- */
-export function Dirs(path: string, ignored: string[] | null): $CancellablePromise<$models.DirListing> {
-    return $Call.ByID(3967375937, path, ignored);
-}
-
-/**
  * Snapshot lit un dossier local : chemins hors dossiers ignorés, contenu des fichiers qui correspondent à pattern
  * (source d'une RegExp JS, insensible à la casse).
  */
 export function Snapshot(path: string, ignored: string[] | null, pattern: string): $CancellablePromise<$models.Snapshot> {
     return $Call.ByID(2394675465, path, ignored, pattern);
+}
+
+/**
+ * WriteFile enregistre un fichier à l'emplacement choisi dans la boîte d'enregistrement native.
+ * data est en base64 : les octets passent ainsi tels quels dans le JSON des bindings.
+ */
+export function WriteFile(path: string, data: string): $CancellablePromise<void> {
+    return $Call.ByID(3583868662, path, data);
 }
