@@ -2,6 +2,7 @@
   "name": "sauron",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Application de bureau (Wails 3) qui génère la configuration Claude Code (CLAUDE.md, rules, skills, agents, hooks), avec contrôle qualité et analyse de repo.",
   "type": "module",
   "scripts": {
