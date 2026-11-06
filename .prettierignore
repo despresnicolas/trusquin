@@ -3,5 +3,8 @@ CLAUDE.local.md
 AGENTS.md
 .claude/
 pnpm-lock.yaml
+dist/
+bin/
 build/
+src/lib/bindings/
 .svelte-kit/

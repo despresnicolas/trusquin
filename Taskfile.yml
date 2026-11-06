@@ -1,0 +1,40 @@
+version: '3'
+
+vars:
+  APP_NAME: 'sauron'
+  BIN_DIR: 'bin'
+  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  # Plateforme cible : l'OS courant, ou `wails3 build GOOS=...` pour la compilation croisée.
+  GOOS: '{{.GOOS | default OS}}'
+
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+  darwin: ./build/darwin/Taskfile.yml
+  linux: ./build/linux/Taskfile.yml
+
+tasks:
+  build:
+    summary: Compile l'application
+    cmds:
+      - task: '{{.GOOS}}:build'
+
+  package:
+    summary: Empaquette une version de production
+    cmds:
+      - task: '{{.GOOS}}:package'
+
+  run:
+    summary: Lance l'application compilée
+    cmds:
+      - task: '{{.GOOS}}:run'
+
+  dev:
+    summary: Mode développement (rechargement du Go et du front)
+    cmds:
+      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+
+  setup:docker:
+    summary: Image Docker de compilation croisée
+    cmds:
+      - task: common:setup:docker

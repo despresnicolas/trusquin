@@ -1,5 +1,5 @@
 import { generate, slug } from './placement';
-import type { GeneratedFile, Issue, Project, QualityReport, Rule } from './types';
+import type { GeneratedFile, HookEvent, Issue, Project, QualityReport, Rule } from './types';
 
 const VAGUE = [
   'clean code',
@@ -40,9 +40,10 @@ const SECRET_PATTERNS: [RegExp, string][] = [
 const NEGATION = /\b(never|jamais|don['’]?t|do not|ne pas|n['’]utilise pas|avoid|évite[rz]?|interdit|forbidden|no)\b/i;
 const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'];
 const NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const HOOK_EVENTS = [
-  'PreToolUse',
+/** Événements de hook reconnus, le plus courant en premier (ordre du sélecteur). */
+export const HOOK_EVENTS: HookEvent[] = [
   'PostToolUse',
+  'PreToolUse',
   'UserPromptSubmit',
   'Stop',
   'SubagentStop',
@@ -81,12 +82,12 @@ function codeSpans(line: string): string[] {
   return [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim().toLowerCase());
 }
 
-/** Contrôles applicables à n'importe quel fichier mémoire (générateur et analyse). */
 // Consigne qui commence par une interdiction ; l'alternative éventuelle suit (« : utiliser X », « plutôt »…).
 const NEGATIVE =
   /^\s*(?:[-*+]|\d+\.)\s+(?:\*\*[^*]+\*\*\s*:?\s*)?(?:ne\s+(?:jamais|pas)\b|n['’]|jamais\b|pas\s+d[e'’]|aucun|interdit|never\b|don['’]t\b|do\s+not\b|avoid\b|évite[rz]?\b)/i;
 const ALTERNATIVE = /[:→;—]|\bplutôt\b|\bà la place\b|\binstead\b|\bprefer|\bpréférer\b/i;
 
+/** Contrôles applicables à n'importe quel fichier mémoire (générateur et analyse). */
 export function lintMemoryText(file: string, text: string, isRoot = false): Issue[] {
   const issues: Issue[] = [];
   const lines = text.split('\n');

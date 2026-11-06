@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { CLAUDE_FILE_LABELS, claudeFiles, importContext, importRules } from '../core/analyze';
-  import { generate } from '../core/placement';
-  import { newId, starterProject } from '../core/presets';
-  import type { ClaudeFile, ClaudeFileGroup, Rule } from '../core/types';
-  import { api } from '../history';
-  import { archive, store } from '../state.svelte';
+  import { CLAUDE_FILE_LABELS, claudeFiles, importContext, importRules } from '#lib/core/analyze.ts';
+  import { generate } from '#lib/core/placement.ts';
+  import { newId, starterProject } from '#lib/core/presets.ts';
+  import type { ClaudeFile, ClaudeFileGroup, Rule } from '#lib/core/types.ts';
+  import { api } from '#lib/history.ts';
+  import { archive, store } from '#lib/state.svelte.ts';
   import FileView from './FileView.svelte';
   import Hint from './Hint.svelte';
 
@@ -62,7 +62,10 @@
     const repo = { paths: Object.keys(contents), contents };
     if (store.errors) {
       if (
-        !confirm(`Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?`)
+        !(await api.ask(
+          `Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?`,
+          'Continuer',
+        ))
       )
         return;
     } else {

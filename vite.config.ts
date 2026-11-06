@@ -1,15 +1,15 @@
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [
     sveltekit({
-      // Serveur Node : pages SPA (ssr = false) + routes /api reliées à PostgreSQL.
-      adapter: adapter(),
+      // Application Wails : pages SPA (ssr = false) compilées dans dist/, embarqué par main.go.
+      adapter: adapter({ pages: 'dist', assets: 'dist', fallback: 'index.html' }),
     }),
   ],
-  // Docker : si les modifications ne remontent pas du volume monté, CHOKIDAR_USEPOLLING=1.
-  server: { watch: process.env.CHOKIDAR_USEPOLLING ? { usePolling: true, interval: 300 } : undefined },
+  // wails3 dev se connecte en IPv4 : sans host explicite, Vite peut n'écouter que sur ::1 (localhost IPv6).
+  server: { host: '127.0.0.1' },
   test: { include: ['src/**/*.test.ts'] },
 });

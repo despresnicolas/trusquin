@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { KIND_LABELS, SCOPE_LABELS, newRule } from '../core/presets';
-  import { store } from '../state.svelte';
+  import { KIND_LABELS, SCOPE_LABELS, newRule } from '#lib/core/presets.ts';
+  import { store } from '#lib/state.svelte.ts';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from '../state.svelte';
+  import { store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
 
   const project = $derived(store.project);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from '../state.svelte';
+  import { store } from '#lib/state.svelte.ts';
   import Guide from './Guide.svelte';
   import Preview from './Preview.svelte';
   import ProjectBar from './ProjectBar.svelte';

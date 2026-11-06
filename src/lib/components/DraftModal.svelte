@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { generate } from '../core/placement';
-  import { newRule, starterProject, type Template } from '../core/presets';
-  import { checkProject } from '../core/quality';
-  import type { Criterion, Rule } from '../core/types';
+  import { generate } from '#lib/core/placement.ts';
+  import { newRule, starterProject, type Template } from '#lib/core/presets.ts';
+  import { checkProject } from '#lib/core/quality.ts';
+  import type { Criterion, Rule } from '#lib/core/types.ts';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
 

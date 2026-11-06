@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { USER_PREFIX } from './core/placement';
+import { slug, USER_PREFIX } from './core/placement';
 import type { GeneratedFile, Project, QualityReport } from './core/types';
 
 function report(files: GeneratedFile[], quality: QualityReport): string {
@@ -32,13 +32,4 @@ export async function exportZip(files: GeneratedFile[], quality: QualityReport):
 }
 
 /** Nom du zip d'export, tiré du nom du projet. */
-export const zipName = (project: Project) =>
-  `${project.name.replace(/\W+/g, '-').toLowerCase() || 'claude'}-sauron.zip`;
-
-export function download(name: string, data: Blob | string): void {
-  const blob = typeof data === 'string' ? new Blob([data], { type: 'application/json' }) : data;
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), { href: url, download: name });
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+export const zipName = (project: Project) => `${slug(project.name.trim() || 'claude')}-sauron.zip`;

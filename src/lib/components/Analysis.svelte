@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { Rule } from '../core/types';
-  import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '../history';
+  import type { Rule } from '#lib/core/types.ts';
+  import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
-  import DirPicker from './DirPicker.svelte';
   import Proposals from './Proposals.svelte';
   import RepoFiles from './RepoFiles.svelte';
   import Hint from './Hint.svelte';
@@ -27,7 +26,6 @@
   let failure = $state('');
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
-  let picker: DirPicker;
 
   const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -69,7 +67,7 @@
 
   const forget = (target: string) =>
     attempt(async () => {
-      if (!confirm(`Supprimer tout l'historique de ${target} ?`)) return;
+      if (!(await api.ask(`Supprimer tout l'historique de ${target} ?`))) return;
       await api.forget(target);
       if (record?.path === target) {
         record = null;
@@ -102,23 +100,25 @@
     }}
   >
     <input bind:value={path} placeholder="/Users/moi/Dev/mon-repo" aria-label="Chemin du dossier" required />
-    <button type="button" class="primary" disabled={loading} onclick={() => picker.open()}>
+    <button
+      type="button"
+      class="primary"
+      disabled={loading}
+      onclick={() =>
+        attempt(async () => {
+          const chosen = await api.pickDir(path);
+          if (!chosen) return;
+          path = chosen;
+          await analyze(chosen);
+        })}
+    >
       {loading ? 'Analyse…' : 'Ajouter un dépôt'}
     </button>
     <Hint
-      text="Choisir un dossier du serveur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
+      text="Choisir un dossier de l'ordinateur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
     />
   </form>
 </div>
-
-<DirPicker
-  bind:this={picker}
-  start={path}
-  onpick={(chosen) => {
-    path = chosen;
-    analyze(chosen);
-  }}
-/>
 
 {#if failure}<p class="sev-error">{failure}</p>{/if}
 

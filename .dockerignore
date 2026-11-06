@@ -1,7 +1,0 @@
-node_modules
-build
-.svelte-kit
-.git
-CLAUDE.local.md
-.claude/settings.local.json
-.env

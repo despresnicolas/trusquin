@@ -12,7 +12,7 @@ Tu lances la vérification du projet et tu résumes le résultat. Ne modifie auc
 2. `pnpm test` (Vitest).
 3. Pour un seul fichier ou test : `pnpm exec vitest run <fichier> -t "<nom>"`.
 
-Les tests de `src/lib/server/db.test.ts` demandent PostgreSQL. S'ils échouent pour une connexion refusée, dis-le et indique `docker compose up -d db`. Ne lis jamais `.env`.
+`pnpm test` lance Vitest puis `go test ./...` (services Go, base SQLite temporaire). Ne lis jamais `.env`.
 
 ## Sortie
 

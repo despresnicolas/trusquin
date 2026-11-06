@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { QualityReport, Severity } from '../core/types';
-  import { LIMITS } from '../core/quality';
-  import { store } from '../state.svelte';
+  import type { QualityReport, Severity } from '#lib/core/types.ts';
+  import { LIMITS } from '#lib/core/quality.ts';
+  import { store } from '#lib/state.svelte.ts';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { quality }: { quality: QualityReport } = $props();

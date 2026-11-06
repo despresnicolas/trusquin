@@ -1,0 +1,33 @@
+{
+  "fill": {
+    "solid": "srgb:0.10000,0.05000,0.04000,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "sauron_eye.svg",
+          "name": "sauron_eye",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0.0,
+              0.0
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}

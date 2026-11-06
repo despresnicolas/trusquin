@@ -31,17 +31,9 @@ export const IGNORED_DIRS = new Set([
   '.turbo',
 ]);
 
-const TEXT_FILES =
+/** Fichiers dont le contenu est lu pour l'analyse (le reste : chemin seul). */
+export const TEXT_FILES =
   /(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md|README(\.md)?|\.gitignore|package\.json|pyproject\.toml|settings(\.local)?\.json|SKILL\.md|\.env\.example|composer\.json|Cargo\.toml|go\.mod|pnpm-workspace\.yaml)$|^\.claude\/.*\.md$/i;
-
-/** Indique si le contenu du fichier est utile à l'analyse (le reste : chemin seul). */
-export function needsContent(path: string): boolean {
-  return TEXT_FILES.test(path);
-}
-
-export function isIgnored(path: string): boolean {
-  return path.split('/').some((part) => IGNORED_DIRS.has(part));
-}
 
 function crit(
   id: string,
@@ -97,6 +89,8 @@ function frontmatterOf(text: string): string | null {
   return m ? m[1] : null;
 }
 
+const stripFrontmatter = (text: string) => text.replace(/^---\r?\n[\s\S]*?\r?\n---(\r?\n|$)/, '');
+
 function grade(score: number): RepoAnalysis['grade'] {
   if (score >= 85) return 'A';
   if (score >= 70) return 'B';
@@ -120,6 +114,8 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     root = read('AGENTS.md') + '\n' + root;
   }
   const rootLines = root ? root.split('\n').length : 0;
+  const rootSpans = root.match(/`[^`\n]+`/g) ?? [];
+  const ruleFiles = find(/^\.claude\/rules\/.*\.md$/);
 
   criteria.push(
     crit(
@@ -150,7 +146,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     ),
   );
 
-  const commandSpans = (root.match(/`[^`\n]+`/g) ?? []).filter((s) =>
+  const commandSpans = rootSpans.filter((s) =>
     /\b(npm|pnpm|yarn|bun|make|cargo|go|pytest|uv|poetry|composer|php|mvn|gradle|docker|just)\b/.test(s),
   );
   criteria.push(
@@ -181,7 +177,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
   for (const file of memoryFiles) {
     memoryIssues.push(...lintMemoryText(file, read(file), file === rootPath));
   }
-  for (const file of find(/^\.claude\/rules\/.*\.md$/)) memoryIssues.push(...lintMemoryText(file, read(file)));
+  for (const file of ruleFiles) memoryIssues.push(...lintMemoryText(file, read(file)));
 
   const imports = [...root.matchAll(/^\s*@([\w./-]+)/gm)].map((m) => m[1]);
   const broken = imports.filter((p) => !p.startsWith('~') && !paths.includes(p.replace(/^\.\//, '')));
@@ -247,7 +243,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
   );
 
   // Few-shot : la mémoire pointe vers des fichiers existants du dépôt à prendre pour modèle.
-  const memoryText = [...memoryFiles, ...find(/^\.claude\/rules\/.*\.md$/)].map(read).join('\n');
+  const memoryText = [...memoryFiles, ...ruleFiles].map(read).join('\n');
   const referenced = [...memoryText.matchAll(/`([\w@./-]+\.\w+)(?::\d+)?`/g)].map((m) => m[1]);
   const examples = [...new Set(referenced.filter((p) => paths.includes(p)))];
   criteria.push(
@@ -264,7 +260,6 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     ),
   );
 
-  const ruleFiles = find(/^\.claude\/rules\/.*\.md$/);
   const scoped = ruleFiles.filter((p) => /^paths:/m.test(frontmatterOf(read(p)) ?? ''));
   const subMemory = memoryFiles.filter((p) => p.includes('/'));
   criteria.push(
@@ -302,7 +297,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       'Ajouter un CLAUDE.md par paquet (commandes, structure, conventions locales) : chargé seulement quand Claude y travaille.',
     ),
   );
-  const targeted = (root.match(/`[^`\n]+`/g) ?? []).some((s) =>
+  const targeted = rootSpans.some((s) =>
     /--filter|--workspace|\s-F\s|yarn workspace |\b(nx|turbo) (run|affected)\b|lerna .*--scope|cargo \w+ (-p|--package)\b/.test(
       s,
     ),
@@ -370,7 +365,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     const text = read(file);
     // shortcut: description sur une seule ligne ; une description YAML multiligne (> ou |) n'est pas lue.
     const description = (frontmatterOf(text) ?? '').match(/^description:\s*['"]?(.*?)['"]?\s*$/m)?.[1] ?? '';
-    const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+    const body = stripFrontmatter(text);
     const name = file.split('/')[2];
     memoryIssues.push(...lintSkill(name, description, body).map((i) => ({ ...i, file })));
   }
@@ -550,7 +545,7 @@ function categoryOf(heading: string): Category {
 function splitSections(text: string): { title: string; body: string }[] {
   const out: { title: string; body: string }[] = [];
   let current: { title: string; body: string[] } | null = null;
-  for (const line of text.replace(/^---\n[\s\S]*?\n---\n/, '').split('\n')) {
+  for (const line of stripFrontmatter(text).split('\n')) {
     const h = line.match(/^#{2,3}\s+(.*)/);
     if (h) {
       if (current) out.push({ title: current.title, body: current.body.join('\n').trim() });
@@ -564,7 +559,7 @@ function splitSections(text: string): { title: string; body: string }[] {
 /** Description et stack : intro de la mémoire racine (avant le premier `##`), sinon `description` du package.json. */
 export function importContext(repo: RepoSnapshot): { description: string; stack: string } {
   const memory = repo.contents['CLAUDE.md'] ?? repo.contents['AGENTS.md'] ?? '';
-  const intro = memory.replace(/^---\n[\s\S]*?\n---\n/, '').split(/^#{2,3}\s/m)[0];
+  const intro = stripFrontmatter(memory).split(/^#{2,3}\s/m)[0];
   const stackLine = /^\**stack\s*:?\s*\**\s*:?\s*(.+)$/im;
   const stack = intro.match(stackLine)?.[1].trim() ?? '';
   let description = intro
@@ -656,9 +651,7 @@ export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
         : [...fm.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?\s*$/gm)].map((m) => m[1]);
       const name = path.split('/').pop()!.replace(/\.md$/, '');
       const sections = splitSections(text);
-      const list = sections.length
-        ? sections
-        : [{ title: name, body: text.replace(/^---\n[\s\S]*?\n---\n/, '').trim() }];
+      const list = sections.length ? sections : [{ title: name, body: stripFrontmatter(text).trim() }];
       for (const s of list) add(s.title, s.body, globs.length ? 'path' : 'topic', globs, categoryOf(name));
     }
   }

@@ -144,6 +144,37 @@ describe('quality', () => {
     }
   });
 
+  it.each<[string, Project['rules'], Partial<Project>?]>([
+    ['bad-glob', [newRule({ scope: 'path', targets: ['/src/*.ts'], body: 'x' })]],
+    ['no-dir', [newRule({ scope: 'directory', body: 'x' })]],
+    ['dir-glob', [newRule({ scope: 'directory', targets: ['src/*'], body: 'x' })]],
+    ['heavy-rule', [newRule({ body: Array.from({ length: 16 }, (_, i) => `r${i}`).join('\n') })]],
+    ['command-not-exact', [newRule({ category: 'commands', body: 'Lancer les tests' })]],
+    ['short-description', [newRule({ kind: 'agent', name: 'a', description: 'Court', body: 'x' })]],
+    ['long-description', [newRule({ kind: 'agent', name: 'a', description: 'x'.repeat(1025), body: 'x' })]],
+    ['hook-no-command', [newRule({ kind: 'hook', event: 'PostToolUse', matcher: 'Edit' })]],
+    ['hook-event', [newRule({ kind: 'hook', command: 'x' })]],
+    ['hook-matcher', [newRule({ kind: 'hook', event: 'PostToolUse', command: 'x' })]],
+    ['duplicate', ['A', 'B'].map((title) => newRule({ title, body: 'Toujours lancer les tests' }))],
+    ['collision', [1, 2].map(() => newRule({ kind: 'command', name: 'deploy', body: 'x' }))],
+    ['no-context', sampleRules(), { description: '' }],
+    ['no-deny', sampleRules(), { permissions: { allow: [], deny: [] } }],
+    ['no-hooks', [newRule({ body: 'x' })]],
+    ['local-gitignore', [newRule({ scope: 'local', body: 'x' })]],
+    ['instruction-budget', [newRule({ body: Array.from({ length: 151 }, (_, i) => `r${i}`).join('\n') })]],
+  ])('reports %s', (code, rules, extra) => {
+    expect(checkProject(project(rules, extra)).issues.map((i) => i.code)).toContain(code);
+  });
+
+  it('lints long files and copied code blocks', () => {
+    const lines = (n: number) => Array.from({ length: n }, (_, i) => `- r${i}`).join('\n');
+    const codes = (text: string, isRoot?: boolean) => lintMemoryText('f.md', text, isRoot).map((i) => i.code);
+    expect(codes(lines(201), true)).toContain('root-too-long');
+    expect(codes(lines(151))).toContain('file-long');
+    expect(codes(['```', ...Array(11).fill('x'), '```'].join('\n'))).toContain('code-copy');
+    expect(codes(['```', ...Array(10).fill('x'), '```'].join('\n'))).not.toContain('code-copy');
+  });
+
   it('warns on long root memory', () => {
     const text = Array.from({ length: 120 }, (_, i) => `- r${i}`).join('\n');
     expect(lintMemoryText('CLAUDE.md', text, true)[0].code).toBe('root-long');
@@ -189,6 +220,19 @@ describe('analyze', () => {
     ];
     const result = analyzeRepo({ paths, contents });
     expect(result.grade).toBe('A');
+  });
+
+  it('reports an invalid settings.json', () => {
+    const result = analyzeRepo({ paths: ['.claude/settings.json'], contents: { '.claude/settings.json': '{' } });
+    expect(result.memoryIssues.map((i) => i.code)).toContain('settings-json');
+  });
+
+  it('strips CRLF frontmatter before importing a rule file', () => {
+    const [rule] = importRules(
+      { paths: [], contents: { '.claude/rules/api.md': '---\r\npaths: src/**\r\n---\r\n- x' } },
+      () => 'id',
+    );
+    expect(rule.body).toBe('- x');
   });
 
   it('reports broken imports', () => {

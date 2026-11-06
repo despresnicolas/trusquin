@@ -1,9 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { importContext, importedPath, importRules } from '../core/analyze';
-  import { newId, starterProject } from '../core/presets';
-  import { download, exportZip, zipName } from '../export';
-  import { archive, store } from '../state.svelte';
+  import { importContext, importedPath, importRules } from '#lib/core/analyze.ts';
+  import { newId, starterProject } from '#lib/core/presets.ts';
+  import { exportZip, zipName } from '#lib/export.ts';
+  import { api } from '#lib/history.ts';
+  import { archive, store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
@@ -40,7 +41,7 @@
   }
 
   async function exportCurrent() {
-    download(zipName(store.project), await exportZip(store.files, store.quality));
+    await api.saveFile(zipName(store.project), await exportZip(store.files, store.quality));
   }
 
   async function reset() {

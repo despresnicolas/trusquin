@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { templateForCriterion } from '../core/presets';
-  import type { Criterion, RepoAnalysis, Rule } from '../core/types';
+  import { templateForCriterion } from '#lib/core/presets.ts';
+  import type { Criterion, RepoAnalysis, Rule } from '#lib/core/types.ts';
   import DraftModal from './DraftModal.svelte';
   import Hint from './Hint.svelte';
 

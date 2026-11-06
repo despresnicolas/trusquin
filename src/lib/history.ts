@@ -1,4 +1,8 @@
-import type { ClaudeFile, Project, RepoAnalysis } from './core/types';
+import { Clipboard, Dialogs } from '@wailsio/runtime';
+import { HistoryService, RepoService } from './bindings/sauron';
+import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
+import { checkProject } from './core/quality';
+import type { ClaudeFile, Project, RepoAnalysis, RepoSnapshot } from './core/types';
 
 /** Une analyse enregistrée, sans le détail des critères. */
 export interface AnalysisRun {
@@ -39,53 +43,71 @@ export interface ProjectSummary {
   versions: number;
 }
 
-/** Contenu d'un dossier du serveur, pour le sélecteur de dépôt. */
-export interface DirListing {
-  path: string;
-  /** Null à la racine du disque ou d'une racine autorisée. */
-  parent: string | null;
-  isRepo: boolean;
-  dirs: { name: string; path: string; isRepo: boolean }[];
-}
-
-async function call<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(body?.message ?? `Erreur ${res.status}`);
-  return body as T;
-}
-
-const q = (path: string) => `path=${encodeURIComponent(path)}`;
+// Services Go de l'application Wails (bindings générés par `wails3 generate bindings` dans src/lib/bindings).
+// Le Go renvoie toujours des tableaux (jamais null), contrairement à ce que disent les types générés.
+const repoFiles = async (path: string) =>
+  (await RepoService.Snapshot(path, [...IGNORED_DIRS], TEXT_FILES.source)) as RepoSnapshot & {
+    root: string;
+    name: string;
+  };
 
 export const api = {
-  repos: () => call<RepoSummary[]>('/api/repos'),
-  runs: (path: string) => call<AnalysisRun[]>(`/api/analyses?${q(path)}`),
-  files: (path: string) => call<ClaudeFile[]>(`/api/repos/files?${q(path)}`),
-  dirs: (path?: string) => call<DirListing>(`/api/dirs${path ? `?${q(path)}` : ''}`),
-  get: (id: number) => call<AnalysisRecord>(`/api/analyses/${id}`),
-  analyze: (path: string) =>
-    call<AnalysisRecord>('/api/analyses', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ path }),
+  repos: async () => ((await HistoryService.ListRepos()) ?? []) as RepoSummary[],
+  runs: async (path: string) => ((await HistoryService.ListRuns(path)) ?? []) as AnalysisRun[],
+  /** Fichiers Claude Code actuels d'un dépôt, lus sur le disque (pas dans l'historique). */
+  files: async (path: string): Promise<ClaudeFile[]> => claudeFiles(await repoFiles(path)),
+  /** Boîte de choix de dossier du système ; '' si annulée. */
+  pickDir: async (start?: string) =>
+    Dialogs.OpenFile({
+      Title: 'Ajouter un dépôt',
+      ButtonText: 'Analyser',
+      CanChooseDirectories: true,
+      CanChooseFiles: false,
+      Directory: start?.trim() || undefined,
     }),
-  // Sans content-type, SvelteKit traite le DELETE comme un formulaire et le bloque (CSRF) en production.
-  forget: (path: string) =>
-    call<{ deleted: number }>(`/api/repos?${q(path)}`, {
-      method: 'DELETE',
-      headers: { 'content-type': 'application/json' },
-    }),
-  projects: () => call<ProjectSummary[]>('/api/projects'),
-  project: (id: number) => call<ProjectRecord>(`/api/projects/${id}`),
-  saveProject: (project: Project) =>
-    call<ProjectVersion>('/api/projects', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ project }),
-    }),
-  forgetProject: (name: string) =>
-    call<{ deleted: number }>(`/api/projects?name=${encodeURIComponent(name)}`, {
-      method: 'DELETE',
-      headers: { 'content-type': 'application/json' },
-    }),
+  /** Boîte de confirmation du système ; vrai si l'utilisateur valide `action`. */
+  ask: async (message: string, action = 'Supprimer') =>
+    (await Dialogs.Question({
+      Title: message,
+      Buttons: [
+        { Label: 'Annuler', IsCancel: true },
+        { Label: action, IsDefault: true },
+      ],
+    })) === action,
+  /** Boîte d'enregistrement du système puis écriture côté Go ; faux si annulée. */
+  saveFile: async (name: string, data: Blob) => {
+    const path = await Dialogs.SaveFile({ Filename: name });
+    if (!path) return false;
+    await RepoService.WriteFile(path, await base64(data));
+    return true;
+  },
+  copy: (text: string) => Clipboard.SetText(text),
+  get: async (id: number) => (await HistoryService.GetAnalysis(id)) as AnalysisRecord,
+  /** Lit le dossier côté Go, l'analyse avec le cœur TS et enregistre le résultat. */
+  analyze: async (path: string) => {
+    const snap = await repoFiles(path);
+    const result = analyzeRepo(snap);
+    return (await HistoryService.SaveAnalysis(snap.root, snap.name, snap.paths.length, result)) as AnalysisRecord;
+  },
+  forget: async (path: string) => ({ deleted: await HistoryService.DeleteRepo(path) }),
+  projects: async () => ((await HistoryService.ListProjects()) ?? []) as ProjectSummary[],
+  project: async (id: number) => (await HistoryService.GetProject(id)) as ProjectRecord,
+  /** Enregistre une version du projet (ignorée si identique à la dernière). Refusé s'il a des erreurs bloquantes. */
+  saveProject: async (project: Project) => {
+    const report = checkProject(project);
+    const blocking = report.issues.filter((i) => i.severity === 'error');
+    if (blocking.length)
+      throw new Error(`${blocking.length} erreur(s) bloquante(s), projet non enregistré : ${blocking[0].message}`);
+    return (await HistoryService.SaveProject(project, report.score)) as ProjectVersion;
+  },
+  forgetProject: async (name: string) => ({ deleted: await HistoryService.DeleteProject(name) }),
 };
+
+// FileReader plutôt que btoa : pas de limite de taille, et dispo dans tous les WebView (WebKit, WebView2, WebKitGTK).
+const base64 = (data: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(data);
+  });

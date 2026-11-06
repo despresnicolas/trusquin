@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=SAURON
+Comment=Générateur et analyse de configuration Claude Code
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/sauron %u
+Terminal=false
+Type=Application
+Icon=sauron
+Categories=Utility;
+StartupWMClass=sauron
+
+ 
