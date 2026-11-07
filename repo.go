@@ -108,7 +108,14 @@ func (s RepoService) WriteRepoFile(root, rel, content string) (string, error) {
 	path := filepath.Join(dir, rel)
 	backup := ""
 	if old, err := os.ReadFile(path); err == nil {
-		backup = filepath.Join(s.repoBackupDir(dir), time.Now().Format(backupStamp), rel)
+		// Deux écritures dans la même milliseconde : on décale l'horodatage plutôt que d'écraser une sauvegarde.
+		for at := time.Now(); ; at = at.Add(time.Millisecond) {
+			backup = filepath.Join(s.repoBackupDir(dir), at.Format(backupStamp), rel)
+			// Toute erreur (absent, illisible) arrête la boucle : l'écriture qui suit remonte le vrai problème.
+			if _, err := os.Stat(backup); err != nil {
+				break
+			}
+		}
 		if err := os.MkdirAll(filepath.Dir(backup), 0o755); err != nil {
 			return "", fmt.Errorf("Sauvegarde impossible, %s n'est pas modifié : %v", rel, err)
 		}

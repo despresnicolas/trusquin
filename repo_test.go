@@ -118,16 +118,17 @@ func TestRestoreBackup(t *testing.T) {
 	if list, err := svc.ListBackups(repo); err != nil || len(list) != 0 {
 		t.Fatalf("aucune sauvegarde attendue : %v %v", list, err)
 	}
-	svc.WriteRepoFile(repo, "CLAUDE.md", "v1")
-	svc.WriteRepoFile(repo, "CLAUDE.md", "v2")
+	// Fichier absent de la fixture : sur un disque insensible à la casse, CLAUDE.md serait le claude.md existant.
+	svc.WriteRepoFile(repo, ".claude/rules/go.md", "v1")
+	svc.WriteRepoFile(repo, ".claude/rules/go.md", "v2")
 	list, err := svc.ListBackups(repo)
-	if err != nil || len(list) != 1 || list[0].Rel != "CLAUDE.md" {
+	if err != nil || len(list) != 1 || list[0].Rel != ".claude/rules/go.md" {
 		t.Fatalf("liste = %v, %v", list, err)
 	}
 	if _, err := svc.RestoreBackup(repo, list[0].Path); err != nil {
 		t.Fatal(err)
 	}
-	if b, _ := os.ReadFile(filepath.Join(repo, "CLAUDE.md")); string(b) != "v1" {
+	if b, _ := os.ReadFile(filepath.Join(repo, ".claude/rules/go.md")); string(b) != "v1" {
 		t.Fatalf("restauré = %q", b)
 	}
 	if list, _ := svc.ListBackups(repo); len(list) != 2 {
