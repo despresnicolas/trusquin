@@ -1,204 +1,383 @@
 <script lang="ts">
-  const KEY = 'sauron:theme';
-  let open = $state(false);
-  let root: HTMLElement;
-  // Thème effectif : choix enregistré (posé par app.html avant le rendu), sinon celui du système.
-  let dark = $state(
-    (document.documentElement.dataset.theme ??
-      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark',
-  );
+  import { Events } from '@wailsio/runtime';
 
-  function setDark(value: boolean) {
-    dark = value;
-    const theme = value ? 'dark' : 'light';
-    document.documentElement.dataset.theme = theme;
+  type Theme = 'light' | 'dark' | 'system';
+  type Lang = 'system' | 'fr' | 'en';
+  const THEME_KEY = 'sauron:theme';
+  const LANG_KEY = 'sauron:lang';
+  const THEMES: { id: Theme; label: string }[] = [
+    { id: 'light', label: 'Clair' },
+    { id: 'dark', label: 'Sombre' },
+    { id: 'system', label: 'Système' },
+  ];
+
+  // Catégories de la colonne de gauche ; l'icône est un tracé SVG 24×24 au trait.
+  const CATEGORIES = [
+    { id: 'appearance', label: 'Apparence', icon: 'M14 4l6 6-9 9H5v-6zM11 7l6 6' },
+    {
+      id: 'language',
+      label: 'Langue',
+      icon: 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18',
+    },
+  ] as const;
+
+  let dialog: HTMLDialogElement;
+  let category = $state<(typeof CATEGORIES)[number]['id']>('appearance');
+  // Choix enregistrés ; le thème est posé par app.html avant le rendu.
+  let theme = $state<Theme>(read(THEME_KEY, ['light', 'dark'], 'system'));
+  let lang = $state<Lang>(read(LANG_KEY, ['fr', 'en'], 'system'));
+  // Choix en cours dans le dialogue : le thème s'applique à la volée, « Enregistrer » le conserve.
+  let draftTheme = $state<Theme>('system');
+  let draftLang = $state<Lang>('system');
+
+  function read<T extends string>(key: string, allowed: string[], fallback: T): T {
     try {
-      localStorage.setItem(KEY, theme);
+      const value = localStorage.getItem(key);
+      return value && allowed.includes(value) ? (value as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function store(key: string, value: string) {
+    try {
+      if (value === 'system') localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
     } catch {
       // stockage indisponible : le choix vaut pour la session
     }
   }
+
+  function show() {
+    draftTheme = theme;
+    draftLang = lang;
+    dialog.showModal();
+  }
+
+  function apply(value: Theme) {
+    if (value === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = value;
+  }
+
+  function save() {
+    theme = draftTheme;
+    lang = draftLang;
+    store(THEME_KEY, theme);
+    store(LANG_KEY, lang);
+    dialog.close();
+  }
+
+  // « Réglages… » (⌘,) du menu SAURON (menu.go).
+  $effect(() => Events.On('settings', show));
 </script>
 
-<svelte:window
+<!-- Échap, Annuler ou un clic à côté ferme sans rien conserver : le thème enregistré revient. -->
+<dialog
+  bind:this={dialog}
+  onclose={() => apply(theme)}
+  aria-labelledby="settings-title"
   onclick={(e) => {
-    if (open && !root.contains(e.target as Node)) open = false;
+    // Le fond (::backdrop) renvoie aussi le dialogue comme cible : on ferme seulement hors du cadre.
+    const r = dialog.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
   }}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') open = false;
-  }}
-/>
+>
+  <header>
+    <h3 id="settings-title">Réglages</h3>
+    <button class="ghost" aria-label="Fermer" onclick={() => dialog.close()}>×</button>
+  </header>
 
-<div class="settings" bind:this={root}>
-  <button
-    class="icon"
-    aria-label="Réglages"
-    aria-expanded={open}
-    aria-controls="settings-menu"
-    onclick={() => (open = !open)}
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true"
-      ><!-- Icon from Material Design Light by Pictogrammers - https://github.com/Templarian/MaterialDesignLight/blob/master/LICENSE.md --><path
-        fill="currentColor"
-        d="m19.59 15.5l-1.82-1.3c.3-1.08.32-2.25 0-3.42l1.82-1.28L18.14 7l-2.03.92c-.79-.8-1.79-1.42-2.96-1.71L12.95 4h-2.9l-.2 2.21c-1.17.29-2.17.91-2.96 1.71L4.86 7L3.41 9.5l1.82 1.28c-.32 1.17-.3 2.34 0 3.42l-1.82 1.3L4.86 18l2.03-.93c.79.79 1.79 1.39 2.96 1.7l.2 2.23h2.9l.2-2.23c1.17-.31 2.17-.91 2.96-1.7l2.03.93zM13.5 3c.27 0 .5.2.5.46l.18 2.04c.76.28 1.44.69 2.05 1.18l1.85-.87c.23-.12.52-.04.66.19l2 3.5c.14.21.06.5-.16.65l-1.67 1.17c.13.8.12 1.59 0 2.36l1.67 1.17c.22.15.3.44.16.65l-2 3.5c-.14.21-.43.29-.66.17l-1.85-.86c-.61.49-1.29.89-2.05 1.19l-.18 2c0 .29-.23.5-.5.5h-4a.5.5 0 0 1-.5-.5l-.18-2c-.76-.3-1.44-.7-2.05-1.19l-1.85.86c-.23.12-.52.04-.66-.17l-2-3.5c-.14-.21-.06-.5.16-.65l1.67-1.17c-.12-.77-.13-1.56 0-2.36l-1.67-1.17c-.22-.15-.3-.44-.16-.65l2-3.5c.14-.23.43-.31.66-.19l1.85.87c.61-.49 1.29-.9 2.05-1.18L9 3.46c0-.26.23-.46.5-.46zm-2 6a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5A3.5 3.5 0 0 1 8 12.5A3.5 3.5 0 0 1 11.5 9m0 1A2.5 2.5 0 0 0 9 12.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5"
-      /></svg
-    >
-  </button>
+  <div class="layout">
+    <nav aria-label="Catégories">
+      {#each CATEGORIES as c (c.id)}
+        <button class="ghost" aria-current={category === c.id ? 'page' : undefined} onclick={() => (category = c.id)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={c.icon} /></svg>
+          {c.label}
+        </button>
+      {/each}
+    </nav>
 
-  {#if open}
-    <div id="settings-menu" class="menu" role="group" aria-label="Réglages">
-      <div class="row">
-        <span id="theme-label">Thème</span>
-        <!-- Switch jour/nuit d'après Uiverse.io (JustCode14) : coché = clair. -->
-        <label class="switch">
-          <input
-            type="checkbox"
-            role="switch"
-            aria-label="Thème clair"
-            checked={!dark}
-            onchange={(e) => setDark(!e.currentTarget.checked)}
-          />
-          <span class="slider">
-            <span class="star star_1"></span>
-            <span class="star star_2"></span>
-            <span class="star star_3"></span>
-            <svg viewBox="0 0 16 16" class="cloud" aria-hidden="true">
-              <path
-                transform="matrix(.77976 0 0 .78395-299.99-418.63)"
-                d="m391.84 540.91c-.421-.329-.949-.524-1.523-.524-1.351 0-2.451 1.084-2.485 2.435-1.395.526-2.388 1.88-2.388 3.466 0 1.874 1.385 3.423 3.182 3.667v.034h12.73v-.006c1.775-.104 3.182-1.584 3.182-3.395 0-1.747-1.309-3.186-2.994-3.379.007-.106.011-.214.011-.322 0-2.707-2.271-4.901-5.072-4.901-2.073 0-3.856 1.202-4.643 2.925"
-              ></path>
-            </svg>
-          </span>
+    {#if category === 'appearance'}
+      <section>
+        <h4 id="theme-title">Thème</h4>
+        <div class="themes" role="radiogroup" aria-labelledby="theme-title">
+          {#each THEMES as t (t.id)}
+            <label class="theme" class:selected={draftTheme === t.id}>
+              <!-- Aperçu façon diff : color-scheme fait résoudre les variables light-dark() d'app.css dans le thème montré ;
+               « Système » superpose le sombre sur la moitié droite. -->
+              <span class="preview" aria-hidden="true">
+                {#each t.id === 'system' ? ['light', 'dark'] : [t.id] as scheme (scheme)}
+                  <span class="screen {scheme}" style="color-scheme: {scheme}">
+                    <span class="bar">
+                      {#each [1, 2, 3] as n (n)}<span class="tab"></span>{/each}
+                    </span>
+                    <span class="side">
+                      <span class="line"></span>
+                      <span class="line"></span>
+                      <span class="line"></span>
+                      <span class="foot">
+                        <span class="field"></span>
+                        <span class="field"></span>
+                        <span class="button"></span>
+                      </span>
+                    </span>
+                    <span class="main">
+                      <span class="band add"
+                        ><span class="line" style="width: 40%"></span><span class="line" style="width: 70%"
+                        ></span></span
+                      >
+                      <span class="band del"
+                        ><span class="line" style="width: 30%"></span><span class="line" style="width: 50%"
+                        ></span></span
+                      >
+                    </span>
+                  </span>
+                {/each}
+              </span>
+              <span class="choice">
+                <input
+                  type="radio"
+                  name="theme"
+                  value={t.id}
+                  bind:group={draftTheme}
+                  onchange={() => apply(draftTheme)}
+                />
+                {t.label}
+              </span>
+            </label>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <section>
+        <label class="lang"
+          ><span>Langue de l'interface</span>
+          <select bind:value={draftLang}>
+            <option value="system">Système</option>
+            <option value="fr">Français</option>
+            <option value="en" disabled>English (bientôt)</option>
+          </select>
         </label>
-      </div>
-    </div>
-  {/if}
-</div>
+        <p class="muted">« Système » suit la langue de macOS. L'interface n'existe pour l'instant qu'en français.</p>
+      </section>
+    {/if}
+  </div>
+
+  <footer>
+    <button onclick={() => dialog.close()}>Annuler</button>
+    <button class="primary" onclick={save}>Enregistrer</button>
+  </footer>
+</dialog>
 
 <style>
-  .settings {
-    position: relative;
-    margin-left: auto;
-  }
-  .icon {
-    display: grid;
-    place-items: center;
-    padding: 6px;
-    font-size: 22px;
-    background: none;
-    border: 0;
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  .icon:hover,
-  .icon[aria-expanded='true'] {
-    background: var(--surface-2);
-    color: var(--text);
-  }
-  .menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
-    min-width: 220px;
-    padding: 6px;
-    background: var(--surface);
+  dialog {
+    width: min(820px, calc(100vw - 32px));
+    padding: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
     box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
   }
-  .row {
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.3);
+  }
+  header,
+  footer {
     display: flex;
+    gap: 8px;
     align-items: center;
+    padding: 12px 20px;
+  }
+  header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  footer {
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+  }
+  footer button {
+    min-width: 110px;
+  }
+  h3,
+  h4 {
+    margin: 0;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    min-height: 360px;
+  }
+  nav {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 16px 12px;
+    border-right: 1px solid var(--border);
+  }
+  nav button {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 15px;
+  }
+  nav button[aria-current='page'] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  nav svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  section {
+    display: grid;
+    align-content: start;
     gap: 12px;
-    padding: 6px 8px;
-    white-space: nowrap;
+    padding: 20px 24px;
   }
-  .row #theme-label {
-    flex: 1;
+  section p {
+    margin: 0;
   }
-  .switch {
-    font-size: 14px;
-    position: relative;
-    display: inline-block;
-    width: 4em;
-    height: 2.2em;
-    border-radius: 30px;
-    box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
-  .switch input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  .slider {
-    position: absolute;
-    inset: 0;
-    cursor: pointer;
-    background-color: var(--sky-night);
-    transition: 0.4s;
-    border-radius: 30px;
+  .theme {
+    display: grid;
     overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
   }
-  .slider::before {
-    position: absolute;
-    content: '';
-    height: 1.2em;
-    width: 1.2em;
-    border-radius: 20px;
-    left: 0.5em;
-    bottom: 0.5em;
-    transition: 0.4s;
-    transition-timing-function: cubic-bezier(0.81, -0.04, 0.38, 1.5);
-    box-shadow: inset 8px -4px 0 0 var(--sky-white);
+  .theme.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
   }
-  .switch input:checked + .slider {
-    background-color: var(--sky-day);
-  }
-  .switch input:checked + .slider::before {
-    transform: translateX(1.8em);
-    box-shadow: inset 15px -4px 0 15px var(--sky-sun);
-  }
-  .switch input:focus-visible + .slider {
+  .theme:has(input:focus-visible) {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
-  .star {
-    background-color: var(--sky-white);
+  .preview {
+    position: relative;
+    display: block;
+    height: 96px;
+    border-bottom: 1px solid var(--border);
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template: 14px 1fr / 30% 1fr;
+    background: var(--bg);
+  }
+  .screen.dark:not(:first-child) {
+    clip-path: inset(0 0 0 50%);
+  }
+  .bar {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 0 6px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--muted);
+    opacity: 0.6;
+  }
+  .tab::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 3px;
+    margin-left: -6px;
     border-radius: 50%;
-    position: absolute;
-    width: 5px;
-    height: 5px;
-    transition: all 0.4s;
+    background: inherit;
   }
-  .star_1 {
-    left: 2.5em;
-    top: 0.5em;
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 4px 4px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
   }
-  .star_2 {
-    left: 2.2em;
-    top: 1.2em;
+  .side .line {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--muted);
+    opacity: 0.5;
   }
-  .star_3 {
-    left: 3em;
-    top: 0.9em;
+  .foot {
+    display: grid;
+    gap: 3px;
+    margin-top: auto;
   }
-  .switch input:checked + .slider .star {
-    opacity: 0;
+  .field {
+    height: 6px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--bg);
   }
-  .cloud {
-    width: 3.5em;
-    position: absolute;
-    bottom: -1.4em;
-    left: -1.1em;
-    opacity: 0;
-    transition: all 0.4s;
+  .button {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--accent);
   }
-  .cloud path {
-    fill: var(--sky-white);
+  .main {
+    display: flex;
+    flex-direction: column;
   }
-  .switch input:checked + .slider .cloud {
-    opacity: 1;
+  .band {
+    display: grid;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .band .line {
+    height: 4px;
+    border-radius: 2px;
+  }
+  .add {
+    background: color-mix(in srgb, var(--ok) 18%, var(--bg));
+  }
+  .add .line {
+    background: var(--ok);
+  }
+  .del {
+    background: color-mix(in srgb, var(--err) 18%, var(--bg));
+  }
+  .del .line {
+    background: var(--err);
+  }
+  .choice {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+  .choice input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .lang {
+    font-size: 14px;
+    color: var(--text);
   }
 </style>

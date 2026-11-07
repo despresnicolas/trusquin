@@ -48,7 +48,7 @@ func main() {
 		Height:             820,
 		URL:                "/",
 		// Pas de barre de titre : le contenu passe sous les boutons de fenêtre, l'en-tête sert de poignée (+layout.svelte).
-		Mac: application.MacWindow{TitleBar: application.MacTitleBarHiddenInset},
+		Mac: application.MacWindow{TitleBar: application.MacTitleBarHidden},
 	})
 
 	if err := app.Run(); err != nil {
