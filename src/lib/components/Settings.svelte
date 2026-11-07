@@ -48,7 +48,8 @@
     }
   }
 
-  function show() {
+  /** Ouvre les réglages : menu SAURON (⌘,) ou bouton de la colonne (+layout.svelte). */
+  export function show() {
     draftTheme = theme;
     draftLang = lang;
     dialog.showModal();

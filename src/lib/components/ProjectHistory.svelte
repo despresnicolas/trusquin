@@ -39,7 +39,7 @@
           return;
       } else await archive();
       store.project = (await api.project(id)).project;
-      await goto('/generator?view=rules');
+      await goto('/generator?goal=resume&view=rules');
     });
 
   const forget = (name: string) =>

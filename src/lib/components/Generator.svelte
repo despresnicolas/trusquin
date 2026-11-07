@@ -3,7 +3,9 @@
 </script>
 
 <script lang="ts">
+  import { GOALS, STEP_TITLES, stepHref, type Goal, type StepView } from '#lib/goals.ts';
   import { store } from '#lib/state.svelte.ts';
+  import GoalChooser from './GoalChooser.svelte';
   import Guide from './Guide.svelte';
   import Preview from './Preview.svelte';
   import ProjectBar from './ProjectBar.svelte';
@@ -11,34 +13,11 @@
   import ProjectHistory from './ProjectHistory.svelte';
   import RulesEditor from './RulesEditor.svelte';
 
-  let { initial = '', view = 'start' }: { initial?: string; view?: View } = $props();
-
-  type Goal = 'new' | 'add' | 'resume';
-  type StepView = Exclude<View, 'start'>;
-
-  /** Parcours proposés à l'accueil du générateur : chacun enchaîne quelques étapes dans l'ordre. */
-  const GOALS: Record<Goal, { title: string; text: string; steps: StepView[] }> = {
-    new: {
-      title: 'Créer la configuration d’un projet',
-      text: 'Partir de zéro : décrire le projet, choisir ses règles, exporter les fichiers.',
-      steps: ['project', 'guide', 'rules', 'export'],
-    },
-    add: {
-      title: 'Ajouter un élément au projet en cours',
-      text: 'Un hook, un skill, une commande, une règle… Le guide indique lequel convient.',
-      steps: ['guide', 'rules', 'export'],
-    },
-    resume: {
-      title: 'Reprendre un projet enregistré',
-      text: 'Rouvrir une version de l’historique, la compléter puis l’exporter.',
-      steps: ['history', 'rules', 'export'],
-    },
-  };
+  let { initial = '', view = 'start', goal }: { initial?: string; view?: View; goal?: Goal } = $props();
 
   /** Ce que l'utilisateur fait à chaque étape, pourquoi, et quand elle est terminée. */
-  const STEPS: Record<StepView, { title: string; why: string; todo: string[]; status: () => string }> = {
+  const STEPS: Record<StepView, { why: string; todo: string[]; status: () => string }> = {
     project: {
-      title: 'Décrire le projet',
       why: 'Ces informations ouvrent le CLAUDE.md : Claude les lit au début de chaque session pour comprendre le dépôt.',
       todo: [
         'Un nom, puis une phrase sur ce que fait le dépôt.',
@@ -53,7 +32,6 @@
             : '',
     },
     guide: {
-      title: 'Choisir l’élément Claude Code',
       why: 'Règle, hook, skill, sous-agent ou commande : chacun est chargé à un moment différent. Le bon choix évite d’alourdir le contexte.',
       todo: [
         'Réponds aux questions : le guide indique l’élément adapté et où il sera placé.',
@@ -63,7 +41,6 @@
       status: () => '',
     },
     rules: {
-      title: 'Écrire les règles',
       why: 'Chaque règle dit quoi faire et à quoi elle s’applique ; SAURON en déduit le fichier et son emplacement.',
       todo: [
         'Pour chaque règle : une consigne précise, vérifiable, formulée en positif.',
@@ -73,7 +50,6 @@
       status: () => (store.project.rules.length ? '' : 'Aucune règle pour l’instant : ajoute au moins une règle.'),
     },
     export: {
-      title: 'Vérifier et exporter',
       why: 'Le contrôle qualité repère ce qui ferait déraper Claude : secrets, consignes vagues, CLAUDE.md trop long.',
       todo: [
         'Corrige les erreurs bloquantes (un clic mène à la règle concernée).',
@@ -83,43 +59,33 @@
       status: () => (store.errors ? `${store.errors} erreur(s) bloquante(s) à corriger avant d’exporter.` : ''),
     },
     history: {
-      title: 'Choisir le projet',
       why: 'Chaque enregistrement crée une version : rouvrir l’une d’elles remplace le projet en cours, après l’avoir enregistré.',
       todo: ['Clique sur « Ouvrir » à côté du projet à reprendre : tu passes aux règles.'],
       status: () => '',
     },
   };
 
-  // Le parcours survit aux navigations internes (même route) ; un lien direct vers une étape choisit le premier parcours qui la contient.
-  let goal = $state<Goal>('new');
+  // Le parcours voyage dans l'URL ; un lien sans parcours (?rule=…) garde le dernier, sinon le premier qui contient l'étape.
+  let last = $state<Goal>('new');
+  $effect(() => {
+    if (goal) last = goal;
+  });
+  const chosen = $derived(goal ?? last);
   const current = $derived(
-    view === 'start' || GOALS[goal].steps.includes(view)
-      ? goal
+    view === 'start' || GOALS[chosen].steps.includes(view)
+      ? chosen
       : (Object.keys(GOALS) as Goal[]).find((g) => GOALS[g].steps.includes(view as StepView))!,
   );
   const steps = $derived(GOALS[current].steps);
   const index = $derived(view === 'start' ? -1 : steps.indexOf(view));
   const step = $derived(view === 'start' ? undefined : STEPS[view]);
-  const href = (v: View) => `/generator?view=${v}`;
+  const href = (v: View) => stepHref(current, v);
 </script>
 
 {#if view === 'start'}
   <h2>Que veux-tu faire ?</h2>
   <p class="muted">Choisis un objectif : SAURON t’accompagne ensuite étape par étape.</p>
-  <div class="goals">
-    {#each Object.entries(GOALS) as [id, g] (id)}
-      <a class="card goal" href={href(g.steps[0])} onclick={() => (goal = id as Goal)}>
-        <b>{g.title}</b>
-        <span class="muted">{g.text}</span>
-        <span class="muted small">{g.steps.length} étapes : {g.steps.map((s) => STEPS[s].title).join(' → ')}</span>
-      </a>
-    {/each}
-    <a class="card goal" href="/analyze">
-      <b>Améliorer un dépôt existant</b>
-      <span class="muted">Noter le dépôt, puis envoyer les propositions au générateur.</span>
-      <span class="muted small">Ouvre l’analyse de dépôt</span>
-    </a>
-  </div>
+  <GoalChooser />
 {:else if step}
   <ProjectBar />
 
@@ -129,7 +95,7 @@
       {#each steps as s, i (s)}
         <li class:done={i < index}>
           <a href={href(s)} aria-current={s === view ? 'step' : undefined}>
-            <span class="num">{i < index ? '✓' : i + 1}</span>{STEPS[s].title}
+            <span class="num">{i < index ? '✓' : i + 1}</span>{STEP_TITLES[s]}
           </a>
         </li>
       {/each}
@@ -137,7 +103,7 @@
   </nav>
 
   <section class="card explain">
-    <h2>Étape {index + 1} sur {steps.length} · {step.title}</h2>
+    <h2>Étape {index + 1} sur {steps.length} · {STEP_TITLES[view as StepView]}</h2>
     <p>{step.why}</p>
     <ul>
       {#each step.todo as t (t)}<li>{t}</li>{/each}
@@ -161,36 +127,19 @@
 
   <div class="nav">
     {#if index > 0}
-      <a class="button" href={href(steps[index - 1])}>← {STEPS[steps[index - 1]].title}</a>
+      <a class="button" href={href(steps[index - 1])}>← {STEP_TITLES[steps[index - 1]]}</a>
     {/if}
     <span class="spacer"></span>
     {#if index < steps.length - 1}
-      <a class="button primary" href={href(steps[index + 1])}>{STEPS[steps[index + 1]].title} →</a>
+      <a class="button primary" href={href(steps[index + 1])}>{STEP_TITLES[steps[index + 1]]} →</a>
+    {:else}
+      <!-- Fin du parcours : la boucle continue par la ré-analyse du dépôt une fois le zip décompressé et committé. -->
+      <a class="button primary" href="/analyze">Ré-analyser le dépôt →</a>
     {/if}
   </div>
 {/if}
 
 <style>
-  .goals {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-    max-width: 1000px;
-  }
-  .goal {
-    display: grid;
-    gap: 6px;
-    align-content: start;
-    color: var(--text);
-    text-decoration: none;
-  }
-  .goal:hover,
-  .goal:focus-visible {
-    border-color: var(--accent);
-  }
-  .small {
-    font-size: 12px;
-  }
   .stepper {
     display: flex;
     flex-wrap: wrap;

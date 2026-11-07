@@ -58,7 +58,7 @@
     }
     store.project = starterProject();
     notice = '';
-    await goto('/generator?view=project');
+    await goto('/generator?goal=new&view=project');
   }
 </script>
 
