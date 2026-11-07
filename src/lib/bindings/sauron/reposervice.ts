@@ -30,3 +30,10 @@ export function Snapshot(path: string, ignored: string[] | null, pattern: string
 export function WriteFile(path: string, data: string): $CancellablePromise<void> {
     return $Call.ByID(3583868662, path, data);
 }
+
+/**
+ * WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
+ */
+export function WriteRepoFile(root: string, rel: string, content: string): $CancellablePromise<void> {
+    return $Call.ByID(2036528010, root, rel, content);
+}

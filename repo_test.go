@@ -88,3 +88,18 @@ func TestWriteFile(t *testing.T) {
 		t.Error("base64 invalide accepté")
 	}
 }
+
+func TestWriteRepoFile(t *testing.T) {
+	_, repo := fixture(t)
+	if err := (RepoService{}).WriteRepoFile(repo, ".claude/rules/go.md", "# Go"); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(repo, ".claude/rules/go.md")); string(b) != "# Go" {
+		t.Fatalf("contenu = %q", b)
+	}
+	for _, rel := range []string{"../evade.md", "/etc/passwd", ""} {
+		if err := (RepoService{}).WriteRepoFile(repo, rel, "x"); err == nil {
+			t.Errorf("%q accepté, hors du dépôt", rel)
+		}
+	}
+}

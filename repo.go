@@ -89,6 +89,25 @@ func (RepoService) WriteFile(path, data string) error {
 	return nil
 }
 
+// WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
+func (RepoService) WriteRepoFile(root, rel, content string) error {
+	dir, err := resolveRepoPath(root)
+	if err != nil {
+		return err
+	}
+	if !filepath.IsLocal(rel) {
+		return fmt.Errorf("Chemin hors du dépôt : « %s »", rel)
+	}
+	path := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("Impossible de créer le dossier de %s : %v", rel, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("Impossible d'enregistrer %s : %v", rel, err)
+	}
+	return nil
+}
+
 // resolveRepoPath valide un chemin saisi par l'utilisateur et renvoie sa forme canonique.
 // Les messages d'erreur sont affichés tels quels dans l'interface.
 func resolveRepoPath(input string) (string, error) {

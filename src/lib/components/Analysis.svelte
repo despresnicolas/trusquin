@@ -181,7 +181,9 @@
         {/key}
       {:else if view === 'proposals'}
         <Proposals
+          root={record.path}
           result={record.result}
+          onsaved={() => analyze(record!.path)}
           sent={drafts.map((d) => d.criterion)}
           onadd={(criterion, rule) => {
             drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];
