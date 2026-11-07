@@ -24,6 +24,8 @@ class Kit {
   quality = $derived(checkProject(this.project, this.files));
   /** Erreurs bloquantes : elles empêchent l'export sans confirmation et l'enregistrement. */
   errors = $derived(this.quality.issues.filter((i) => i.severity === 'error').length);
+  /** Aucune règle active : projet pas encore commencé, pas en erreur aux yeux de l'utilisateur. */
+  empty = $derived(!this.project.rules.some((r) => r.enabled));
   /** Incrémenté à chaque enregistrement dans l'historique, pour rafraîchir la liste. */
   saved = $state(0);
 }

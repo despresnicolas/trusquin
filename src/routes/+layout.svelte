@@ -13,7 +13,7 @@
     { href: '/analyze', label: 'Analyse de dépôt' },
     { href: '/generator', label: 'Générateur' },
   ];
-  const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
+  const hasErrors = $derived(store.errors > 0 && !store.empty);
 
   $effect(() => persist($state.snapshot(store.project)));
   // Menu « Aller » de la barre macOS (menu.go).

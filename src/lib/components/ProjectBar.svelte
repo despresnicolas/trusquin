@@ -10,8 +10,10 @@
 
   let notice = $state('');
   let resetting = $state(false);
-  let confirmed = $state(false);
   const errors = $derived(store.errors);
+  // Ce qui bloque l'export, avec la règle concernée quand il y en a une.
+  const blocking = $derived(store.quality.issues.filter((i) => i.severity === 'error'));
+  const titleOf = (id: string) => store.project.rules.find((r) => r.id === id)?.title || 'Sans titre';
 
   /** Les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles au projet en cours. */
   async function importFiles(e: Event) {
@@ -61,7 +63,7 @@
 
 <div class="bar card">
   <b class="name">{store.project.name || 'Sans nom'}</b>
-  <ScoreBadge score={store.quality.score} />
+  {#if store.empty}<span class="pill">à démarrer</span>{:else}<ScoreBadge score={store.quality.score} />{/if}
   <span class="spacer"></span>
   <button onclick={() => (resetting = true)}>Nouveau projet</button>
   <Hint
@@ -81,19 +83,22 @@
   <Hint
     text="Ajoute une version dans l'onglet Historique (en base). Rien n'est ajouté si rien n'a changé ; refusé tant qu'il reste des erreurs bloquantes."
   />
-  {#if errors && !confirmed}
-    <button class="sev-error" onclick={() => (confirmed = true)}>{errors} erreur(s) · exporter quand même…</button>
-  {:else}
-    <button class="primary" onclick={exportCurrent}>Exporter le zip</button>
-  {/if}
+  <button
+    class="primary"
+    onclick={exportCurrent}
+    disabled={errors > 0}
+    title={errors ? 'Export possible une fois les points ci-dessous réglés' : undefined}>Exporter le zip</button
+  >
   <Hint
-    text="Fichiers prêts à décompresser à la racine du dépôt, plus un rapport de qualité. Vérifier d'abord l'onglet Aperçu & export."
+    text="Fichiers prêts à décompresser à la racine du dépôt, plus un rapport de qualité. Disponible quand il ne reste aucune erreur bloquante."
   />
 </div>
 
 {#if resetting}
   <div class="card confirm" role="alert">
-    {#if errors}
+    {#if store.empty}
+      <span>Le projet en cours est vide : rien à enregistrer.</span>
+    {:else if errors}
       <span class="sev-error"
         >Le projet en cours a {errors} erreur(s) bloquante(s) : il ne sera pas enregistré et sera perdu.</span
       >
@@ -102,6 +107,24 @@
     {/if}
     <button class="primary" onclick={reset}>Nouveau projet</button>
     <button class="ghost" onclick={() => (resetting = false)}>Annuler</button>
+  </div>
+{/if}
+{#if store.empty}
+  <p class="card todo">
+    Projet vide : ajoute une première règle pour pouvoir exporter.
+    <a href="/generator?view=guide">Choisir un élément avec le guide</a> ou importer un CLAUDE.md existant.
+  </p>
+{:else if blocking.length}
+  <div class="card todo" role="status">
+    <b>Pour exporter, il reste {blocking.length} point{blocking.length > 1 ? 's' : ''} à régler :</b>
+    <ul>
+      {#each blocking as i, n (n)}
+        <li>
+          {i.message} <span class="muted">→ {i.fix}</span>
+          {#if i.ruleId}<a href="/generator?rule={i.ruleId}">Ouvrir « {titleOf(i.ruleId)} »</a>{/if}
+        </li>
+      {/each}
+    </ul>
   </div>
 {/if}
 {#if notice}<p class="muted notice">{notice}</p>{/if}
@@ -135,6 +158,14 @@
   }
   .file input {
     display: none;
+  }
+  .todo {
+    margin-top: 8px;
+    padding: 10px 14px;
+  }
+  .todo ul {
+    margin: 4px 0 0;
+    padding-left: 20px;
   }
   .notice {
     margin: 8px 2px 0;
