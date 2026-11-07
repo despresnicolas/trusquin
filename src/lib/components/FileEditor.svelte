@@ -9,7 +9,8 @@
     content,
     onsaved,
     onclose,
-  }: { root: string; path: string; content: string; onsaved: () => void; onclose: () => void } = $props();
+  }: { root: string; path: string; content: string; onsaved: (backups: string[]) => void; onclose: () => void } =
+    $props();
 
   let text = $state(untrack(() => content));
   let failure = $state('');
@@ -29,8 +30,7 @@
     saving = true;
     failure = '';
     try {
-      await api.writeRepoFile(root, path, text);
-      onsaved();
+      onsaved([await api.writeRepoFile(root, path, text)].filter(Boolean));
       dialog.close();
     } catch (e) {
       failure = (e as Error).message;
@@ -75,7 +75,9 @@
 
   {#if failure}<p class="sev-error">{failure}</p>{/if}
   <footer>
-    <span class="muted">Écrit dans {root}/{path}, puis le dépôt est ré-analysé.</span>
+    <span class="muted"
+      >Écrit dans {root}/{path} (l’ancienne version est sauvegardée), puis le dépôt est ré-analysé.</span
+    >
     <button class="ghost" onclick={() => dialog.close()}>Annuler</button>
     <button class="primary" onclick={save} disabled={saving || !changed || !text.trim()}
       >Enregistrer dans le dépôt</button

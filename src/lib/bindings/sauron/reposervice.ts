@@ -33,7 +33,8 @@ export function WriteFile(path: string, data: string): $CancellablePromise<void>
 
 /**
  * WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
+ * Un fichier existant est d'abord copié dans BackupDir/<dépôt>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
  */
-export function WriteRepoFile(root: string, rel: string, content: string): $CancellablePromise<void> {
+export function WriteRepoFile(root: string, rel: string, content: string): $CancellablePromise<string> {
     return $Call.ByID(2036528010, root, rel, content);
 }

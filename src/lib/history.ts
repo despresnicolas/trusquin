@@ -81,7 +81,7 @@ export const api = {
     await RepoService.WriteFile(path, await base64(data));
     return true;
   },
-  /** Écrit un fichier texte dans le dépôt analysé (chemin relatif à sa racine). */
+  /** Écrit un fichier texte dans le dépôt analysé (chemin relatif à sa racine) ; renvoie la sauvegarde de l'ancienne version, ou ''. */
   writeRepoFile: (root: string, rel: string, content: string) => RepoService.WriteRepoFile(root, rel, content),
   copy: (text: string) => Clipboard.SetText(text),
   get: async (id: number) => (await HistoryService.GetAnalysis(id)) as AnalysisRecord,

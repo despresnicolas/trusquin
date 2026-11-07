@@ -21,7 +21,7 @@
     root: string;
     existing: string[];
     onadd: (rule: Rule) => void;
-    onsaved: () => void;
+    onsaved: (backups: string[]) => void;
     onclose: () => void;
   } = $props();
 
@@ -39,8 +39,9 @@
   async function write() {
     failure = '';
     try {
-      for (const f of own) await api.writeRepoFile(root, f.path, f.content);
-      onsaved();
+      const backups: string[] = [];
+      for (const f of own) backups.push(await api.writeRepoFile(root, f.path, f.content));
+      onsaved(backups.filter(Boolean));
       dialog.close();
     } catch (e) {
       failure = (e as Error).message;

@@ -24,6 +24,8 @@
     record ? record.result.criteria.filter((c) => c.fix).length + record.result.memoryIssues.length : 0,
   );
   let failure = $state('');
+  // Sauvegardes des fichiers écrasés depuis les propositions : affichées jusqu'au prochain enregistrement.
+  let backups = $state<string[]>([]);
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
 
@@ -121,6 +123,13 @@
 </div>
 
 {#if failure}<p class="sev-error">{failure}</p>{/if}
+{#if backups.length}
+  <p class="muted">
+    Ancienne version sauvegardée : {#each backups as b (b)}<code>{b}</code>
+    {/each}
+    <button class="ghost" aria-label="Masquer" onclick={() => (backups = [])}>×</button>
+  </p>
+{/if}
 
 <div class="layout">
   <aside>
@@ -183,7 +192,10 @@
         <Proposals
           root={record.path}
           result={record.result}
-          onsaved={() => analyze(record!.path)}
+          onsaved={(list) => {
+            backups = list;
+            analyze(record!.path);
+          }}
           sent={drafts.map((d) => d.criterion)}
           onadd={(criterion, rule) => {
             drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];

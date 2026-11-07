@@ -17,7 +17,7 @@
     result: RepoAnalysis;
     sent: string[];
     onadd: (criterionId: string, rule: Rule) => void;
-    onsaved: () => void;
+    onsaved: (backups: string[]) => void;
   } = $props();
   let designing = $state<Criterion | null>(null);
   let editing = $state<{ path: string; content: string } | null>(null);

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 // Fichiers plus gros : chemin seul, contenu non lu.
@@ -24,7 +25,10 @@ type Snapshot struct {
 
 // RepoService lit le disque. Les listes d'ignorés et le motif des fichiers à lire viennent du cœur TS
 // (IGNORED_DIRS, TEXT_FILES) pour rester la seule source de vérité.
-type RepoService struct{}
+type RepoService struct {
+	// BackupDir reçoit une copie de chaque fichier avant que WriteRepoFile ne l'écrase.
+	BackupDir string
+}
 
 // Snapshot lit un dossier local : chemins hors dossiers ignorés, contenu des fichiers qui correspondent à pattern
 // (source d'une RegExp JS, insensible à la casse).
@@ -90,22 +94,35 @@ func (RepoService) WriteFile(path, data string) error {
 }
 
 // WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
-func (RepoService) WriteRepoFile(root, rel, content string) error {
+// Un fichier existant est d'abord copié dans BackupDir/<dépôt>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
+func (s RepoService) WriteRepoFile(root, rel, content string) (string, error) {
 	dir, err := resolveRepoPath(root)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !filepath.IsLocal(rel) {
-		return fmt.Errorf("Chemin hors du dépôt : « %s »", rel)
+		return "", fmt.Errorf("Chemin hors du dépôt : « %s »", rel)
 	}
 	path := filepath.Join(dir, rel)
+	backup := ""
+	if old, err := os.ReadFile(path); err == nil {
+		backup = filepath.Join(s.BackupDir, filepath.Base(dir), time.Now().Format("20060102-150405.000"), rel)
+		if err := os.MkdirAll(filepath.Dir(backup), 0o755); err != nil {
+			return "", fmt.Errorf("Sauvegarde impossible, %s n'est pas modifié : %v", rel, err)
+		}
+		if err := os.WriteFile(backup, old, 0o644); err != nil {
+			return "", fmt.Errorf("Sauvegarde impossible, %s n'est pas modifié : %v", rel, err)
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("Impossible de lire %s : %v", rel, err)
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("Impossible de créer le dossier de %s : %v", rel, err)
+		return "", fmt.Errorf("Impossible de créer le dossier de %s : %v", rel, err)
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("Impossible d'enregistrer %s : %v", rel, err)
+		return "", fmt.Errorf("Impossible d'enregistrer %s : %v", rel, err)
 	}
-	return nil
+	return backup, nil
 }
 
 // resolveRepoPath valide un chemin saisi par l'utilisateur et renvoie sa forme canonique.

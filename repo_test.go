@@ -91,14 +91,22 @@ func TestWriteFile(t *testing.T) {
 
 func TestWriteRepoFile(t *testing.T) {
 	_, repo := fixture(t)
-	if err := (RepoService{}).WriteRepoFile(repo, ".claude/rules/go.md", "# Go"); err != nil {
-		t.Fatal(err)
+	svc := RepoService{BackupDir: t.TempDir()}
+	if backup, err := svc.WriteRepoFile(repo, ".claude/rules/go.md", "# Go"); err != nil || backup != "" {
+		t.Fatalf("création : backup=%q err=%v", backup, err)
 	}
 	if b, _ := os.ReadFile(filepath.Join(repo, ".claude/rules/go.md")); string(b) != "# Go" {
 		t.Fatalf("contenu = %q", b)
 	}
+	backup, err := svc.WriteRepoFile(repo, ".claude/rules/go.md", "# Go v2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(backup); string(b) != "# Go" || !strings.HasPrefix(backup, svc.BackupDir) {
+		t.Fatalf("sauvegarde %q = %q", backup, b)
+	}
 	for _, rel := range []string{"../evade.md", "/etc/passwd", ""} {
-		if err := (RepoService{}).WriteRepoFile(repo, rel, "x"); err == nil {
+		if _, err := svc.WriteRepoFile(repo, rel, "x"); err == nil {
 			t.Errorf("%q accepté, hors du dépôt", rel)
 		}
 	}

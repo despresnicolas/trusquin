@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -26,7 +27,7 @@ func main() {
 		Name:        "SAURON",
 		Description: "Générateur et analyse de configuration Claude Code",
 		Services: []application.Service{
-			application.NewService(&RepoService{}),
+			application.NewService(&RepoService{BackupDir: filepath.Join(filepath.Dir(dbPath), "backups")}),
 			application.NewService(history),
 		},
 		Assets: application.AssetOptions{
