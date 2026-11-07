@@ -43,6 +43,7 @@
   }
 
   async function exportCurrent() {
+    if (errors || !store.files.length) return;
     await api.saveFile(zipName(store.project), await exportZip(store.files, store.quality));
   }
 
@@ -86,8 +87,12 @@
   <button
     class="primary"
     onclick={exportCurrent}
-    disabled={errors > 0}
-    title={errors ? 'Export possible une fois les points ci-dessous réglés' : undefined}>Exporter le zip</button
+    disabled={errors > 0 || !store.files.length}
+    title={!store.files.length
+      ? 'Aucun fichier à exporter'
+      : errors
+        ? 'Export possible une fois les points ci-dessous réglés'
+        : undefined}>Exporter le zip</button
   >
   <Hint
     text="Fichiers prêts à décompresser à la racine du dépôt, plus un rapport de qualité. Disponible quand il ne reste aucune erreur bloquante."
