@@ -38,7 +38,7 @@
     },
     {
       href: '/glossary',
-      label: 'Glossaire',
+      label: 'Référentiel',
       hint: 'Règles appliquées',
       key: '⌘5',
       icon: 'M5 5h14M5 10h14M5 15h9M5 20h6',

@@ -92,7 +92,7 @@
 
 <div class="glossary">
   <header>
-    <h1>Glossaire</h1>
+    <h1>Référentiel</h1>
     <p class="lead">Toutes les règles que Trusquin applique pour noter un dépôt et contrôler les fichiers.</p>
   </header>
 
