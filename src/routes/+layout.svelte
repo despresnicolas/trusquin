@@ -37,7 +37,7 @@
       icon: 'M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z',
     },
     {
-      href: '/glossary',
+      href: '/reference',
       label: 'Référentiel',
       hint: 'Règles appliquées',
       key: '⌘5',

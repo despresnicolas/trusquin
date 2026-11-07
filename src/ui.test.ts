@@ -4,7 +4,7 @@ import Analysis from './lib/components/Analysis.svelte';
 import Generator from './lib/components/Generator.svelte';
 import Home from './lib/components/Home.svelte';
 import Practices from './lib/components/Practices.svelte';
-import Glossary, { CHECKS } from './lib/components/Glossary.svelte';
+import Reference, { CHECKS } from './lib/components/Reference.svelte';
 import { readFileSync } from 'node:fs';
 import Guide from './lib/components/Guide.svelte';
 import Preview from './lib/components/Preview.svelte';
@@ -28,7 +28,7 @@ describe('ui smoke', () => {
     expect(render(Home).body).toContain('Que veux-tu faire');
     expect(render(Practices).body).toContain('Ce qui fait une bonne règle');
     expect(render(Practices).body).toContain('Où va chaque fichier');
-    expect(render(Glossary).body).toContain('Critères de la note');
+    expect(render(Reference).body).toContain('Critères de la note');
     const empty = { score: 100, grade: 'A' as const, criteria: [], memoryIssues: [], memoryFiles: [] };
     expect(
       render(Proposals, { props: { root: '/tmp', result: empty, sent: [], onadd: () => {}, onsaved: () => {} } }).body,
@@ -36,7 +36,7 @@ describe('ui smoke', () => {
   });
 });
 
-describe('glossaire', () => {
+describe('référentiel', () => {
   it('liste chaque code de contrôle du cœur', () => {
     const src = ['quality', 'analyze'].map((m) => readFileSync(`src/lib/core/${m}.ts`, 'utf8')).join('\n');
     const codes = new Set([...src.matchAll(/code: '([a-z-]+)'/g)].map((m) => m[1]));
