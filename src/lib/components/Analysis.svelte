@@ -241,7 +241,6 @@
             </tbody>
           </table>
         </div>
-        <button class="danger" onclick={() => forget(record!.path)} disabled={loading}>Supprimer l'historique</button>
       {/if}
     {/if}
   </section>
@@ -368,9 +367,6 @@
   .toolbar .path {
     flex: 1;
     min-width: 0;
-  }
-  .danger {
-    color: var(--err);
   }
   .history {
     width: 100%;
