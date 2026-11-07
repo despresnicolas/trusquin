@@ -1,5 +1,6 @@
 <script lang="ts">
   import Settings from '#lib/components/Settings.svelte';
+  import { i18n, t } from '#lib/i18n.svelte.ts';
   import { persist, store } from '#lib/state.svelte.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -14,39 +15,42 @@
 
   /** Le parcours, dans l'ordre : choisir, noter un dépôt, écrire ses fichiers. Mêmes raccourcis que le menu Aller. */
   const SECTIONS = [
-    { href: '/', label: 'Accueil', hint: 'Choisir quoi faire', key: '⌘1', icon: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z' },
+    { href: '/', label: 'nav.home', hint: 'nav.homeHint', key: '⌘1', icon: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z' },
     {
       href: '/analyze',
-      label: 'Analyser un dépôt',
-      hint: 'Note et propositions',
+      label: 'nav.analyze',
+      hint: 'nav.analyzeHint',
       key: '⌘2',
       icon: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14M16 16l4 4',
     },
     {
       href: '/generator',
-      label: 'Générateur',
-      hint: 'Écrire les fichiers',
+      label: 'nav.generator',
+      hint: 'nav.generatorHint',
       key: '⌘3',
       icon: 'M6 4h9l4 4v12H6zM14 4v5h5M9 13h7M9 17h5',
     },
     {
       href: '/practices',
-      label: 'Bonnes pratiques',
-      hint: 'Règles et fichiers',
+      label: 'nav.practices',
+      hint: 'nav.practicesHint',
       key: '⌘4',
       icon: 'M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z',
     },
     {
       href: '/reference',
-      label: 'Référentiel',
-      hint: 'Règles appliquées',
+      label: 'nav.reference',
+      hint: 'nav.referenceHint',
       key: '⌘5',
       icon: 'M5 5h14M5 10h14M5 15h9M5 20h6',
     },
-  ];
+  ] as const;
   const hasErrors = $derived(store.errors > 0 && !store.empty);
 
   $effect(() => persist($state.snapshot(store.project)));
+  $effect(() => {
+    document.documentElement.lang = i18n.locale;
+  });
   // Menu « Aller » (menu.go, ⌘1 à ⌘5).
   $effect(() => Events.On('navigate', (e) => goto(String(e.data))));
 </script>
@@ -54,16 +58,16 @@
 <div class="app">
   <!-- Glisser la colonne déplace la fenêtre (runtime Wails) ; les liens restent cliquables. -->
   <aside class:mac>
-    <nav aria-label="Navigation">
+    <nav aria-label={t('nav.label')}>
       {#each SECTIONS as s (s.href)}
         <a href={s.href} aria-current={page.url.pathname === s.href ? 'page' : undefined}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d={s.icon} /></svg>
           <span class="text">
             <b>
-              {s.label}
-              {#if s.href === '/generator' && hasErrors}<span class="dot" aria-label="erreurs à corriger"></span>{/if}
+              {t(s.label)}
+              {#if s.href === '/generator' && hasErrors}<span class="dot" aria-label={t('nav.errors')}></span>{/if}
             </b>
-            <small>{s.hint}</small>
+            <small>{t(s.hint)}</small>
           </span>
           <kbd>{s.key}</kbd>
         </a>
@@ -75,7 +79,7 @@
           d="M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"
         /></svg
       >
-      <span class="text"><b>Réglages</b></span>
+      <span class="text"><b>{t('settings.title')}</b></span>
       <kbd>⌘,</kbd>
     </button>
   </aside>

@@ -1,0 +1,30 @@
+import type { Key } from './fr';
+
+export const en: Record<Key, string> = {
+  'nav.label': 'Navigation',
+  'nav.home': 'Home',
+  'nav.homeHint': 'Choose what to do',
+  'nav.analyze': 'Analyze a repo',
+  'nav.analyzeHint': 'Score and proposals',
+  'nav.generator': 'Generator',
+  'nav.generatorHint': 'Write the files',
+  'nav.practices': 'Best practices',
+  'nav.practicesHint': 'Rules and files',
+  'nav.reference': 'Reference',
+  'nav.referenceHint': 'Rules applied',
+  'nav.errors': 'errors to fix',
+
+  'settings.title': 'Settings',
+  'settings.close': 'Close',
+  'settings.categories': 'Categories',
+  'settings.appearance': 'Appearance',
+  'settings.language': 'Language',
+  'settings.theme': 'Theme',
+  'settings.light': 'Light',
+  'settings.dark': 'Dark',
+  'settings.system': 'System',
+  'settings.uiLanguage': 'Interface language',
+  'settings.languageHint': '“System” follows the macOS language, and falls back to English if it is not French.',
+  'settings.cancel': 'Cancel',
+  'settings.save': 'Save',
+};
