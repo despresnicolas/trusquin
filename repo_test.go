@@ -111,3 +111,32 @@ func TestWriteRepoFile(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreBackup(t *testing.T) {
+	root, repo := fixture(t)
+	svc := RepoService{BackupDir: t.TempDir()}
+	if list, err := svc.ListBackups(repo); err != nil || len(list) != 0 {
+		t.Fatalf("aucune sauvegarde attendue : %v %v", list, err)
+	}
+	svc.WriteRepoFile(repo, "CLAUDE.md", "v1")
+	svc.WriteRepoFile(repo, "CLAUDE.md", "v2")
+	list, err := svc.ListBackups(repo)
+	if err != nil || len(list) != 1 || list[0].Rel != "CLAUDE.md" {
+		t.Fatalf("liste = %v, %v", list, err)
+	}
+	if _, err := svc.RestoreBackup(repo, list[0].Path); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(repo, "CLAUDE.md")); string(b) != "v1" {
+		t.Fatalf("restauré = %q", b)
+	}
+	if list, _ := svc.ListBackups(repo); len(list) != 2 {
+		t.Fatalf("la version remplacée doit être sauvegardée : %v", list)
+	}
+	// Un fichier hors des sauvegardes de ce dépôt est refusé.
+	for _, bad := range []string{filepath.Join(root, "fichier.txt"), filepath.Join(svc.BackupDir, "x")} {
+		if _, err := svc.RestoreBackup(repo, bad); err == nil {
+			t.Errorf("%s accepté", bad)
+		}
+	}
+}

@@ -16,6 +16,20 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * ListBackups liste les sauvegardes d'un dépôt, la plus récente d'abord.
+ */
+export function ListBackups(root: string): $CancellablePromise<$models.Backup[] | null> {
+    return $Call.ByID(979751012, root);
+}
+
+/**
+ * RestoreBackup remet une sauvegarde à sa place dans le dépôt ; la version remplacée est elle-même sauvegardée.
+ */
+export function RestoreBackup(root: string, backup: string): $CancellablePromise<string> {
+    return $Call.ByID(3930387319, root, backup);
+}
+
+/**
  * Snapshot lit un dossier local : chemins hors dossiers ignorés, contenu des fichiers qui correspondent à pattern
  * (source d'une RegExp JS, insensible à la casse).
  */
@@ -33,7 +47,7 @@ export function WriteFile(path: string, data: string): $CancellablePromise<void>
 
 /**
  * WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
- * Un fichier existant est d'abord copié dans BackupDir/<dépôt>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
+ * Un fichier existant est d'abord copié dans <repoBackupDir>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
  */
 export function WriteRepoFile(root: string, rel: string, content: string): $CancellablePromise<string> {
     return $Call.ByID(2036528010, root, rel, content);

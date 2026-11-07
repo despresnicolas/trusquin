@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Rule } from '#lib/core/types.ts';
+  import type { Backup } from '#lib/bindings/sauron/models.ts';
   import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
   import Proposals from './Proposals.svelte';
@@ -26,6 +27,8 @@
   let failure = $state('');
   // Sauvegardes des fichiers écrasés depuis les propositions : affichées jusqu'au prochain enregistrement.
   let backups = $state<string[]>([]);
+  // Sauvegardes du dépôt affiché, restaurables depuis l'onglet Historique.
+  let saved = $state<Backup[]>([]);
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
 
@@ -52,6 +55,7 @@
     record = next;
     path = next.path;
     runs = await api.runs(next.path);
+    saved = await api.backups(next.path).catch(() => []);
     view = 'report';
   }
 
@@ -63,6 +67,14 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => (toast = null), 5000);
       await refresh();
+    });
+
+  const restore = (b: Backup) =>
+    attempt(async () => {
+      if (!(await api.ask(`Remettre la version de ${b.rel} du ${date(b.savedAt)} ?`, 'Restaurer'))) return;
+      const replaced = await api.restore(record!.path, b.path);
+      backups = replaced ? [replaced] : [];
+      await analyze(record!.path);
     });
 
   const open = (id: number) => attempt(async () => show(await api.get(id)));
@@ -126,7 +138,7 @@
 {#if failure}<p class="sev-error">{failure}</p>{/if}
 {#if backups.length}
   <p class="muted">
-    Ancienne version sauvegardée : {#each backups as b (b)}<code>{b}</code>
+    Ancienne version sauvegardée, restaurable dans l’onglet Historique : {#each backups as b (b)}<code>{b}</code>
     {/each}
     <button class="ghost" aria-label="Masquer" onclick={() => (backups = [])}>×</button>
   </p>
@@ -241,6 +253,26 @@
             </tbody>
           </table>
         </div>
+        <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
+        {#if !saved.length}
+          <p class="muted">
+            Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis SAURON.
+          </p>
+        {:else}
+          <div class="scroll-x">
+            <table class="history">
+              <tbody>
+                {#each saved as b (b.path)}
+                  <tr>
+                    <td><code>{b.rel}</code></td>
+                    <td class="muted">{date(b.savedAt)}</td>
+                    <td><button onclick={() => restore(b)} disabled={loading}>Restaurer</button></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
       {/if}
     {/if}
   </section>

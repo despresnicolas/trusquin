@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -94,7 +96,7 @@ func (RepoService) WriteFile(path, data string) error {
 }
 
 // WriteRepoFile écrit un fichier texte dans un dépôt ; rel doit rester dans le dépôt (pas de .. ni de chemin absolu).
-// Un fichier existant est d'abord copié dans BackupDir/<dépôt>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
+// Un fichier existant est d'abord copié dans <repoBackupDir>/<horodatage>/<rel> : renvoie ce chemin, ou "" sans sauvegarde.
 func (s RepoService) WriteRepoFile(root, rel, content string) (string, error) {
 	dir, err := resolveRepoPath(root)
 	if err != nil {
@@ -106,7 +108,7 @@ func (s RepoService) WriteRepoFile(root, rel, content string) (string, error) {
 	path := filepath.Join(dir, rel)
 	backup := ""
 	if old, err := os.ReadFile(path); err == nil {
-		backup = filepath.Join(s.BackupDir, filepath.Base(dir), time.Now().Format("20060102-150405.000"), rel)
+		backup = filepath.Join(s.repoBackupDir(dir), time.Now().Format(backupStamp), rel)
 		if err := os.MkdirAll(filepath.Dir(backup), 0o755); err != nil {
 			return "", fmt.Errorf("Sauvegarde impossible, %s n'est pas modifié : %v", rel, err)
 		}
@@ -123,6 +125,70 @@ func (s RepoService) WriteRepoFile(root, rel, content string) (string, error) {
 		return "", fmt.Errorf("Impossible d'enregistrer %s : %v", rel, err)
 	}
 	return backup, nil
+}
+
+// Horodatage du dossier d'une sauvegarde : trié comme une date.
+const backupStamp = "20060102-150405.000"
+
+// Backup : une ancienne version d'un fichier du dépôt, avant qu'il soit écrasé.
+type Backup struct {
+	Path    string `json:"path"`
+	Rel     string `json:"rel"`
+	SavedAt string `json:"savedAt"`
+}
+
+// repoBackupDir : un dossier par dépôt ; l'empreinte du chemin sépare deux dépôts du même nom.
+func (s RepoService) repoBackupDir(dir string) string {
+	sum := sha256.Sum256([]byte(dir))
+	return filepath.Join(s.BackupDir, filepath.Base(dir)+"-"+hex.EncodeToString(sum[:4]))
+}
+
+// ListBackups liste les sauvegardes d'un dépôt, la plus récente d'abord.
+func (s RepoService) ListBackups(root string) ([]Backup, error) {
+	dir, err := resolveRepoPath(root)
+	if err != nil {
+		return nil, err
+	}
+	base := s.repoBackupDir(dir)
+	list := []Backup{}
+	err = filepath.WalkDir(base, func(abs string, d os.DirEntry, err error) error {
+		if err != nil || !d.Type().IsRegular() {
+			return err
+		}
+		rel, _ := filepath.Rel(base, abs)
+		stamp, file, ok := strings.Cut(filepath.ToSlash(rel), "/")
+		at, perr := time.ParseInLocation(backupStamp, stamp, time.Local)
+		if ok && perr == nil {
+			list = append(list, Backup{Path: abs, Rel: file, SavedAt: at.Format(time.RFC3339)})
+		}
+		return nil
+	})
+	if errors.Is(err, os.ErrNotExist) {
+		return list, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Impossible de lire les sauvegardes : %v", err)
+	}
+	slices.SortFunc(list, func(a, b Backup) int { return strings.Compare(b.Path, a.Path) })
+	return list, nil
+}
+
+// RestoreBackup remet une sauvegarde à sa place dans le dépôt ; la version remplacée est elle-même sauvegardée.
+func (s RepoService) RestoreBackup(root, backup string) (string, error) {
+	dir, err := resolveRepoPath(root)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(s.repoBackupDir(dir), backup)
+	_, file, ok := strings.Cut(filepath.ToSlash(rel), "/")
+	if err != nil || !filepath.IsLocal(rel) || !ok {
+		return "", fmt.Errorf("Ce n'est pas une sauvegarde de ce dépôt : %s", backup)
+	}
+	content, err := os.ReadFile(backup)
+	if err != nil {
+		return "", fmt.Errorf("Sauvegarde illisible : %v", err)
+	}
+	return s.WriteRepoFile(dir, file, string(content))
 }
 
 // resolveRepoPath valide un chemin saisi par l'utilisateur et renvoie sa forme canonique.
