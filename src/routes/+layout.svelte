@@ -15,12 +15,15 @@
   ];
   const hasErrors = $derived(store.errors > 0 && !store.empty);
 
+  // macOS : place réservée aux boutons de fenêtre, la barre de titre étant masquée (main.go).
+  const mac = navigator.userAgent.includes('Mac');
+
   $effect(() => persist($state.snapshot(store.project)));
   // Menu « Aller » de la barre macOS (menu.go).
   $effect(() => Events.On('navigate', (e) => goto(String(e.data))));
 </script>
 
-<header>
+<header class:mac>
   <div class="brand">
     <a href="/"><strong>SAURON</strong></a>
   </div>
@@ -49,8 +52,15 @@
     gap: 16px;
     flex-wrap: wrap;
     padding: 10px 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    /* Glisser l'en-tête déplace la fenêtre (runtime Wails) ; les contrôles restent cliquables. */
+    --wails-draggable: drag;
+  }
+  header.mac {
+    padding-left: 84px;
+  }
+  header :global(:is(a, button, input, select, label)) {
+    --wails-draggable: no-drag;
   }
   .brand {
     display: grid;
