@@ -91,13 +91,16 @@ function frontmatterOf(text: string): string | null {
 
 const stripFrontmatter = (text: string) => text.replace(/^---\r?\n[\s\S]*?\r?\n---(\r?\n|$)/, '');
 
-function grade(score: number): RepoAnalysis['grade'] {
-  if (score >= 85) return 'A';
-  if (score >= 70) return 'B';
-  if (score >= 55) return 'C';
-  if (score >= 40) return 'D';
-  return 'E';
-}
+/** Barème des lettres, de la meilleure à la moins bonne : note minimale sur 100 pour chacune. */
+export const GRADES: { grade: RepoAnalysis['grade']; min: number }[] = [
+  { grade: 'A', min: 85 },
+  { grade: 'B', min: 70 },
+  { grade: 'C', min: 55 },
+  { grade: 'D', min: 40 },
+  { grade: 'E', min: 0 },
+];
+
+const grade = (score: number) => GRADES.find((g) => score >= g.min)!.grade;
 
 export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
   const { paths, contents } = repo;

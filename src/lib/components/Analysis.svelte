@@ -5,7 +5,7 @@
   import AnalysisReport from './AnalysisReport.svelte';
   import Proposals from './Proposals.svelte';
   import RepoFiles from './RepoFiles.svelte';
-  import Hint from './Hint.svelte';
+  import HowItWorks from './HowItWorks.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
   import { untrack } from 'svelte';
 
@@ -46,9 +46,20 @@
     }
   }
 
+  // Tant que la liste n'est pas lue, on n'affiche pas l'état vide (évite un flash au chargement).
+  let ready = $state(false);
   const refresh = async () => {
     repos = await api.repos();
+    ready = true;
   };
+
+  const pick = () =>
+    attempt(async () => {
+      const chosen = await api.pickDir(path);
+      if (!chosen) return;
+      path = chosen;
+      await analyze(chosen);
+    });
 
   async function show(next: AnalysisRecord) {
     if (next.path !== record?.path) drafts = [];
@@ -104,37 +115,6 @@
   });
 </script>
 
-<div class="card intro">
-  <div>
-    <h3>Analyser un projet</h3>
-  </div>
-  <form
-    onsubmit={(e) => {
-      e.preventDefault();
-      analyze(path);
-    }}
-  >
-    <input bind:value={path} placeholder="/Users/moi/Dev/mon-repo" aria-label="Chemin du dossier" required />
-    <button
-      type="button"
-      class="primary"
-      disabled={loading}
-      onclick={() =>
-        attempt(async () => {
-          const chosen = await api.pickDir(path);
-          if (!chosen) return;
-          path = chosen;
-          await analyze(chosen);
-        })}
-    >
-      {loading ? 'Analyse…' : 'Ajouter un dépôt'}
-    </button>
-    <Hint
-      text="Choisir un dossier de l'ordinateur : il est noté sur sa préparation pour Claude Code (A à E). Rien n'est modifié dans le dépôt ; le résultat est gardé dans l'historique."
-    />
-  </form>
-</div>
-
 {#if failure}<p class="sev-error">{failure}</p>{/if}
 {#if backups.length}
   <p class="muted">
@@ -144,139 +124,194 @@
   </p>
 {/if}
 
-<div class="layout">
-  <aside>
-    <h3>Dépôts</h3>
-    {#if !repos.length}
-      <p class="muted">Aucun dépôt analysé.</p>
-    {/if}
-    <ul class="repos">
-      {#each repos as repo (repo.last.path)}
-        {@const delta = repo.previousScore === null ? null : repo.last.score - repo.previousScore}
-        <li class:active={record?.path === repo.last.path}>
-          <button class="item" onclick={() => open(repo.last.id)} title={repo.last.path}>
-            <span class="head">
-              <b>{repo.last.name}</b>
-              <ScoreBadge score={repo.last.score} label={repo.last.grade} />
-            </span>
-            <span class="muted path">{repo.last.path}</span>
-            <span class="muted small">
-              {date(repo.last.createdAt)} · {repo.runs} analyse{repo.runs > 1 ? 's' : ''}
-              {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
-            </span>
-          </button>
-          <button
-            class="ghost remove"
-            onclick={() => forget(repo.last.path)}
-            disabled={loading}
-            aria-label="Retirer {repo.last.name}"
-            title="Retirer ce dépôt et ses analyses (le dossier n'est pas touché)">Supprimer</button
-          >
-        </li>
-      {/each}
-    </ul>
-  </aside>
-
-  <section>
-    {#if record}
-      <div class="toolbar">
-        <code class="path">{record.path}</code>
-        <button onclick={() => analyze(record!.path)} disabled={loading}>Ré-analyser</button>
-        <Hint
-          text="Relit le dépôt après tes changements et ajoute une analyse : l'onglet Historique montre l'évolution du score."
-        />
-      </div>
-      <div class="views" role="tablist">
-        <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
-        <button
-          role="tab"
-          aria-selected={view === 'proposals'}
-          title="Ce qu'il faut corriger, trié par points gagnés"
-          onclick={() => (view = 'proposals')}
+{#if ready && !repos.length}
+  <div class="empty">
+    <h1>Analyser un dépôt</h1>
+    <p class="lead">
+      SAURON note un dossier sur sa préparation pour Claude Code (A à E) et liste les corrections, triées par points
+      gagnés. Rien n'est modifié dans le dépôt sans ton accord.
+    </p>
+    <button class="primary" onclick={pick} disabled={loading}>{loading ? 'Analyse…' : 'Choisir un dossier…'}</button>
+  </div>
+  <HowItWorks />
+{:else}
+  <div class="layout">
+    <aside>
+      <div class="aside-head">
+        <h3>Dépôts</h3>
+        <button class="add" onclick={pick} disabled={loading} aria-label="Ajouter un dépôt" title="Ajouter un dépôt"
+          >{loading ? '…' : '+'}</button
         >
-          Propositions <span class="muted">{proposals}</span>
-        </button>
-        <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>
-          Fichiers Claude
-          {#if drafts.length}<span class="pill">{drafts.length} nouveau{drafts.length > 1 ? 'x' : ''}</span>{/if}
-        </button>
-        <button role="tab" aria-selected={view === 'history'} onclick={() => (view = 'history')}>
-          Historique <span class="muted">{runs.length}</span>
-        </button>
       </div>
-      {#if view === 'report'}
-        {#key record.id}
-          <AnalysisReport {record} />
-        {/key}
-      {:else if view === 'proposals'}
-        <Proposals
-          root={record.path}
-          result={record.result}
-          onsaved={(list) => {
-            backups = list;
-            analyze(record!.path);
-          }}
-          sent={drafts.map((d) => d.criterion)}
-          onadd={(criterion, rule) => {
-            drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];
-            view = 'files';
-          }}
-        />
-      {:else if view === 'files'}
-        {#key record.path}
-          <RepoFiles
-            path={record.path}
-            name={record.name}
-            drafts={drafts.map((d) => d.rule)}
-            onremove={(id) => (drafts = drafts.filter((d) => d.rule.id !== id))}
-          />
-        {/key}
+      <ul class="repos">
+        {#each repos as repo (repo.last.path)}
+          {@const delta = repo.previousScore === null ? null : repo.last.score - repo.previousScore}
+          <li class:active={record?.path === repo.last.path}>
+            <button class="item" onclick={() => open(repo.last.id)} title={repo.last.path}>
+              <span class="head">
+                <b>{repo.last.name}</b>
+                <ScoreBadge score={repo.last.score} label={repo.last.grade} />
+              </span>
+              <span class="muted path">{repo.last.path}</span>
+              <span class="muted small">
+                {date(repo.last.createdAt)} · {repo.runs} analyse{repo.runs > 1 ? 's' : ''}
+                {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
+              </span>
+            </button>
+            <button
+              class="ghost remove"
+              onclick={() => forget(repo.last.path)}
+              disabled={loading}
+              aria-label="Retirer {repo.last.name}"
+              title="Retirer ce dépôt et ses analyses (le dossier n'est pas touché)">Supprimer</button
+            >
+          </li>
+        {/each}
+      </ul>
+    </aside>
+
+    <section>
+      {#if !record}
+        <p class="muted">Choisis un dépôt dans la liste, ou ajoutes-en un avec +.</p>
       {:else}
-        <div class="scroll-x">
-          <table class="history">
-            <tbody>
-              {#each runs as r, i (r.id)}
-                {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
-                <tr class:active={r.id === record.id}>
-                  <td>
-                    <button class="ghost" onclick={() => open(r.id)}>{date(r.createdAt)}</button>
-                  </td>
-                  <td><ScoreBadge score={r.score} label={r.grade} /></td>
-                  <td>
-                    {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
-                      >{/if}
-                  </td>
-                  <td class="muted">{r.fileCount} fichiers</td>
-                  <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+        <div class="title">
+          <h2>{record.name} <ScoreBadge score={record.score} label={record.grade} /></h2>
+          <code class="muted path" title={record.path}>{record.path}</code>
         </div>
-        <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
-        {#if !saved.length}
-          <p class="muted">
-            Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis SAURON.
-          </p>
+        <!-- La boucle de travail, appliquée à ce dépôt : chaque étape dit où on en est et y mène. -->
+        <ol class="steps" aria-label="Étapes">
+          <li class="done static">
+            <span class="num">✓</span>
+            <span class="label"><b>Analysé</b><small class="muted">{date(record.createdAt)}</small></span>
+          </li>
+          <li class:done={!proposals}>
+            <button class="ghost" onclick={() => (view = 'proposals')}>
+              <span class="num">{proposals ? 2 : '✓'}</span>
+              <span class="label"
+                ><b>Corriger</b><small class="muted"
+                  >{proposals ? `${proposals} proposition${proposals > 1 ? 's' : ''}` : 'Rien à corriger'}</small
+                ></span
+              >
+            </button>
+          </li>
+          <li class:done={!drafts.length}>
+            <button class="ghost" onclick={() => (view = 'files')}>
+              <span class="num">{drafts.length ? 3 : '✓'}</span>
+              <span class="label"
+                ><b>Exporter</b><small class="muted"
+                  >{drafts.length
+                    ? `${drafts.length} règle${drafts.length > 1 ? 's' : ''} à exporter`
+                    : 'Rien en attente'}</small
+                ></span
+              >
+            </button>
+          </li>
+          <li>
+            <button
+              class="ghost"
+              onclick={() => analyze(record!.path)}
+              disabled={loading}
+              title="Relit le dépôt après tes changements : l'onglet Historique montre l'évolution de la note."
+            >
+              <span class="num">4</span>
+              <span class="label"
+                ><b>{loading ? 'Analyse…' : 'Ré-analyser'}</b><small class="muted">Voir la note monter</small></span
+              >
+            </button>
+          </li>
+        </ol>
+        <div class="views" role="tablist">
+          <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
+          <button
+            role="tab"
+            aria-selected={view === 'proposals'}
+            title="Ce qu'il faut corriger, trié par points gagnés"
+            onclick={() => (view = 'proposals')}
+          >
+            Propositions <span class="muted">{proposals}</span>
+          </button>
+          <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>
+            Fichiers Claude
+            {#if drafts.length}<span class="pill">{drafts.length} nouveau{drafts.length > 1 ? 'x' : ''}</span>{/if}
+          </button>
+          <button role="tab" aria-selected={view === 'history'} onclick={() => (view = 'history')}>
+            Historique <span class="muted">{runs.length}</span>
+          </button>
+        </div>
+        {#if view === 'report'}
+          {#key record.id}
+            <AnalysisReport {record} />
+          {/key}
+        {:else if view === 'proposals'}
+          <Proposals
+            root={record.path}
+            result={record.result}
+            onsaved={(list) => {
+              backups = list;
+              analyze(record!.path);
+            }}
+            sent={drafts.map((d) => d.criterion)}
+            onadd={(criterion, rule) => {
+              drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];
+              view = 'files';
+            }}
+          />
+        {:else if view === 'files'}
+          {#key record.path}
+            <RepoFiles
+              path={record.path}
+              name={record.name}
+              drafts={drafts.map((d) => d.rule)}
+              onremove={(id) => (drafts = drafts.filter((d) => d.rule.id !== id))}
+            />
+          {/key}
         {:else}
           <div class="scroll-x">
             <table class="history">
               <tbody>
-                {#each saved as b (b.path)}
-                  <tr>
-                    <td><code>{b.rel}</code></td>
-                    <td class="muted">{date(b.savedAt)}</td>
-                    <td><button onclick={() => restore(b)} disabled={loading}>Restaurer</button></td>
+                {#each runs as r, i (r.id)}
+                  {@const delta = runs[i + 1] ? r.score - runs[i + 1].score : 0}
+                  <tr class:active={r.id === record.id}>
+                    <td>
+                      <button class="ghost" onclick={() => open(r.id)}>{date(r.createdAt)}</button>
+                    </td>
+                    <td><ScoreBadge score={r.score} label={r.grade} /></td>
+                    <td>
+                      {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
+                        >{/if}
+                    </td>
+                    <td class="muted">{r.fileCount} fichiers</td>
+                    <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
+          <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
+          {#if !saved.length}
+            <p class="muted">
+              Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis SAURON.
+            </p>
+          {:else}
+            <div class="scroll-x">
+              <table class="history">
+                <tbody>
+                  {#each saved as b (b.path)}
+                    <tr>
+                      <td><code>{b.rel}</code></td>
+                      <td class="muted">{date(b.savedAt)}</td>
+                      <td><button onclick={() => restore(b)} disabled={loading}>Restaurer</button></td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
         {/if}
       {/if}
-    {/if}
-  </section>
-</div>
+    </section>
+  </div>
+{/if}
 
 <div class="toast-zone" role="status" aria-live="polite">
   {#if toast}
@@ -293,29 +328,33 @@
 </div>
 
 <style>
-  .intro {
+  h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+  }
+  .lead {
+    max-width: 62ch;
+    margin: 0 auto 20px;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .empty {
+    padding: 48px 0 40px;
+    text-align: center;
+  }
+  .aside-head {
     display: flex;
-    gap: 20px;
     align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
+    justify-content: space-between;
+    margin-bottom: 8px;
   }
-  .intro > div {
-    flex: 1;
-    min-width: 240px;
-  }
-  .intro h3 {
-    margin: 0 0 4px;
-  }
-  form {
-    display: flex;
-    gap: 8px;
-    flex: 1;
-    min-width: 280px;
-  }
-  form input {
-    flex: 1;
-    font-family: var(--mono);
+  .add {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
   }
   .layout {
     display: grid;
@@ -329,7 +368,7 @@
     }
   }
   aside h3 {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: 15px;
   }
   .repos {
@@ -390,15 +429,62 @@
   .down {
     color: var(--err);
   }
-  .toolbar {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .toolbar .path {
-    flex: 1;
+  .title {
+    display: grid;
+    gap: 2px;
     min-width: 0;
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .steps li {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .steps .static,
+  .steps button {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  .steps .label {
+    display: grid;
+    line-height: 1.3;
+  }
+  .steps small {
+    font-size: 12px;
+  }
+  .steps .num {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .steps .done .num {
+    background: var(--ok);
+  }
+  .title h2 {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 0;
+    font-size: 20px;
   }
   .history {
     width: 100%;
