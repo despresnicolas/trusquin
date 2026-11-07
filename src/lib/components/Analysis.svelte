@@ -69,7 +69,8 @@
 
   const forget = (target: string) =>
     attempt(async () => {
-      if (!(await api.ask(`Supprimer tout l'historique de ${target} ?`))) return;
+      if (!(await api.ask(`Retirer ${target} de SAURON ? Ses analyses sont supprimées, le dossier n'est pas touché.`)))
+        return;
       await api.forget(target);
       if (record?.path === target) {
         record = null;
@@ -152,6 +153,13 @@
               {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
             </span>
           </button>
+          <button
+            class="ghost remove"
+            onclick={() => forget(repo.last.path)}
+            disabled={loading}
+            aria-label="Retirer {repo.last.name}"
+            title="Retirer ce dépôt et ses analyses (le dossier n'est pas touché)">Supprimer</button
+          >
         </li>
       {/each}
     </ul>
@@ -310,6 +318,21 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: inherit;
+  }
+  .repos li {
+    position: relative;
+  }
+  .remove {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .remove:hover,
+  .remove:focus-visible {
+    color: var(--err);
   }
   .active .item {
     border-color: var(--accent);
