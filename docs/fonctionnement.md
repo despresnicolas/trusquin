@@ -36,11 +36,11 @@ Note sur 100 (A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, E). Les critères non appl
 
 Analyses et projets sont enregistrés dans une base SQLite locale, dans le dossier de configuration de l'utilisateur :
 
-- macOS : `~/Library/Application Support/sauron/sauron.db`
-- Linux : `~/.config/sauron/sauron.db`
-- Windows : `%AppData%\sauron\sauron.db`
+- macOS : `~/Library/Application Support/trusquin/trusquin.db`
+- Linux : `~/.config/trusquin/trusquin.db`
+- Windows : `%AppData%\trusquin\trusquin.db`
 
-La variable d'environnement `SAURON_DB` permet d'en choisir un autre chemin.
+La variable d'environnement `TRUSQUIN_DB` permet d'en choisir un autre chemin.
 
 ## Sources
 

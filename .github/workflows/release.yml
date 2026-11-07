@@ -38,11 +38,11 @@ jobs:
       - run: wails3 package
       # Le .app est un dossier : on le zippe pour l'upload.
       - if: runner.os == 'macOS'
-        run: cd bin && ditto -c -k --keepParent sauron.app sauron-macos.zip
+        run: cd bin && ditto -c -k --keepParent trusquin.app trusquin-macos.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: sauron-${{ runner.os }}
-          path: ${{ runner.os == 'macOS' && 'bin/sauron-macos.zip' || matrix.artifacts }}
+          name: trusquin-${{ runner.os }}
+          path: ${{ runner.os == 'macOS' && 'bin/trusquin-macos.zip' || matrix.artifacts }}
 
   release:
     needs: package

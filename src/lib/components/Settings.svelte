@@ -3,8 +3,8 @@
 
   type Theme = 'light' | 'dark' | 'system';
   type Lang = 'system' | 'fr' | 'en';
-  const THEME_KEY = 'sauron:theme';
-  const LANG_KEY = 'sauron:lang';
+  const THEME_KEY = 'trusquin:theme';
+  const LANG_KEY = 'trusquin:lang';
   const THEMES: { id: Theme; label: string }[] = [
     { id: 'light', label: 'Clair' },
     { id: 'dark', label: 'Sombre' },
@@ -48,7 +48,7 @@
     }
   }
 
-  /** Ouvre les réglages : menu SAURON (⌘,) ou bouton de la colonne (+layout.svelte). */
+  /** Ouvre les réglages : menu Trusquin (⌘,) ou bouton de la colonne (+layout.svelte). */
   export function show() {
     draftTheme = theme;
     draftLang = lang;
@@ -68,7 +68,7 @@
     dialog.close();
   }
 
-  // « Réglages… » (⌘,) du menu SAURON (menu.go).
+  // « Réglages… » (⌘,) du menu Trusquin (menu.go).
   $effect(() => Events.On('settings', show));
 </script>
 

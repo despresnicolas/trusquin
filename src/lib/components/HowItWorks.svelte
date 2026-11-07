@@ -3,7 +3,7 @@
 
   /** La boucle de travail, en quatre temps. */
   const LOOP = [
-    { title: 'Analyser', text: 'SAURON note le dépôt sur 100 et liste les propositions, triées par points gagnés.' },
+    { title: 'Analyser', text: 'Trusquin note le dépôt sur 100 et liste les propositions, triées par points gagnés.' },
     {
       title: 'Corriger',
       text: 'Modifier ou créer les fichiers depuis les propositions, ou les écrire dans le générateur.',

@@ -1,9 +1,9 @@
 import { Clipboard, Dialogs } from '@wailsio/runtime';
-import { HistoryService, RepoService } from './bindings/sauron';
+import { HistoryService, RepoService } from './bindings/trusquin';
 import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
 import { checkProject } from './core/quality';
 import type { ClaudeFile, Project, RepoAnalysis, RepoSnapshot } from './core/types';
-import type { Backup } from './bindings/sauron/models';
+import type { Backup } from './bindings/trusquin/models';
 
 /** Une analyse enregistrée, sans le détail des critères. */
 export interface AnalysisRun {

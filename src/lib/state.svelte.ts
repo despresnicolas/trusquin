@@ -4,7 +4,7 @@ import { checkProject } from './core/quality';
 import type { Project } from './core/types';
 import { api } from './history';
 
-const KEY = 'sauron:project';
+const KEY = 'trusquin:project';
 const LEGACY_KEYS = ['tars:project', 'claude-kit:project'];
 
 function load(): Project {

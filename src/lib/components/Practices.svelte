@@ -124,7 +124,7 @@
 <div class="page">
   <header>
     <h1>Bonnes pratiques</h1>
-    <p class="lead">Ce que SAURON vérifie, et pourquoi : une consigne utile, au bon endroit, tenue à jour.</p>
+    <p class="lead">Ce que Trusquin vérifie, et pourquoi : une consigne utile, au bon endroit, tenue à jour.</p>
   </header>
 
   <section>
@@ -145,7 +145,7 @@
                     <dt class="good"><span aria-hidden="true">✓</span> À préférer</dt>
                     <dd>{p.good}</dd>
                   </dl>
-                  {#if p.check}<p class="check">Vérifié par SAURON : {p.check}</p>{/if}
+                  {#if p.check}<p class="check">Vérifié par Trusquin : {p.check}</p>{/if}
                 </details>
               </li>
             {/each}

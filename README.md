@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="build/appicon.png" alt="Logo SAURON" width="128">
+<img src="build/appicon.png" alt="Logo Trusquin" width="128">
 
-# SAURON
+# Trusquin
 
-**Écrivez vos règles une fois. SAURON les range au bon endroit pour Claude Code.**
+**Écrivez vos règles une fois. Trusquin les range au bon endroit pour Claude Code.**
 
 ![Statut](https://img.shields.io/badge/statut-b%C3%AAta-orange)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
@@ -13,13 +13,13 @@
 
 </div>
 
-SAURON est une application de bureau gratuite pour les développeurs qui utilisent [Claude Code](https://claude.com/claude-code), l'assistant de programmation d'Anthropic. Vous décrivez vos consignes en langage courant, SAURON génère les bons fichiers (`CLAUDE.md`, règles, skills, agents, hooks…), les place au bon endroit, vérifie leur qualité et note vos dépôts existants.
+Trusquin est une application de bureau gratuite pour les développeurs qui utilisent [Claude Code](https://claude.com/claude-code), l'assistant de programmation d'Anthropic. Vous décrivez vos consignes en langage courant, Trusquin génère les bons fichiers (`CLAUDE.md`, règles, skills, agents, hooks…), les place au bon endroit, vérifie leur qualité et note vos dépôts existants.
 
 ## 📸 Aperçu
 
-<!-- TODO : ajouter une capture, par exemple ![Générateur SAURON](docs/capture.png) -->
+<!-- TODO : ajouter une capture, par exemple ![Générateur Trusquin](docs/capture.png) -->
 
-> 💡 _SAURON = Standards for Agents: Unified Rules, Oversight & Nesting._
+> 💡 _Le trusquin est l’outil du charpentier qui trace, avant la coupe, où passera chaque ligne._
 
 ## ✨ Fonctionnalités
 
@@ -41,11 +41,11 @@ SAURON est une application de bureau gratuite pour les développeurs qui utilise
 go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 wails3 doctor
 
-# 2. Récupérer et compiler SAURON
-git clone https://github.com/despresnicolas/sauron.git
-cd sauron
+# 2. Récupérer et compiler Trusquin
+git clone https://github.com/despresnicolas/trusquin.git
+cd trusquin
 pnpm install
-wails3 build       # binaire dans bin/sauron
+wails3 build       # binaire dans bin/trusquin
 wails3 package     # application empaquetée (.app, installeur…)
 ```
 
@@ -58,7 +58,7 @@ wails3 package     # application empaquetée (.app, installeur…)
 
 Projet déjà configuré ? Ouvrez **Analyse de dépôt**, choisissez le dossier et importez ses règles pour les retravailler.
 
-| Vous écrivez…                           | SAURON génère…                         |
+| Vous écrivez…                           | Trusquin génère…                       |
 | --------------------------------------- | -------------------------------------- |
 | Une règle pour tout le projet           | `CLAUDE.md`                            |
 | Une règle pour les fichiers `*.test.ts` | `.claude/rules/<nom>.md` avec `paths:` |
@@ -74,9 +74,9 @@ Projet déjà configuré ? Ouvrez **Analyse de dépôt**, choisissez le dossier 
 
 ## 🤝 Contribuer
 
-Les contributions sont bienvenues ! Signalez un bug ou proposez une idée dans les [issues](https://github.com/despresnicolas/sauron/issues).
+Les contributions sont bienvenues ! Signalez un bug ou proposez une idée dans les [issues](https://github.com/despresnicolas/trusquin/issues).
 
-SAURON est une application [Wails 3](https://v3.wails.io/) : Go pour l'accès disque et la base, SvelteKit (Svelte 5, TypeScript) pour l'interface et toute la logique métier.
+Trusquin est une application [Wails 3](https://v3.wails.io/) : Go pour l'accès disque et la base, SvelteKit (Svelte 5, TypeScript) pour l'interface et toute la logique métier.
 
 ```bash
 wails3 dev         # mode développement, rechargement du Go et du front
@@ -100,4 +100,4 @@ Les choix d'architecture sont consignés dans [`docs/adr/`](docs/adr/).
 
 Distribué sous licence [MIT](LICENSE).
 
-SAURON est un projet indépendant, sans lien avec Anthropic.
+Trusquin est un projet indépendant, sans lien avec Anthropic.

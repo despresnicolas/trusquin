@@ -1,4 +1,4 @@
-# Sauron
+# Trusquin
 
 Transforme des règles en fichiers Claude Code placés au bon endroit, et note des dépôts existants sur leur préparation pour Claude Code.
 

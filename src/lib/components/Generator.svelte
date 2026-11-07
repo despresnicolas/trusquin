@@ -41,7 +41,7 @@
       status: () => '',
     },
     rules: {
-      why: 'Chaque règle dit quoi faire et à quoi elle s’applique ; SAURON en déduit le fichier et son emplacement.',
+      why: 'Chaque règle dit quoi faire et à quoi elle s’applique ; Trusquin en déduit le fichier et son emplacement.',
       todo: [
         'Pour chaque règle : une consigne précise, vérifiable, formulée en positif.',
         'Les pastilles rouges et orange signalent ce qui est à corriger.',
@@ -84,7 +84,7 @@
 
 {#if view === 'start'}
   <h2>Que veux-tu faire ?</h2>
-  <p class="muted">Choisis un objectif : SAURON t’accompagne ensuite étape par étape.</p>
+  <p class="muted">Choisis un objectif : Trusquin t’accompagne ensuite étape par étape.</p>
   <GoalChooser />
 {:else if step}
   <ProjectBar />

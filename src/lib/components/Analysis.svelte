@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Rule } from '#lib/core/types.ts';
-  import type { Backup } from '#lib/bindings/sauron/models.ts';
+  import type { Backup } from '#lib/bindings/trusquin/models.ts';
   import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
   import Proposals from './Proposals.svelte';
@@ -92,7 +92,9 @@
 
   const forget = (target: string) =>
     attempt(async () => {
-      if (!(await api.ask(`Retirer ${target} de SAURON ? Ses analyses sont supprimées, le dossier n'est pas touché.`)))
+      if (
+        !(await api.ask(`Retirer ${target} de Trusquin ? Ses analyses sont supprimées, le dossier n'est pas touché.`))
+      )
         return;
       await api.forget(target);
       if (record?.path === target) {
@@ -128,7 +130,7 @@
   <div class="empty">
     <h1>Analyser un dépôt</h1>
     <p class="lead">
-      SAURON note un dossier sur sa préparation pour Claude Code (A à E) et liste les corrections, triées par points
+      Trusquin note un dossier sur sa préparation pour Claude Code (A à E) et liste les corrections, triées par points
       gagnés. Rien n'est modifié dans le dépôt sans ton accord.
     </p>
     <button class="primary" onclick={pick} disabled={loading}>{loading ? 'Analyse…' : 'Choisir un dossier…'}</button>
@@ -290,7 +292,7 @@
           <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
           {#if !saved.length}
             <p class="muted">
-              Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis SAURON.
+              Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis Trusquin.
             </p>
           {:else}
             <div class="scroll-x">

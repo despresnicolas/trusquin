@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=SAURON
+Name=Trusquin
 Comment=Générateur et analyse de configuration Claude Code
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/sauron %u
+Exec=/usr/local/bin/trusquin %u
 Terminal=false
 Type=Application
-Icon=sauron
+Icon=trusquin
 Categories=Utility;
-StartupWMClass=sauron
+StartupWMClass=trusquin
 
  

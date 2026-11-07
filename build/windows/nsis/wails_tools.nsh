@@ -5,13 +5,13 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "sauron"
+    !define INFO_PROJECTNAME "trusquin"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "SAURON"
+    !define INFO_COMPANYNAME "Trusquin"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "SAURON"
+    !define INFO_PRODUCTNAME "Trusquin"
 !endif
 !ifndef INFO_PRODUCTVERSION
     !define INFO_PRODUCTVERSION "0.1.0"
