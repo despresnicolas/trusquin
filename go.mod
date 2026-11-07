@@ -1,4 +1,4 @@
-module sauron
+module trusquin
 
 go 1.26.0
 

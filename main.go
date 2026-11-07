@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -14,6 +15,13 @@ import (
 var assets embed.FS
 
 func main() {
+	// Anciennes données de SAURON : en cas d'échec elles restent en place, rien n'est perdu.
+	if config, err := os.UserConfigDir(); err == nil {
+		home, _ := os.UserHomeDir()
+		if err := migrateFromSauron(config, home); err != nil {
+			log.Print(err)
+		}
+	}
 	dbPath, err := defaultDBPath()
 	if err != nil {
 		log.Fatal(err)
@@ -24,7 +32,7 @@ func main() {
 	}
 
 	app := application.New(application.Options{
-		Name:        "SAURON",
+		Name:        "Trusquin",
 		Description: "Générateur et analyse de configuration Claude Code",
 		Services: []application.Service{
 			application.NewService(&RepoService{BackupDir: filepath.Join(filepath.Dir(dbPath), "backups")}),
@@ -41,7 +49,7 @@ func main() {
 	app.Menu.Set(newMenu(app))
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title: "SAURON",
+		Title: "Trusquin",
 		// Windows et Linux : la barre de menus native s'affiche dans la fenêtre (sans effet sur macOS).
 		UseApplicationMenu: true,
 		Width:              1280,

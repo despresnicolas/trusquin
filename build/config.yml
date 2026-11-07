@@ -5,9 +5,9 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "SAURON" # The name of the company
-  productName: "SAURON" # The name of the application
-  productIdentifier: "dev.sauron.app" # The unique product identifier
+  companyName: "Trusquin" # The name of the company
+  productName: "Trusquin" # The name of the application
+  productIdentifier: "dev.trusquin.app" # The unique product identifier
   description: "Générateur et analyse de configuration Claude Code" # The application description
   copyright: "(c) 2026, nicolas despres" # Copyright text
   comments: "" # Comments

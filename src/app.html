@@ -3,11 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SAURON</title>
+    <title>Trusquin</title>
     <script>
       // Thème choisi dans les réglages, appliqué avant le rendu pour éviter un flash.
       try {
-        const theme = localStorage.getItem('sauron:theme');
+        // Clés de l'ancien nom de l'application (SAURON), reprises une fois.
+        for (const key of Object.keys(localStorage)) {
+          if (!key.startsWith('sauron:')) continue;
+          const next = 'trusquin:' + key.slice(7);
+          if (localStorage.getItem(next) === null) localStorage.setItem(next, localStorage.getItem(key));
+          localStorage.removeItem(key);
+        }
+        const theme = localStorage.getItem('trusquin:theme');
         if (theme) document.documentElement.dataset.theme = theme;
       } catch {}
     </script>

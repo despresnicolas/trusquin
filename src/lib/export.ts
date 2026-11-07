@@ -4,7 +4,7 @@ import type { GeneratedFile, Project, QualityReport } from './core/types';
 
 function report(files: GeneratedFile[], quality: QualityReport): string {
   const lines = [
-    '# Rapport SAURON',
+    '# Rapport Trusquin',
     '',
     `Score qualité : **${quality.score}/100** · ${quality.alwaysLoadedInstructions} instructions toujours chargées`,
     '',
@@ -27,9 +27,9 @@ export async function exportZip(files: GeneratedFile[], quality: QualityReport):
     const path = file.path.startsWith(USER_PREFIX) ? `_home/${file.path.slice(USER_PREFIX.length)}` : file.path;
     zip.file(path, file.content);
   }
-  zip.file('_sauron-report.md', report(files, quality));
+  zip.file('_trusquin-report.md', report(files, quality));
   return zip.generateAsync({ type: 'blob' });
 }
 
 /** Nom du zip d'export, tiré du nom du projet. */
-export const zipName = (project: Project) => `${slug(project.name.trim() || 'claude')}-sauron.zip`;
+export const zipName = (project: Project) => `${slug(project.name.trim() || 'claude')}-trusquin.zip`;

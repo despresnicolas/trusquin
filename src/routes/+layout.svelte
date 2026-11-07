@@ -29,11 +29,25 @@
       key: '⌘3',
       icon: 'M6 4h9l4 4v12H6zM14 4v5h5M9 13h7M9 17h5',
     },
+    {
+      href: '/practices',
+      label: 'Bonnes pratiques',
+      hint: 'Règles et fichiers',
+      key: '⌘4',
+      icon: 'M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z',
+    },
+    {
+      href: '/glossary',
+      label: 'Glossaire',
+      hint: 'Règles appliquées',
+      key: '⌘5',
+      icon: 'M5 5h14M5 10h14M5 15h9M5 20h6',
+    },
   ];
   const hasErrors = $derived(store.errors > 0 && !store.empty);
 
   $effect(() => persist($state.snapshot(store.project)));
-  // Menu « Aller » (menu.go, ⌘1 à ⌘3).
+  // Menu « Aller » (menu.go, ⌘1 à ⌘5).
   $effect(() => Events.On('navigate', (e) => goto(String(e.data))));
 </script>
 

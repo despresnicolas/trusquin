@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  APP_NAME: 'sauron'
+  APP_NAME: 'trusquin'
   BIN_DIR: 'bin'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
   # Plateforme cible : l'OS courant, ou `wails3 build GOOS=...` pour la compilation croisée.

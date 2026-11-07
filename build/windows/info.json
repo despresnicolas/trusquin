@@ -7,10 +7,10 @@
 		"0409": {
 			"FileVersion": "0.1.0",
 			"ProductVersion": "0.1.0",
-			"CompanyName": "SAURON",
+			"CompanyName": "Trusquin",
 			"FileDescription": "Générateur et analyse de configuration Claude Code",
 			"LegalCopyright": "(c) 2026, nicolas despres",
-			"ProductName": "SAURON",
+			"ProductName": "Trusquin",
 			"Comments": "This is a comment"
 		}
 	}

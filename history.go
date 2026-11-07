@@ -81,16 +81,16 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 CREATE INDEX IF NOT EXISTS projects_name_created_idx ON projects (name, created_at DESC);`
 
-// defaultDBPath : SAURON_DB, sinon <dossier de config utilisateur>/sauron/sauron.db.
+// defaultDBPath : TRUSQUIN_DB, sinon <dossier de config utilisateur>/trusquin/trusquin.db.
 func defaultDBPath() (string, error) {
-	if p := os.Getenv("SAURON_DB"); p != "" {
+	if p := os.Getenv("TRUSQUIN_DB"); p != "" {
 		return p, nil
 	}
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "sauron", "sauron.db"), nil
+	return filepath.Join(dir, "trusquin", "trusquin.db"), nil
 }
 
 func openHistory(path string) (*HistoryService, error) {

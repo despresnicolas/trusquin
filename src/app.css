@@ -12,6 +12,13 @@
   --warn: light-dark(#b45309, #fbbf24);
   --err: light-dark(#b91c1c, #f87171);
   --info: light-dark(#1d4ed8, #93c5fd);
+  /* Échelle des notes A à E, façon Nutri-Score. */
+  --grade-a: #038141;
+  --grade-b: #85bb2f;
+  --grade-c: #fecb02;
+  --grade-d: #ee8100;
+  --grade-e: #e63e11;
+  --on-grade-light: #1d1c1a;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --radius: 8px;
   /* Suit le système, sauf choix explicite (data-theme, posé par Settings.svelte). */

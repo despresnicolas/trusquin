@@ -22,7 +22,7 @@
 </div>
 <p class="muted hint">
   « Exporter le zip » (en haut) : décompresser à la racine du repo. Le zip contient aussi
-  <code>_sauron-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code> sont rangés dans
+  <code>_trusquin-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code> sont rangés dans
   <code>_home/</code>.
 </p>
 

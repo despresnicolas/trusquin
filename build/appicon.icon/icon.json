@@ -6,8 +6,8 @@
     {
       "layers": [
         {
-          "image-name": "sauron_eye.svg",
-          "name": "sauron_eye",
+          "image-name": "appicon.svg",
+          "name": "appicon",
           "position": {
             "scale": 1,
             "translation-in-points": [

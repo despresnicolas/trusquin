@@ -1,4 +1,4 @@
-# SAURON
+# Trusquin
 
 Générateur Svelte qui transforme des règles (quoi + à quoi ça s'applique) en fichiers Claude Code placés au bon endroit, avec contrôle qualité et analyse de repo.
 
@@ -8,7 +8,7 @@ Générateur Svelte qui transforme des règles (quoi + à quoi ça s'applique) e
 
 - Installer : `pnpm install` (jamais `npm` ni `yarn`) ; CLI Wails : `go install github.com/wailsapp/wails/v3/cmd/wails3@latest`
 - Dev : `wails3 dev` (application de bureau, rechargement Go + front)
-- Build : `wails3 build` (binaire `bin/sauron`) ; empaqueter : `wails3 package`
+- Build : `wails3 build` (binaire `bin/trusquin`) ; empaqueter : `wails3 package`
 - Bindings après un changement de signature Go : `wails3 generate bindings -clean=true -ts -i -d src/lib/bindings`
 - Tests : `pnpm test` (Vitest puis `go test ./...`) ; Go seul : `pnpm test:go`
 - Un seul test : `pnpm exec vitest run src/lib/core/core.test.ts -t "nom"` ; Go : `go test -run TestNom ./...`
@@ -44,7 +44,7 @@ Ces contrôles tournent via des hooks (`.claude/settings.json`) : ne pas les ref
 
 ### Issue tracker
 
-Tickets dans les GitHub Issues de `despresnicolas/sauron` (CLI `gh`). See `docs/agents/issue-tracker.md`.
+Tickets dans les GitHub Issues de `despresnicolas/trusquin` (CLI `gh`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -20,20 +20,20 @@ func newMenu(app *application.App) *application.Menu {
 	mac := runtime.GOOS == "darwin"
 
 	if mac {
-		sauron := menu.AddSubmenu("SAURON")
-		role(sauron, application.About, "À propos de SAURON")
-		sauron.AddSeparator()
-		sauron.Add("Réglages…").SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
+		trusquin := menu.AddSubmenu("Trusquin")
+		role(trusquin, application.About, "À propos de Trusquin")
+		trusquin.AddSeparator()
+		trusquin.Add("Réglages…").SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
 			app.Event.Emit(settingsEvent)
 		})
-		sauron.AddSeparator()
-		role(sauron, application.ServicesMenu, "Services")
-		sauron.AddSeparator()
-		role(sauron, application.Hide, "Masquer SAURON")
-		role(sauron, application.HideOthers, "Masquer les autres")
-		role(sauron, application.UnHide, "Tout afficher")
-		sauron.AddSeparator()
-		role(sauron, application.Quit, "Quitter SAURON")
+		trusquin.AddSeparator()
+		role(trusquin, application.ServicesMenu, "Services")
+		trusquin.AddSeparator()
+		role(trusquin, application.Hide, "Masquer Trusquin")
+		role(trusquin, application.HideOthers, "Masquer les autres")
+		role(trusquin, application.UnHide, "Tout afficher")
+		trusquin.AddSeparator()
+		role(trusquin, application.Quit, "Quitter Trusquin")
 	} else {
 		file := menu.AddSubmenu("Fichier")
 		role(file, application.Quit, "Quitter")
@@ -53,6 +53,8 @@ func newMenu(app *application.App) *application.Menu {
 		{"Accueil", "/"},
 		{"Analyse de dépôt", "/analyze"},
 		{"Générateur", "/generator"},
+		{"Bonnes pratiques", "/practices"},
+		{"Glossaire", "/glossary"},
 	} {
 		goTo.Add(tab.label).SetAccelerator("CmdOrCtrl+" + string(rune('1'+i))).OnClick(func(*application.Context) {
 			app.Event.Emit(navigateEvent, tab.path)
@@ -84,12 +86,12 @@ func newMenu(app *application.App) *application.Menu {
 	help.Add("Documentation Claude Code").OnClick(func(*application.Context) {
 		_ = app.Browser.OpenURL("https://code.claude.com/docs")
 	})
-	help.Add("Dépôt SAURON sur GitHub").OnClick(func(*application.Context) {
-		_ = app.Browser.OpenURL("https://github.com/despresnicolas/sauron")
+	help.Add("Dépôt Trusquin sur GitHub").OnClick(func(*application.Context) {
+		_ = app.Browser.OpenURL("https://github.com/despresnicolas/trusquin")
 	})
 	if !mac {
 		help.AddSeparator()
-		role(help, application.About, "À propos de SAURON")
+		role(help, application.About, "À propos de Trusquin")
 	}
 
 	return menu

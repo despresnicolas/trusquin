@@ -31,6 +31,17 @@
   </div>
 </div>
 
+{#if result.memoryIssues.length}
+  <h3>Problèmes dans les fichiers mémoire existants</h3>
+  <ul>
+    {#each result.memoryIssues as i}
+      <li class="sev-{i.severity}">
+        {#if i.file}<code>{i.file}</code>{/if}{i.message} <span class="muted">→ {i.fix}</span>
+      </li>
+    {/each}
+  </ul>
+{/if}
+
 {#each groups as g}
   <h3>{g.label}</h3>
   <table>
@@ -49,18 +60,6 @@
     </tbody>
   </table>
 {/each}
-
-{#if result.memoryIssues.length}
-  <h3>Problèmes dans les fichiers mémoire existants</h3>
-  <ul>
-    {#each result.memoryIssues as i}
-      <li class="sev-{i.severity}">
-        {#if i.file}<code>{i.file}</code>
-        {/if}{i.message} <span class="muted">→ {i.fix}</span>
-      </li>
-    {/each}
-  </ul>
-{/if}
 
 <style>
   .summary {
@@ -132,5 +131,8 @@
   }
   ul {
     padding-left: 18px;
+  }
+  li code {
+    margin-right: 0.4em;
   }
 </style>
