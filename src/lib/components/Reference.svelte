@@ -90,7 +90,7 @@
   ] as const;
 </script>
 
-<div class="glossary">
+<div class="reference">
   <header>
     <h1>Référentiel</h1>
     <p class="lead">Toutes les règles que Trusquin applique pour noter un dépôt et contrôler les fichiers.</p>
@@ -138,7 +138,7 @@
 </div>
 
 <style>
-  .glossary {
+  .reference {
     display: grid;
     gap: 40px;
     line-height: 1.55;

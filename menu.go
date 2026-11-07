@@ -54,7 +54,7 @@ func newMenu(app *application.App) *application.Menu {
 		{"Analyse de dépôt", "/analyze"},
 		{"Générateur", "/generator"},
 		{"Bonnes pratiques", "/practices"},
-		{"Référentiel", "/glossary"},
+		{"Référentiel", "/reference"},
 	} {
 		goTo.Add(tab.label).SetAccelerator("CmdOrCtrl+" + string(rune('1'+i))).OnClick(func(*application.Context) {
 			app.Event.Emit(navigateEvent, tab.path)
