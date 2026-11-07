@@ -9,6 +9,9 @@ import (
 // navigateEvent demande au front d'ouvrir un onglet (écouté dans src/routes/+layout.svelte).
 const navigateEvent = "navigate"
 
+// settingsEvent ouvre le panneau des réglages (écouté dans src/lib/components/Settings.svelte).
+const settingsEvent = "settings"
+
 // newMenu construit la barre de menus en français, limitée à ce que l'app sait faire,
 // selon les usages de chaque système : menu d'application sur macOS, Fichier/Aide ailleurs.
 func newMenu(app *application.App) *application.Menu {
@@ -19,6 +22,12 @@ func newMenu(app *application.App) *application.Menu {
 	if mac {
 		sauron := menu.AddSubmenu("SAURON")
 		role(sauron, application.About, "À propos de SAURON")
+		sauron.AddSeparator()
+		sauron.Add("Réglages…").SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
+			app.Event.Emit(settingsEvent)
+		})
+		sauron.AddSeparator()
+		role(sauron, application.ServicesMenu, "Services")
 		sauron.AddSeparator()
 		role(sauron, application.Hide, "Masquer SAURON")
 		role(sauron, application.HideOthers, "Masquer les autres")

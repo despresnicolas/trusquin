@@ -29,6 +29,15 @@ export interface AnalysisRun {
     "createdAt": string;
 }
 
+/**
+ * Backup : une ancienne version d'un fichier du dépôt, avant qu'il soit écrasé.
+ */
+export interface Backup {
+    "path": string;
+    "rel": string;
+    "savedAt": string;
+}
+
 export interface ProjectRecord {
     "id": number;
     "name": string;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Rule } from '#lib/core/types.ts';
+  import type { Backup } from '#lib/bindings/sauron/models.ts';
   import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
   import Proposals from './Proposals.svelte';
@@ -24,6 +25,10 @@
     record ? record.result.criteria.filter((c) => c.fix).length + record.result.memoryIssues.length : 0,
   );
   let failure = $state('');
+  // Sauvegardes des fichiers écrasés depuis les propositions : affichées jusqu'au prochain enregistrement.
+  let backups = $state<string[]>([]);
+  // Sauvegardes du dépôt affiché, restaurables depuis l'onglet Historique.
+  let saved = $state<Backup[]>([]);
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
 
@@ -50,6 +55,7 @@
     record = next;
     path = next.path;
     runs = await api.runs(next.path);
+    saved = await api.backups(next.path).catch(() => []);
     view = 'report';
   }
 
@@ -63,11 +69,20 @@
       await refresh();
     });
 
+  const restore = (b: Backup) =>
+    attempt(async () => {
+      if (!(await api.ask(`Remettre la version de ${b.rel} du ${date(b.savedAt)} ?`, 'Restaurer'))) return;
+      const replaced = await api.restore(record!.path, b.path);
+      backups = replaced ? [replaced] : [];
+      await analyze(record!.path);
+    });
+
   const open = (id: number) => attempt(async () => show(await api.get(id)));
 
   const forget = (target: string) =>
     attempt(async () => {
-      if (!(await api.ask(`Supprimer tout l'historique de ${target} ?`))) return;
+      if (!(await api.ask(`Retirer ${target} de SAURON ? Ses analyses sont supprimées, le dossier n'est pas touché.`)))
+        return;
       await api.forget(target);
       if (record?.path === target) {
         record = null;
@@ -121,6 +136,13 @@
 </div>
 
 {#if failure}<p class="sev-error">{failure}</p>{/if}
+{#if backups.length}
+  <p class="muted">
+    Ancienne version sauvegardée, restaurable dans l’onglet Historique : {#each backups as b (b)}<code>{b}</code>
+    {/each}
+    <button class="ghost" aria-label="Masquer" onclick={() => (backups = [])}>×</button>
+  </p>
+{/if}
 
 <div class="layout">
   <aside>
@@ -143,6 +165,13 @@
               {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
             </span>
           </button>
+          <button
+            class="ghost remove"
+            onclick={() => forget(repo.last.path)}
+            disabled={loading}
+            aria-label="Retirer {repo.last.name}"
+            title="Retirer ce dépôt et ses analyses (le dossier n'est pas touché)">Supprimer</button
+          >
         </li>
       {/each}
     </ul>
@@ -181,7 +210,12 @@
         {/key}
       {:else if view === 'proposals'}
         <Proposals
+          root={record.path}
           result={record.result}
+          onsaved={(list) => {
+            backups = list;
+            analyze(record!.path);
+          }}
           sent={drafts.map((d) => d.criterion)}
           onadd={(criterion, rule) => {
             drafts = [...drafts.filter((d) => d.criterion !== criterion), { criterion, rule }];
@@ -219,7 +253,26 @@
             </tbody>
           </table>
         </div>
-        <button class="danger" onclick={() => forget(record!.path)} disabled={loading}>Supprimer l'historique</button>
+        <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
+        {#if !saved.length}
+          <p class="muted">
+            Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis SAURON.
+          </p>
+        {:else}
+          <div class="scroll-x">
+            <table class="history">
+              <tbody>
+                {#each saved as b (b.path)}
+                  <tr>
+                    <td><code>{b.rel}</code></td>
+                    <td class="muted">{date(b.savedAt)}</td>
+                    <td><button onclick={() => restore(b)} disabled={loading}>Restaurer</button></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
       {/if}
     {/if}
   </section>
@@ -297,6 +350,21 @@
     border-radius: var(--radius);
     color: inherit;
   }
+  .repos li {
+    position: relative;
+  }
+  .remove {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .remove:hover,
+  .remove:focus-visible {
+    color: var(--err);
+  }
   .active .item {
     border-color: var(--accent);
     background: var(--accent-soft);
@@ -331,9 +399,6 @@
   .toolbar .path {
     flex: 1;
     min-width: 0;
-  }
-  .danger {
-    color: var(--err);
   }
   .history {
     width: 100%;

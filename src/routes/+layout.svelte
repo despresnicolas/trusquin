@@ -7,90 +7,184 @@
   import '../app.css';
 
   let { children } = $props();
+  let settings: Settings;
 
-  const tabs = [
-    { href: '/', label: 'Accueil' },
-    { href: '/analyze', label: 'Analyse de dépôt' },
-    { href: '/generator', label: 'Générateur' },
+  // macOS : la barre de titre est masquée (main.go), le haut de la colonne garde la place des boutons de fenêtre.
+  const mac = navigator.userAgent.includes('Mac');
+
+  /** Le parcours, dans l'ordre : choisir, noter un dépôt, écrire ses fichiers. Mêmes raccourcis que le menu Aller. */
+  const SECTIONS = [
+    { href: '/', label: 'Accueil', hint: 'Choisir quoi faire', key: '⌘1', icon: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z' },
+    {
+      href: '/analyze',
+      label: 'Analyser un dépôt',
+      hint: 'Note et propositions',
+      key: '⌘2',
+      icon: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14M16 16l4 4',
+    },
+    {
+      href: '/generator',
+      label: 'Générateur',
+      hint: 'Écrire les fichiers',
+      key: '⌘3',
+      icon: 'M6 4h9l4 4v12H6zM14 4v5h5M9 13h7M9 17h5',
+    },
   ];
-  const hasErrors = $derived(store.quality.issues.some((i) => i.severity === 'error'));
+  const hasErrors = $derived(store.errors > 0 && !store.empty);
 
   $effect(() => persist($state.snapshot(store.project)));
-  // Menu « Aller » de la barre macOS (menu.go).
+  // Menu « Aller » (menu.go, ⌘1 à ⌘3).
   $effect(() => Events.On('navigate', (e) => goto(String(e.data))));
 </script>
 
-<header>
-  <div class="brand">
-    <a href="/"><strong>SAURON</strong></a>
-  </div>
-  <nav>
-    {#each tabs as t}
-      <a href={t.href} class:active={page.url.pathname === t.href}>
-        {t.label}
-        {#if t.href === '/generator' && hasErrors}<span class="dot" aria-label="erreurs"></span>{/if}
-      </a>
-    {/each}
-  </nav>
-  <Settings />
-</header>
+<div class="app">
+  <!-- Glisser la colonne déplace la fenêtre (runtime Wails) ; les liens restent cliquables. -->
+  <aside class:mac>
+    <nav aria-label="Navigation">
+      {#each SECTIONS as s (s.href)}
+        <a href={s.href} aria-current={page.url.pathname === s.href ? 'page' : undefined}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={s.icon} /></svg>
+          <span class="text">
+            <b>
+              {s.label}
+              {#if s.href === '/generator' && hasErrors}<span class="dot" aria-label="erreurs à corriger"></span>{/if}
+            </b>
+            <small>{s.hint}</small>
+          </span>
+          <kbd>{s.key}</kbd>
+        </a>
+      {/each}
+    </nav>
+    <button class="ghost settings" onclick={() => settings.show()}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"
+        ><path
+          d="M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"
+        /></svg
+      >
+      <span class="text"><b>Réglages</b></span>
+      <kbd>⌘,</kbd>
+    </button>
+  </aside>
 
-<main>
-  {@render children()}
-</main>
+  <main>
+    {@render children()}
+  </main>
+</div>
+<Settings bind:this={settings} />
 
 <style>
-  header {
+  .app {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  aside {
     position: sticky;
     top: 0;
-    z-index: 2;
     display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding: 10px 20px;
+    flex-direction: column;
+    gap: 4px;
+    height: 100vh;
+    padding: 16px 10px;
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    --wails-draggable: drag;
   }
-  .brand {
-    display: grid;
-    line-height: 1.2;
+  aside.mac {
+    padding-top: 44px;
   }
-  .brand a {
-    color: inherit;
-    text-decoration: none;
+  aside :global(:is(a, button)) {
+    --wails-draggable: no-drag;
   }
   nav {
-    display: flex;
+    display: grid;
     gap: 2px;
-    flex: 1;
-    flex-wrap: wrap;
   }
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-  nav a {
-    padding: 6px 12px;
+  nav a,
+  .settings {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
     border-radius: 6px;
+    color: var(--text);
+    text-decoration: none;
+    text-align: left;
   }
-  nav a:hover {
+  nav a:hover,
+  .settings:hover {
     background: var(--surface-2);
   }
-  nav a.active {
+  nav a[aria-current='page'] {
     background: var(--accent-soft);
     color: var(--accent);
+  }
+  .settings {
+    width: 100%;
+    margin-top: auto;
+    border: 0;
+  }
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .text {
+    display: grid;
+    flex: 1;
+    line-height: 1.3;
+  }
+  small,
+  kbd {
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
   }
   .dot {
     display: inline-block;
     width: 7px;
     height: 7px;
+    margin-left: 4px;
     border-radius: 50%;
     background: var(--err);
-    margin-left: 4px;
     vertical-align: middle;
   }
   main {
-    padding: 20px 20px 60px;
+    min-width: 0;
+    padding: 28px 24px 60px;
+  }
+  /* Fenêtre étroite : la colonne devient une barre en haut, sans sous-titres ni raccourcis. */
+  @media (max-width: 760px) {
+    .app {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    aside {
+      position: static;
+      flex-direction: row;
+      height: auto;
+      padding: 8px;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    aside.mac {
+      padding: 8px 8px 8px 84px;
+    }
+    nav {
+      display: flex;
+      flex: 1;
+    }
+    small,
+    kbd {
+      display: none;
+    }
+    .settings {
+      width: auto;
+      margin: 0;
+    }
   }
 </style>

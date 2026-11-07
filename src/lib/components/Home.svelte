@@ -2,6 +2,7 @@
   import { LOADING_LABELS } from '#lib/core/presets.ts';
   import type { Loading } from '#lib/core/types.ts';
   import { api, type RepoSummary } from '#lib/history.ts';
+  import GoalChooser from './GoalChooser.svelte';
   import RepoChooser from './RepoChooser.svelte';
 
   // Dépôts déjà analysés : sans eux, l'étape « Concevoir les propositions » n'a rien à ouvrir.
@@ -115,16 +116,20 @@
       text: '« Concevoir… » prépare chaque fichier ; « Créer un nouveau projet » les envoie au Générateur.',
       href: '',
     },
-    { title: 'Décrire le projet', text: 'Nom, description, stack et permissions.', href: '/generator?view=project' },
+    {
+      title: 'Décrire le projet',
+      text: 'Nom, description, stack et permissions.',
+      href: '/generator?goal=new&view=project',
+    },
     {
       title: 'Écrire les règles',
       text: 'Pour chacune : quoi, et à quoi elle s’applique. Hésitation sur l’élément ? Le Guide tranche.',
-      href: '/generator?view=guide',
+      href: '/generator?goal=new&view=guide',
     },
     {
       title: 'Vérifier et exporter',
       text: 'Corriger les erreurs, relire chaque fichier, exporter le zip et le décompresser à la racine.',
-      href: '/generator?view=export',
+      href: '/generator?goal=new&view=export',
     },
     {
       title: 'Committer et ré-analyser',
@@ -163,11 +168,12 @@
       Des règles courtes, vérifiables et placées au bon endroit : Claude les suit mieux et elles coûtent moins de
       contexte. Sauron note un dépôt existant et génère les fichiers.
     </p>
-    <div class="cta">
-      <a class="button primary" href="/analyze">Analyser un dépôt</a>
-      <a class="button" href="/generator?view=project">Créer un projet</a>
-    </div>
   </header>
+
+  <section class="start">
+    <h2>Que veux-tu faire ?</h2>
+    <GoalChooser />
+  </section>
 
   <div class="columns">
     <section id="regles">
@@ -258,25 +264,11 @@
     margin: 0 0 16px;
     font-size: 16px;
   }
-  .cta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+  .start {
+    margin: 0 0 28px;
   }
-  .button {
-    display: inline-block;
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface);
-    color: var(--text);
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .button.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+  .start h2 {
+    margin: 0 0 12px;
   }
   .columns {
     display: grid;

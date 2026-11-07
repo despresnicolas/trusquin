@@ -3,6 +3,7 @@ import { HistoryService, RepoService } from './bindings/sauron';
 import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
 import { checkProject } from './core/quality';
 import type { ClaudeFile, Project, RepoAnalysis, RepoSnapshot } from './core/types';
+import type { Backup } from './bindings/sauron/models';
 
 /** Une analyse enregistrée, sans le détail des critères. */
 export interface AnalysisRun {
@@ -81,6 +82,12 @@ export const api = {
     await RepoService.WriteFile(path, await base64(data));
     return true;
   },
+  /** Écrit un fichier texte dans le dépôt analysé (chemin relatif à sa racine) ; renvoie la sauvegarde de l'ancienne version, ou ''. */
+  writeRepoFile: (root: string, rel: string, content: string) => RepoService.WriteRepoFile(root, rel, content),
+  /** Anciennes versions des fichiers écrasés dans ce dépôt, la plus récente d'abord. */
+  backups: async (root: string): Promise<Backup[]> => (await RepoService.ListBackups(root)) ?? [],
+  /** Remet une sauvegarde à sa place ; renvoie la sauvegarde de la version remplacée. */
+  restore: (root: string, backup: string) => RepoService.RestoreBackup(root, backup),
   copy: (text: string) => Clipboard.SetText(text),
   get: async (id: number) => (await HistoryService.GetAnalysis(id)) as AnalysisRecord,
   /** Lit le dossier côté Go, l'analyse avec le cœur TS et enregistre le résultat. */

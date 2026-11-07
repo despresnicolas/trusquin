@@ -85,7 +85,7 @@
       </div>
     {:else}
       {#if !p.kind}
-        <a href="/generator?view=project">Régler dans l'onglet Projet</a>
+        <a href="/generator?view=project">Régler à l'étape « Décrire le projet »</a>
       {:else}
         <p class="muted">Pas de modèle : partir d'une règle vide.</p>
       {/if}

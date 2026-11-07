@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -26,7 +27,7 @@ func main() {
 		Name:        "SAURON",
 		Description: "Générateur et analyse de configuration Claude Code",
 		Services: []application.Service{
-			application.NewService(&RepoService{}),
+			application.NewService(&RepoService{BackupDir: filepath.Join(filepath.Dir(dbPath), "backups")}),
 			application.NewService(history),
 		},
 		Assets: application.AssetOptions{
@@ -46,6 +47,8 @@ func main() {
 		Width:              1280,
 		Height:             820,
 		URL:                "/",
+		// Pas de barre de titre : le contenu passe sous les boutons de fenêtre, l'en-tête sert de poignée (+layout.svelte).
+		Mac: application.MacWindow{TitleBar: application.MacTitleBarHidden},
 	})
 
 	if err := app.Run(); err != nil {

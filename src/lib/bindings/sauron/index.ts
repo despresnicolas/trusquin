@@ -11,6 +11,7 @@ export {
 export type {
     AnalysisRecord,
     AnalysisRun,
+    Backup,
     ProjectRecord,
     ProjectSummary,
     ProjectVersion,

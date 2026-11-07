@@ -88,3 +88,56 @@ func TestWriteFile(t *testing.T) {
 		t.Error("base64 invalide accepté")
 	}
 }
+
+func TestWriteRepoFile(t *testing.T) {
+	_, repo := fixture(t)
+	svc := RepoService{BackupDir: t.TempDir()}
+	if backup, err := svc.WriteRepoFile(repo, ".claude/rules/go.md", "# Go"); err != nil || backup != "" {
+		t.Fatalf("création : backup=%q err=%v", backup, err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(repo, ".claude/rules/go.md")); string(b) != "# Go" {
+		t.Fatalf("contenu = %q", b)
+	}
+	backup, err := svc.WriteRepoFile(repo, ".claude/rules/go.md", "# Go v2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(backup); string(b) != "# Go" || !strings.HasPrefix(backup, svc.BackupDir) {
+		t.Fatalf("sauvegarde %q = %q", backup, b)
+	}
+	for _, rel := range []string{"../evade.md", "/etc/passwd", ""} {
+		if _, err := svc.WriteRepoFile(repo, rel, "x"); err == nil {
+			t.Errorf("%q accepté, hors du dépôt", rel)
+		}
+	}
+}
+
+func TestRestoreBackup(t *testing.T) {
+	root, repo := fixture(t)
+	svc := RepoService{BackupDir: t.TempDir()}
+	if list, err := svc.ListBackups(repo); err != nil || len(list) != 0 {
+		t.Fatalf("aucune sauvegarde attendue : %v %v", list, err)
+	}
+	// Fichier absent de la fixture : sur un disque insensible à la casse, CLAUDE.md serait le claude.md existant.
+	svc.WriteRepoFile(repo, ".claude/rules/go.md", "v1")
+	svc.WriteRepoFile(repo, ".claude/rules/go.md", "v2")
+	list, err := svc.ListBackups(repo)
+	if err != nil || len(list) != 1 || list[0].Rel != ".claude/rules/go.md" {
+		t.Fatalf("liste = %v, %v", list, err)
+	}
+	if _, err := svc.RestoreBackup(repo, list[0].Path); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(repo, ".claude/rules/go.md")); string(b) != "v1" {
+		t.Fatalf("restauré = %q", b)
+	}
+	if list, _ := svc.ListBackups(repo); len(list) != 2 {
+		t.Fatalf("la version remplacée doit être sauvegardée : %v", list)
+	}
+	// Un fichier hors des sauvegardes de ce dépôt est refusé.
+	for _, bad := range []string{filepath.Join(root, "fichier.txt"), filepath.Join(svc.BackupDir, "x")} {
+		if _, err := svc.RestoreBackup(repo, bad); err == nil {
+			t.Errorf("%s accepté", bad)
+		}
+	}
+}

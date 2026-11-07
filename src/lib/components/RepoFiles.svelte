@@ -82,7 +82,7 @@
       ...importContext(repo),
       rules: [...importRules(repo, newId), ...$state.snapshot(drafts)],
     };
-    await goto('/generator?view=project');
+    await goto('/generator?goal=new&view=project');
   }
 </script>
 
