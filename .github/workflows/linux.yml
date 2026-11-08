@@ -1,0 +1,27 @@
+name: Linux
+
+# Compatibilité Linux : compile, empaquette (.deb), installe et démarre l'application dans l'image officielle
+# de chaque distribution. Wails 3.1 exige GTK >= 4.10 + WebKitGTK 6.0 : Ubuntu 24.04+ (dont Pop!_OS 24.04) et Debian 13+.
+# Ubuntu 22.04 / Pop!_OS 22.04 (GTK 4.6) et Debian 12 (GTK 4.8) ne compilent pas : le .deb refuse de s'y installer.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 24.04 LTS / Pop!_OS 24.04
+            image: ubuntu:24.04
+          - name: Debian 13 (trixie)
+            image: debian:trixie
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Même commande qu'en local (voir build/linux/check.sh).
+      - run: docker run --rm -v "$PWD":/src:ro ${{ matrix.image }} bash /src/build/linux/check.sh
