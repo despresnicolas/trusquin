@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import { GRADES } from '#lib/core/analyze.ts';
 
   // Façon Nutri-Score : les cinq lettres côte à côte, celle de `grade` mise en avant.
   let { grade }: { grade?: string } = $props();
 </script>
 
-<div class="scale" role="img" aria-label={grade ? `Note ${grade} sur une échelle de A à E` : 'Échelle de A à E'}>
+<div class="scale" role="img" aria-label={grade ? t('grade.label', { grade }) : t('grade.scale')}>
   {#each GRADES as g, i (g.grade)}
     <span class="cell">
       <b class="letter {g.grade.toLowerCase()}" class:on={g.grade === grade}>{g.grade}</b>

@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import { GOALS, STEP_TITLES, stepHref, type Goal, type StepView } from '#lib/goals.ts';
   import { store } from '#lib/state.svelte.ts';
   import GoalChooser from './GoalChooser.svelte';
@@ -89,13 +90,13 @@
 {:else if step}
   <ProjectBar />
 
-  <nav class="stepper" aria-label="Étapes : {GOALS[current].title}">
+  <nav class="stepper" aria-label="Étapes : {t(GOALS[current].title)}">
     <a href={href('start')} class="change">↺ Changer d’objectif</a>
     <ol>
       {#each steps as s, i (s)}
         <li class:done={i < index}>
           <a href={href(s)} aria-current={s === view ? 'step' : undefined}>
-            <span class="num">{i < index ? '✓' : i + 1}</span>{STEP_TITLES[s]}
+            <span class="num">{i < index ? '✓' : i + 1}</span>{t(STEP_TITLES[s])}
           </a>
         </li>
       {/each}
@@ -103,7 +104,7 @@
   </nav>
 
   <section class="card explain">
-    <h2>Étape {index + 1} sur {steps.length} · {STEP_TITLES[view as StepView]}</h2>
+    <h2>Étape {index + 1} sur {steps.length} · {t(STEP_TITLES[view as StepView])}</h2>
     <p>{step.why}</p>
     <ul>
       {#each step.todo as t (t)}<li>{t}</li>{/each}
@@ -127,11 +128,11 @@
 
   <div class="nav">
     {#if index > 0}
-      <a class="button" href={href(steps[index - 1])}>← {STEP_TITLES[steps[index - 1]]}</a>
+      <a class="button" href={href(steps[index - 1])}>← {t(STEP_TITLES[steps[index - 1]])}</a>
     {/if}
     <span class="spacer"></span>
     {#if index < steps.length - 1}
-      <a class="button primary" href={href(steps[index + 1])}>{STEP_TITLES[steps[index + 1]]} →</a>
+      <a class="button primary" href={href(steps[index + 1])}>{t(STEP_TITLES[steps[index + 1]])} →</a>
     {:else}
       <!-- Fin du parcours : la boucle continue par la ré-analyse du dépôt une fois le zip décompressé et committé. -->
       <a class="button primary" href="/analyze">Ré-analyser le dépôt →</a>

@@ -1,21 +1,19 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import GoalChooser from './GoalChooser.svelte';
   import HowItWorks from './HowItWorks.svelte';
 </script>
 
 <div class="home">
   <header>
-    <h1>Bien configurer Claude Code</h1>
-    <p class="lead">
-      Des règles courtes, vérifiables et placées au bon endroit : Claude les suit mieux et elles coûtent moins de
-      contexte.
-    </p>
+    <h1>{t('home.title')}</h1>
+    <p class="lead">{t('home.lead')}</p>
   </header>
 
   <HowItWorks />
 
   <section>
-    <h2>Que veux-tu faire ?</h2>
+    <h2>{t('home.goals')}</h2>
     <GoalChooser />
   </section>
 </div>

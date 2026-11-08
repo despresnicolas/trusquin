@@ -1,30 +1,33 @@
+import type { Key } from './i18n/fr';
+
 /** Étapes du générateur (paramètre `view` de /generator). */
 export type StepView = 'project' | 'guide' | 'rules' | 'export' | 'history';
 export type Goal = 'new' | 'add' | 'resume';
 
-export const STEP_TITLES: Record<StepView, string> = {
-  project: 'Décrire le projet',
-  guide: 'Choisir l’élément Claude Code',
-  rules: 'Écrire les règles',
-  export: 'Vérifier et exporter',
-  history: 'Choisir le projet',
+/** Clés de traduction (i18n/fr.ts) : les titres passent par `t()` à l'affichage. */
+export const STEP_TITLES: Record<StepView, Key> = {
+  project: 'step.project',
+  guide: 'step.guide',
+  rules: 'step.rules',
+  export: 'step.export',
+  history: 'step.history',
 };
 
 /** Parcours du générateur : chacun enchaîne quelques étapes dans l'ordre. */
-export const GOALS: Record<Goal, { title: string; text: string; steps: StepView[] }> = {
+export const GOALS: Record<Goal, { title: Key; text: Key; steps: StepView[] }> = {
   new: {
-    title: 'Créer la configuration d’un projet',
-    text: 'Partir de zéro : décrire le projet, choisir ses règles, exporter les fichiers.',
+    title: 'goal.new',
+    text: 'goal.newText',
     steps: ['project', 'guide', 'rules', 'export'],
   },
   add: {
-    title: 'Ajouter un élément au projet en cours',
-    text: 'Un hook, un skill, une commande, une règle… Le guide indique lequel convient.',
+    title: 'goal.add',
+    text: 'goal.addText',
     steps: ['guide', 'rules', 'export'],
   },
   resume: {
-    title: 'Reprendre un projet enregistré',
-    text: 'Rouvrir une version de l’historique, la compléter puis l’exporter.',
+    title: 'goal.resume',
+    text: 'goal.resumeText',
     steps: ['history', 'rules', 'export'],
   },
 };
