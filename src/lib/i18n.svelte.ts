@@ -1,3 +1,4 @@
+import { coreEn } from './i18n/core-en';
 import { en } from './i18n/en';
 import { fr, type Key } from './i18n/fr';
 
@@ -35,4 +36,9 @@ export const i18n = new I18n();
 /** Texte traduit ; `{nom}` est remplacé par `params.nom`. Réactif : lit `i18n.locale`. */
 export function t(key: Key, params: Record<string, string | number> = {}): string {
   return DICTS[i18n.locale][key].replace(/\{(\w+)\}/g, (m, name: string) => String(params[name] ?? m));
+}
+
+/** Texte venant de core (guide, modèles), écrit en français : traduit via i18n/core-en.ts, inchangé sinon. */
+export function tc(text: string): string {
+  return i18n.locale === 'en' ? (coreEn[text] ?? text) : text;
 }

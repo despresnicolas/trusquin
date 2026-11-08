@@ -10,7 +10,7 @@
     type Step,
     type Template,
   } from '#lib/core/presets.ts';
-  import { t } from '#lib/i18n.svelte.ts';
+  import { t, tc } from '#lib/i18n.svelte.ts';
   import { store } from '#lib/state.svelte.ts';
 
   // Données constantes : pas besoin de proxys profonds.
@@ -48,8 +48,8 @@
       {#each trail as answer, i (i)}
         <li>
           <button class="ghost" onclick={() => backTo(i)} title={t('guide.changeAnswer')}>
-            <span class="muted">{answer.step.question}</span>
-            <b>{answer.label}</b>
+            <span class="muted">{tc(answer.step.question)}</span>
+            <b>{tc(answer.label)}</b>
           </button>
         </li>
       {/each}
@@ -58,25 +58,25 @@
 
   {#if isStep(node)}
     {@const step = node}
-    <p class="question">{step.question}</p>
-    {#if step.hint}<p class="muted">{step.hint}</p>{/if}
+    <p class="question">{tc(step.question)}</p>
+    {#if step.hint}<p class="muted">{tc(step.hint)}</p>{/if}
     <div class="choices">
       {#each step.choices as c (c.label)}
-        <button onclick={() => choose(step, c)}>{c.label}</button>
+        <button onclick={() => choose(step, c)}>{tc(c.label)}</button>
       {/each}
     </div>
   {:else}
     {@const p = node}
     <div class="result">
-      <p class="question">{p.answer}</p>
-      <p><code>{p.where}</code></p>
+      <p class="question">{tc(p.answer)}</p>
+      <p><code>{tc(p.where)}</code></p>
       {#if p.kind}<p class="muted">{t(`kindHint.${p.kind}`)}</p>{/if}
     </div>
     {#each templatesFor(p) as template (template.label)}
       <div class="template">
         <div>
-          <b>{template.label}</b>
-          <div class="muted">{template.hint}</div>
+          <b>{tc(template.label)}</b>
+          <div class="muted">{tc(template.hint)}</div>
         </div>
         <button onclick={() => use(template)}>{t('guide.add')}</button>
       </div>
@@ -108,9 +108,9 @@
       <tbody>
         {#each PATTERNS as p (p.question)}
           <tr>
-            <td>{p.question}</td>
-            <td><button class="ghost link" onclick={() => show(p)}>{p.answer}</button></td>
-            <td><code>{p.where}</code></td>
+            <td>{tc(p.question)}</td>
+            <td><button class="ghost link" onclick={() => show(p)}>{tc(p.answer)}</button></td>
+            <td><code>{tc(p.where)}</code></td>
           </tr>
         {/each}
       </tbody>
