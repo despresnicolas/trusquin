@@ -247,9 +247,10 @@ export function templateForCriterion(id: string): Template | undefined {
   return TEMPLATES.find((t) => t.label === CRITERION_TEMPLATES[id]);
 }
 
-export function starterProject(): Project {
+/** `name` : l'interface passe le nom par défaut traduit ; core reste sans i18n. */
+export function starterProject(name = 'Mon projet'): Project {
   return {
-    name: 'Mon projet',
+    name,
     description: '',
     stack: '',
     useAgentsMd: false,

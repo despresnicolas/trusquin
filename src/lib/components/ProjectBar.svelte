@@ -57,7 +57,7 @@
       notice = t('bar.resetFailed', { error: (e as Error).message });
       return;
     }
-    store.project = starterProject();
+    store.project = starterProject(t('common.defaultProject'));
     notice = '';
     await goto('/generator?goal=new&view=project');
   }

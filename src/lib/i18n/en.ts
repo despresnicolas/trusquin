@@ -68,6 +68,7 @@ export const en: Record<Key, string> = {
   'common.delete': 'Delete',
   'common.untitled': 'Untitled',
   'common.unnamed': 'Unnamed',
+  'common.defaultProject': 'My project',
   'hint.label': 'Help: {text}',
 
   'gen.steps': 'Steps: {goal}',

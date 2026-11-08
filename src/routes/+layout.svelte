@@ -1,6 +1,8 @@
 <script lang="ts">
   import Settings from '#lib/components/Settings.svelte';
   import { i18n, t } from '#lib/i18n.svelte.ts';
+  import { en } from '#lib/i18n/en.ts';
+  import { fr } from '#lib/i18n/fr.ts';
   import { persist, store } from '#lib/state.svelte.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -50,6 +52,11 @@
   $effect(() => persist($state.snapshot(store.project)));
   $effect(() => {
     document.documentElement.lang = i18n.locale;
+  });
+  // Le nom par défaut, jamais modifié, suit la langue de l'interface (y compris pour un projet déjà enregistré).
+  const DEFAULT_NAMES = [fr['common.defaultProject'], en['common.defaultProject']];
+  $effect(() => {
+    if (DEFAULT_NAMES.includes(store.project.name)) store.project.name = t('common.defaultProject');
   });
   // Menu « Aller » (menu.go, ⌘1 à ⌘5).
   $effect(() => Events.On('navigate', (e) => goto(String(e.data))));

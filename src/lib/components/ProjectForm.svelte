@@ -7,7 +7,13 @@
 </script>
 
 <div class="card project">
-  <label>{t('form.name')} <Hint text={t('form.nameHint')} /><input bind:value={project.name} /></label>
+  <label
+    >{t('form.name')}
+    <Hint text={t('form.nameHint')} /><input
+      bind:value={project.name}
+      placeholder={t('common.defaultProject')}
+    /></label
+  >
   <label
     >{t('form.description')}
     <Hint text={t('form.descriptionHint')} /><textarea rows="2" bind:value={project.description}></textarea></label

@@ -74,6 +74,7 @@ export const fr = {
   'common.delete': 'Supprimer',
   'common.untitled': 'Sans titre',
   'common.unnamed': 'Sans nom',
+  'common.defaultProject': 'Mon projet',
   'hint.label': 'Aide : {text}',
 
   // Étapes du générateur (Generator.svelte)

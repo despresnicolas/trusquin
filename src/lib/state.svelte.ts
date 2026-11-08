@@ -3,6 +3,7 @@ import { starterProject } from './core/presets';
 import { checkProject } from './core/quality';
 import type { Project } from './core/types';
 import { api } from './history';
+import { t } from './i18n.svelte';
 
 const KEY = 'trusquin:project';
 const LEGACY_KEYS = ['tars:project', 'claude-kit:project'];
@@ -14,7 +15,7 @@ function load(): Project {
   } catch {
     // stockage indisponible : on repart du projet de départ
   }
-  return starterProject();
+  return starterProject(t('common.defaultProject'));
 }
 
 /** État partagé par toutes les pages : le projet et ce qui en découle. */
