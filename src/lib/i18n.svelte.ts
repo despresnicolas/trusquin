@@ -1,5 +1,6 @@
-import type { Issue } from './core/types';
+import type { Criterion, Issue } from './core/types';
 import { coreEn } from './i18n/core-en';
+import { criteriaEn } from './i18n/criteria-en';
 import { en } from './i18n/en';
 import { fr, type Key } from './i18n/fr';
 import { issuesEn, secretKindsEn } from './i18n/issues-en';
@@ -56,4 +57,9 @@ export function issueText(issue: Issue): { message: string; fix: string } {
   const params = { ...issue.params };
   if (typeof params.kind === 'string') params.kind = secretKindsEn[params.kind] ?? params.kind;
   return { message: fill(en.message, params), fix: fill(en.fix, params) };
+}
+
+/** Libellé d'un critère de notation dans la langue de l'interface ; repli sur le français de core. */
+export function criterionLabel(criterion: Criterion): string {
+  return i18n.locale === 'en' ? (criteriaEn[criterion.id] ?? criterion.label) : criterion.label;
 }

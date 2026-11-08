@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { analyzeRepo } from './core/analyze';
 import { DECISION_TREE, isStep, PATTERNS, TEMPLATES, type Pattern, type Step } from './core/presets';
 import { localeOf, t } from './i18n.svelte';
 import { readFileSync } from 'node:fs';
 import { coreEn } from './i18n/core-en';
+import { criteriaEn } from './i18n/criteria-en';
 import { issuesEn } from './i18n/issues-en';
 import { en } from './i18n/en';
 import { fr } from './i18n/fr';
@@ -46,6 +48,11 @@ describe('i18n', () => {
     const codes = [...source.matchAll(/code: '([a-z-]+)'/g)].map((m) => m[1]);
     expect(codes.length).toBeGreaterThan(30);
     expect(codes.filter((c) => !(c in issuesEn))).toEqual([]);
+  });
+
+  it('translates every scoring criterion', () => {
+    const ids = analyzeRepo({ paths: [], contents: {} }).criteria.map((c) => c.id);
+    expect(ids.filter((id) => !(id in criteriaEn))).toEqual([]);
   });
 
   it('returns a string for every key', () => {
