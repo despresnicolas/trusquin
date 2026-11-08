@@ -37,6 +37,11 @@
   box-sizing: border-box;
 }
 
+/* Barre de défilement de la fenêtre masquée : la page défile toujours (trackpad, molette, clavier). */
+html {
+  scrollbar-width: none;
+}
+
 body {
   margin: 0;
   background: var(--bg);
