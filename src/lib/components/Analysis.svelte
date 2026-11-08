@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Rule } from '#lib/core/types.ts';
   import type { Backup } from '#lib/bindings/trusquin/models.ts';
+  import { i18n, t } from '#lib/i18n.svelte.ts';
   import { api, type AnalysisRecord, type AnalysisRun, type RepoSummary } from '#lib/history.ts';
   import AnalysisReport from './AnalysisReport.svelte';
   import Proposals from './Proposals.svelte';
@@ -32,7 +33,7 @@
   let toast = $state<{ run: AnalysisRun; delta: number | null } | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
 
-  const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  const date = (iso: string) => new Date(iso).toLocaleString(i18n.locale, { dateStyle: 'short', timeStyle: 'short' });
 
   async function attempt(task: () => Promise<void>) {
     loading = true;
@@ -82,7 +83,8 @@
 
   const restore = (b: Backup) =>
     attempt(async () => {
-      if (!(await api.ask(`Remettre la version de ${b.rel} du ${date(b.savedAt)} ?`, 'Restaurer'))) return;
+      if (!(await api.ask(t('analysis.askRestore', { file: b.rel, date: date(b.savedAt) }), t('analysis.restore'))))
+        return;
       const replaced = await api.restore(record!.path, b.path);
       backups = replaced ? [replaced] : [];
       await analyze(record!.path);
@@ -92,10 +94,7 @@
 
   const forget = (target: string) =>
     attempt(async () => {
-      if (
-        !(await api.ask(`Retirer ${target} de Trusquin ? Ses analyses sont supprimées, le dossier n'est pas touché.`))
-      )
-        return;
+      if (!(await api.ask(t('analysis.askForget', { path: target })))) return;
       await api.forget(target);
       if (record?.path === target) {
         record = null;
@@ -120,28 +119,28 @@
 {#if failure}<p class="sev-error">{failure}</p>{/if}
 {#if backups.length}
   <p class="muted">
-    Ancienne version sauvegardée, restaurable dans l’onglet Historique : {#each backups as b (b)}<code>{b}</code>
+    {t('analysis.backupSaved')}
+    {#each backups as b (b)}<code>{b}</code>
     {/each}
-    <button class="ghost" aria-label="Masquer" onclick={() => (backups = [])}>×</button>
+    <button class="ghost" aria-label={t('analysis.hide')} onclick={() => (backups = [])}>×</button>
   </p>
 {/if}
 
 {#if ready && !repos.length}
   <div class="empty">
-    <h1>Analyser un dépôt</h1>
-    <p class="lead">
-      Trusquin note un dossier sur sa préparation pour Claude Code (A à E) et liste les corrections, triées par points
-      gagnés. Rien n'est modifié dans le dépôt sans ton accord.
-    </p>
-    <button class="primary" onclick={pick} disabled={loading}>{loading ? 'Analyse…' : 'Choisir un dossier…'}</button>
+    <h1>{t('nav.analyze')}</h1>
+    <p class="lead">{t('analysis.lead')}</p>
+    <button class="primary" onclick={pick} disabled={loading}
+      >{loading ? t('analysis.running') : t('analysis.pick')}</button
+    >
   </div>
   <HowItWorks />
 {:else}
   <div class="layout">
     <aside>
       <div class="aside-head">
-        <h3>Dépôts</h3>
-        <button class="add" onclick={pick} disabled={loading} aria-label="Ajouter un dépôt" title="Ajouter un dépôt"
+        <h3>{t('analysis.repos')}</h3>
+        <button class="add" onclick={pick} disabled={loading} aria-label={t('analysis.add')} title={t('analysis.add')}
           >{loading ? '…' : '+'}</button
         >
       </div>
@@ -156,7 +155,7 @@
               </span>
               <span class="muted path">{repo.last.path}</span>
               <span class="muted small">
-                {date(repo.last.createdAt)} · {repo.runs} analyse{repo.runs > 1 ? 's' : ''}
+                {date(repo.last.createdAt)} · {t(repo.runs > 1 ? 'analysis.runs' : 'analysis.run', { n: repo.runs })}
                 {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>{/if}
               </span>
             </button>
@@ -164,8 +163,8 @@
               class="ghost remove"
               onclick={() => forget(repo.last.path)}
               disabled={loading}
-              aria-label="Retirer {repo.last.name}"
-              title="Retirer ce dépôt et ses analyses (le dossier n'est pas touché)">Supprimer</button
+              aria-label={t('analysis.forgetLabel', { name: repo.last.name })}
+              title={t('analysis.forgetTitle')}>{t('common.delete')}</button
             >
           </li>
         {/each}
@@ -174,24 +173,28 @@
 
     <section>
       {#if !record}
-        <p class="muted">Choisis un dépôt dans la liste, ou ajoutes-en un avec +.</p>
+        <p class="muted">{t('analysis.choose')}</p>
       {:else}
         <div class="title">
           <h2>{record.name} <ScoreBadge score={record.score} label={record.grade} /></h2>
           <code class="muted path" title={record.path}>{record.path}</code>
         </div>
         <!-- La boucle de travail, appliquée à ce dépôt : chaque étape dit où on en est et y mène. -->
-        <ol class="steps" aria-label="Étapes">
+        <ol class="steps" aria-label={t('analysis.steps')}>
           <li class="done static">
             <span class="num">✓</span>
-            <span class="label"><b>Analysé</b><small class="muted">{date(record.createdAt)}</small></span>
+            <span class="label"
+              ><b>{t('analysis.analyzed')}</b><small class="muted">{date(record.createdAt)}</small></span
+            >
           </li>
           <li class:done={!proposals}>
             <button class="ghost" onclick={() => (view = 'proposals')}>
               <span class="num">{proposals ? 2 : '✓'}</span>
               <span class="label"
-                ><b>Corriger</b><small class="muted"
-                  >{proposals ? `${proposals} proposition${proposals > 1 ? 's' : ''}` : 'Rien à corriger'}</small
+                ><b>{t('loop.fix')}</b><small class="muted"
+                  >{proposals
+                    ? t(proposals > 1 ? 'analysis.proposals' : 'analysis.proposal', { n: proposals })
+                    : t('analysis.nothingToFix')}</small
                 ></span
               >
             </button>
@@ -200,10 +203,10 @@
             <button class="ghost" onclick={() => (view = 'files')}>
               <span class="num">{drafts.length ? 3 : '✓'}</span>
               <span class="label"
-                ><b>Exporter</b><small class="muted"
+                ><b>{t('loop.export')}</b><small class="muted"
                   >{drafts.length
-                    ? `${drafts.length} règle${drafts.length > 1 ? 's' : ''} à exporter`
-                    : 'Rien en attente'}</small
+                    ? t(drafts.length > 1 ? 'analysis.rulesToExport' : 'analysis.ruleToExport', { n: drafts.length })
+                    : t('analysis.nothingPending')}</small
                 ></span
               >
             </button>
@@ -213,31 +216,37 @@
               class="ghost"
               onclick={() => analyze(record!.path)}
               disabled={loading}
-              title="Relit le dépôt après tes changements : l'onglet Historique montre l'évolution de la note."
+              title={t('analysis.reanalyzeTitle')}
             >
               <span class="num">4</span>
               <span class="label"
-                ><b>{loading ? 'Analyse…' : 'Ré-analyser'}</b><small class="muted">Voir la note monter</small></span
+                ><b>{loading ? t('analysis.running') : t('loop.reanalyze')}</b><small class="muted"
+                  >{t('analysis.watchScore')}</small
+                ></span
               >
             </button>
           </li>
         </ol>
         <div class="views" role="tablist">
-          <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}>Rapport</button>
+          <button role="tab" aria-selected={view === 'report'} onclick={() => (view = 'report')}
+            >{t('analysis.report')}</button
+          >
           <button
             role="tab"
             aria-selected={view === 'proposals'}
-            title="Ce qu'il faut corriger, trié par points gagnés"
+            title={t('analysis.proposalsTitle')}
             onclick={() => (view = 'proposals')}
           >
-            Propositions <span class="muted">{proposals}</span>
+            {t('analysis.proposalsTab')} <span class="muted">{proposals}</span>
           </button>
           <button role="tab" aria-selected={view === 'files'} onclick={() => (view = 'files')}>
-            Fichiers Claude
-            {#if drafts.length}<span class="pill">{drafts.length} nouveau{drafts.length > 1 ? 'x' : ''}</span>{/if}
+            {t('analysis.claudeFiles')}
+            {#if drafts.length}<span class="pill"
+                >{t(drafts.length > 1 ? 'analysis.newMany' : 'analysis.newOne', { n: drafts.length })}</span
+              >{/if}
           </button>
           <button role="tab" aria-selected={view === 'history'} onclick={() => (view = 'history')}>
-            Historique <span class="muted">{runs.length}</span>
+            {t('analysis.history')} <span class="muted">{runs.length}</span>
           </button>
         </div>
         {#if view === 'report'}
@@ -282,18 +291,16 @@
                       {#if delta}<span class={delta > 0 ? 'up' : 'down'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span
                         >{/if}
                     </td>
-                    <td class="muted">{r.fileCount} fichiers</td>
-                    <td class="muted">{r.id === record.id ? 'affichée' : ''}</td>
+                    <td class="muted">{t('analysis.files', { n: r.fileCount })}</td>
+                    <td class="muted">{r.id === record.id ? t('analysis.shown') : ''}</td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
-          <h4>Sauvegardes <span class="muted">{saved.length}</span></h4>
+          <h4>{t('analysis.backups')} <span class="muted">{saved.length}</span></h4>
           {#if !saved.length}
-            <p class="muted">
-              Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis Trusquin.
-            </p>
+            <p class="muted">{t('analysis.noBackups')}</p>
           {:else}
             <div class="scroll-x">
               <table class="history">
@@ -302,7 +309,7 @@
                     <tr>
                       <td><code>{b.rel}</code></td>
                       <td class="muted">{date(b.savedAt)}</td>
-                      <td><button onclick={() => restore(b)} disabled={loading}>Restaurer</button></td>
+                      <td><button onclick={() => restore(b)} disabled={loading}>{t('analysis.restore')}</button></td>
                     </tr>
                   {/each}
                 </tbody>
@@ -318,13 +325,13 @@
 <div class="toast-zone" role="status" aria-live="polite">
   {#if toast}
     <div class="toast card">
-      <span>Analyse terminée · <b>{toast.run.name}</b></span>
+      <span>{t('analysis.done')} · <b>{toast.run.name}</b></span>
       <ScoreBadge score={toast.run.score} label={toast.run.grade} />
       {#if toast.delta}<span class={toast.delta > 0 ? 'up' : 'down'}
           >{toast.delta > 0 ? '▲' : '▼'} {Math.abs(toast.delta)}</span
         >{/if}
-      <span class="muted">{toast.run.fileCount} fichiers</span>
-      <button class="ghost" aria-label="Fermer" onclick={() => (toast = null)}>×</button>
+      <span class="muted">{t('analysis.files', { n: toast.run.fileCount })}</span>
+      <button class="ghost" aria-label={t('settings.close')} onclick={() => (toast = null)}>×</button>
     </div>
   {/if}
 </div>

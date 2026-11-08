@@ -12,7 +12,6 @@ export const fr = {
   'nav.practicesHint': 'Règles et fichiers',
   'nav.reference': 'Référentiel',
   'nav.referenceHint': 'Règles appliquées',
-  'nav.errors': 'erreurs à corriger',
 
   // Réglages (Settings.svelte)
   'settings.title': 'Réglages',
@@ -430,6 +429,122 @@ export const fr = {
   'check.broken-import': 'Import `@fichier` vers un fichier absent.',
   'check.agents-not-imported': 'AGENTS.md présent mais pas importé depuis CLAUDE.md.',
   'check.settings-json': 'settings.json illisible (JSON invalide).',
+
+  // Analyse d'un dépôt (Analysis.svelte)
+  'analysis.lead':
+    "Trusquin note un dossier sur sa préparation pour Claude Code (A à E) et liste les corrections, triées par points gagnés. Rien n'est modifié dans le dépôt sans ton accord.",
+  'analysis.running': 'Analyse…',
+  'analysis.pick': 'Choisir un dossier…',
+  'analysis.repos': 'Dépôts',
+  'analysis.add': 'Ajouter un dépôt',
+  'analysis.run': '{n} analyse',
+  'analysis.runs': '{n} analyses',
+  'analysis.forgetLabel': 'Retirer {name}',
+  'analysis.forgetTitle': "Retirer ce dépôt et ses analyses (le dossier n'est pas touché)",
+  'analysis.askForget': "Retirer {path} de Trusquin ? Ses analyses sont supprimées, le dossier n'est pas touché.",
+  'analysis.askRestore': 'Remettre la version de {file} du {date} ?',
+  'analysis.restore': 'Restaurer',
+  'analysis.backupSaved': 'Ancienne version sauvegardée, restaurable dans l’onglet Historique :',
+  'analysis.hide': 'Masquer',
+  'analysis.choose': 'Choisis un dépôt dans la liste, ou ajoutes-en un avec +.',
+  'analysis.steps': 'Étapes',
+  'analysis.analyzed': 'Analysé',
+  'analysis.proposal': '{n} proposition',
+  'analysis.proposals': '{n} propositions',
+  'analysis.nothingToFix': 'Rien à corriger',
+  'analysis.ruleToExport': '{n} règle à exporter',
+  'analysis.rulesToExport': '{n} règles à exporter',
+  'analysis.nothingPending': 'Rien en attente',
+  'analysis.reanalyzeTitle':
+    "Relit le dépôt après tes changements : l'onglet Historique montre l'évolution de la note.",
+  'analysis.watchScore': 'Voir la note monter',
+  'analysis.report': 'Rapport',
+  'analysis.proposalsTab': 'Propositions',
+  'analysis.proposalsTitle': "Ce qu'il faut corriger, trié par points gagnés",
+  'analysis.claudeFiles': 'Fichiers Claude',
+  'analysis.newOne': '{n} nouveau',
+  'analysis.newMany': '{n} nouveaux',
+  'analysis.history': 'Historique',
+  'analysis.files': '{n} fichiers',
+  'analysis.shown': 'affichée',
+  'analysis.backups': 'Sauvegardes',
+  'analysis.noBackups': "Aucune : une copie est gardée chaque fois qu'un fichier du dépôt est écrasé depuis Trusquin.",
+  'analysis.done': 'Analyse terminée',
+
+  // Rapport (AnalysisReport.svelte)
+  'report.groupPractices': 'Bonnes pratiques du repo (boucles de feedback)',
+  'report.memory': 'mémoire : {files}',
+  'report.none': 'aucune',
+  'report.memoryIssues': 'Problèmes dans les fichiers mémoire existants',
+
+  // Propositions (Proposals.svelte)
+  'proposals.none': 'Pas de proposition : rien à améliorer pour ce dépôt.',
+  'proposals.gainHint': 'Points gagnés sur la note du dépôt une fois le critère corrigé.',
+  'proposals.edit': 'Modifier',
+  'proposals.inFiles': 'Dans Fichiers Claude',
+  'proposals.design': 'Concevoir…',
+  'proposals.redesign': 'Concevoir à nouveau…',
+  'proposals.designHint':
+    'Ouvre un modèle à adapter au dépôt, avec sa destination et ses défauts en direct. Une fois ajouté, il apparaît dans Fichiers Claude comme nouveau fichier à enregistrer dans le projet.',
+  'proposals.editFile': 'Modifier le fichier…',
+  'proposals.editFileHint':
+    "Ouvre le fichier avec ses défauts détectés en direct pendant la saisie, puis l'enregistre dans le dépôt et le ré-analyse.",
+  'severity.error': 'erreur',
+  'severity.warning': 'avertissement',
+  'severity.info': 'suggestion',
+
+  // Fichiers Claude d'un dépôt (RepoFiles.svelte)
+  'files.askContinue': 'Le projet en cours a {n} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?',
+  'files.continue': 'Continuer',
+  'files.reading': 'Lecture du dépôt…',
+  'files.toSave': '{n} fichier(s) à enregistrer dans le projet',
+  'files.toSaveHint':
+    'Les propositions conçues ne sont pas écrites dans le dépôt. « Créer un nouveau projet » les ajoute au Générateur avec les règles existantes : vérifier, puis exporter le zip.',
+  'files.designFirst': "Conçois une proposition (onglet Propositions) pour l'ajouter ici.",
+  'files.createProject': 'Créer un nouveau projet',
+  'files.createProjectHint':
+    "Ouvre le Générateur avec les règles importées de ce dépôt et les propositions conçues. Le projet en cours est d'abord enregistré dans l'historique.",
+  'files.none': 'Aucun fichier Claude Code (CLAUDE.md, .claude/…) dans ce dépôt.',
+  'files.modified': 'modifié',
+  'files.new': 'nouveau',
+  'files.modifiedCap': 'Modifié',
+  'files.newCap': 'Nouveau',
+  'files.toSaveOne': 'à enregistrer dans le projet',
+  'files.remove': 'Retirer',
+  'files.proposed': 'Ajout proposé',
+  'fileGroup.memory': 'Mémoire',
+  'fileGroup.rules': 'Règles',
+  'fileGroup.skills': 'Skills',
+  'fileGroup.agents': 'Agents',
+  'fileGroup.commands': 'Commandes',
+  'fileGroup.settings': 'Réglages',
+
+  // Conception d'une proposition (DraftModal.svelte)
+  'draft.template': "Modèle « {label} » : {hint} Adapter le contenu au dépôt avant de l'ajouter.",
+  'draft.clash': '{files} existe déjà : passer par les fichiers Claude pour le compléter.',
+  'draft.addToFiles': 'Ajouter aux fichiers Claude',
+  'draft.create': 'Créer dans le dépôt',
+
+  // Éditeur de fichier (FileEditor.svelte)
+  'editor.edit': 'modifier',
+  'editor.create': 'créer',
+  'editor.content': 'Contenu de {path}',
+  'editor.assist': 'Assistance',
+  'editor.noIssues': 'Aucun défaut détecté.',
+  'editor.goodRule': 'Une bonne consigne',
+  'editor.tipCheckable': 'Vérifiable',
+  'editor.tipCheckableText': ' : une commande, un seuil, un chemin. « Test à côté du code : foo.ts → foo.test.ts ».',
+  'editor.tipPositive': 'En positif',
+  'editor.tipPositiveText': ' : dire quoi faire plutôt qu’interdire seulement.',
+  'editor.tipExample': 'Un exemple',
+  'editor.tipExampleText': ' : « suivre src/… » vaut mieux qu’une description de style.',
+  'editor.tipDeletion': 'Test de suppression',
+  'editor.tipDeletionText': ' : sans cette ligne, Claude se tromperait-il ? Sinon, la retirer.',
+  'editor.writeNote': 'Écrit dans {file} (l’ancienne version est sauvegardée), puis le dépôt est ré-analysé.',
+  'editor.save': 'Enregistrer dans le dépôt',
+
+  // Historique des projets (history.ts)
+  'history.blockedSave': '{n} erreur(s) bloquante(s), projet non enregistré : {message}',
 };
 
 export type Key = keyof typeof fr;

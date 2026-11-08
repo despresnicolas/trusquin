@@ -68,7 +68,7 @@ export const coreEn: Record<string, string> = {
     'The key folders and the decisions Claude cannot guess.',
   'Monorepo : carte et commandes ciblées': 'Monorepo: map and targeted commands',
   'Une ligne par paquet et les commandes d’un seul paquet : Claude sait où chercher et ne lance pas tout le dépôt.':
-    'One line per package and single-package commands: Claude knows where to look and does not run the whole repo.',
+    'One line per package and single-package commands: Claude knows where to look and does not run the whole repository.',
   'Monorepo : CLAUDE.md de paquet': 'Monorepo: package CLAUDE.md',
   'Chargé seulement quand Claude travaille dans ce paquet : ses commandes, sa structure, son fichier exemplaire.':
     'Loaded only when Claude works in this package: its commands, its structure, its model file.',
@@ -76,7 +76,7 @@ export const coreEn: Record<string, string> = {
   'Chargées seulement quand Claude touche ces fichiers.': 'Loaded only when Claude touches these files.',
   'Exemple de référence (few-shot)': 'Reference example (few-shot)',
   'Montrer plutôt qu’expliquer : Claude reproduit la structure d’un fichier exemplaire du dépôt.':
-    'Show rather than explain: Claude reproduces the structure of a model file from the repo.',
+    'Show rather than explain: Claude reproduces the structure of a model file from the repository.',
   Tests: 'Tests',
   'Où sont les tests, comment les lancer, ce qui est attendu.':
     'Where the tests are, how to run them, what is expected.',

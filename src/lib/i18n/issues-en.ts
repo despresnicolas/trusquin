@@ -13,7 +13,7 @@ export const issuesEn: Record<string, { message: string; fix: string }> = {
   },
   'file-long': { message: '{n} lines in a single rules file.', fix: 'Split by topic or by path.' },
   vague: {
-    message: 'Vague wording: {terms}.',
+    message: 'Vague wording: “{terms}”.',
     fix: 'Replace with a checkable rule (command, threshold, example file). Test: “without this line, would Claude get it wrong?”',
   },
   secret: {
@@ -120,7 +120,7 @@ export const issuesEn: Record<string, { message: string; fix: string }> = {
     fix: 'Keep critical only the most often forgotten instructions (tests before handing back, commit format).',
   },
   'local-gitignore': {
-    message: 'CLAUDE.local.md must stay out of the repo.',
+    message: 'CLAUDE.local.md must stay out of the repository.',
     fix: 'Check that `.gitignore` contains `CLAUDE.local.md`.',
   },
   collision: { message: '{n} items generate {path}.', fix: 'Rename one of the items.' },
@@ -128,6 +128,12 @@ export const issuesEn: Record<string, { message: string; fix: string }> = {
     message: '{n} instructions loaded in every session (budget ≈ {max}).',
     fix: 'Move rules to the “paths” scope or into skills.',
   },
+  'broken-import': { message: 'Import @{path} not found.', fix: 'Fix the path or remove the import.' },
+  'agents-not-imported': {
+    message: 'No neighboring CLAUDE.md imports this file: Claude Code does not read it.',
+    fix: 'Add the line `@AGENTS.md` at the top of {dir}CLAUDE.md (create it if needed).',
+  },
+  'settings-json': { message: 'Invalid JSON.', fix: 'Fix the syntax.' },
 };
 
 /** Types de secret (params.kind de « secret »). */

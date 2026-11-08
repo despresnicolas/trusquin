@@ -1,4 +1,5 @@
 import type { Criterion, Issue } from './core/types';
+import { analysisEn, analysisPatternsEn } from './i18n/analysis-en';
 import { coreEn, explanationsEn } from './i18n/core-en';
 import { criteriaEn } from './i18n/criteria-en';
 import { en } from './i18n/en';
@@ -62,6 +63,19 @@ export function issueText(issue: Issue): { message: string; fix: string } {
 /** Libellé d'un critère de notation dans la langue de l'interface ; repli sur le français de core. */
 export function criterionLabel(criterion: Criterion): string {
   return i18n.locale === 'en' ? (criteriaEn[criterion.id] ?? criterion.label) : criterion.label;
+}
+
+/** Libellé, détail et correction d'un critère de notation dans la langue de l'interface. */
+export function criterionText(criterion: Criterion): { label: string; detail: string; fix?: string } {
+  const label = criterionLabel(criterion);
+  if (i18n.locale !== 'en') return { label, detail: criterion.detail, fix: criterion.fix };
+  return { label, detail: analysisText(criterion.detail), fix: criterion.fix && analysisText(criterion.fix) };
+}
+
+function analysisText(text: string): string {
+  if (text in analysisEn) return analysisEn[text];
+  for (const [pattern, english] of analysisPatternsEn) if (pattern.test(text)) return text.replace(pattern, english);
+  return text;
 }
 
 /** Explication d'un fichier généré (core/placement.ts) dans la langue de l'interface. */

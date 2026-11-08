@@ -47,7 +47,6 @@
       icon: 'M5 5h14M5 10h14M5 15h9M5 20h6',
     },
   ] as const;
-  const hasErrors = $derived(store.errors > 0 && !store.empty);
 
   $effect(() => persist($state.snapshot(store.project)));
   $effect(() => {
@@ -70,10 +69,7 @@
         <a href={s.href} aria-current={page.url.pathname === s.href ? 'page' : undefined}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d={s.icon} /></svg>
           <span class="text">
-            <b>
-              {t(s.label)}
-              {#if s.href === '/generator' && hasErrors}<span class="dot" aria-label={t('nav.errors')}></span>{/if}
-            </b>
+            <b>{t(s.label)}</b>
             <small>{t(s.hint)}</small>
           </span>
           <kbd>{s.key}</kbd>
@@ -169,15 +165,6 @@
     color: var(--muted);
     font-family: inherit;
     font-size: 12px;
-  }
-  .dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-left: 4px;
-    border-radius: 50%;
-    background: var(--err);
-    vertical-align: middle;
   }
   main {
     min-width: 0;

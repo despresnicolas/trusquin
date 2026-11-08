@@ -2,6 +2,7 @@
   import { templateForCriterion } from '#lib/core/presets.ts';
   import type { ClaudeFile, Criterion, RepoAnalysis, Rule } from '#lib/core/types.ts';
   import { api } from '#lib/history.ts';
+  import { criterionText, issueText, t } from '#lib/i18n.svelte.ts';
   import DraftModal from './DraftModal.svelte';
   import FileEditor from './FileEditor.svelte';
   import Hint from './Hint.svelte';
@@ -45,58 +46,50 @@
 </script>
 
 {#if !criteria.length && !result.memoryIssues.length}
-  <p class="card muted">Pas de proposition : rien à améliorer pour ce dépôt.</p>
+  <p class="card muted">{t('proposals.none')}</p>
 {:else}
   <ol class="list">
     {#each criteria as c (c.id)}
+      {@const text = criterionText(c)}
       <li class="card">
         <div class="head">
-          <b>{c.fix}</b>
-          <span class="gain"
-            >+{c.max - c.points} pts <Hint
-              text="Points gagnés sur la note du dépôt une fois le critère corrigé."
-            /></span
-          >
+          <b>{text.fix}</b>
+          <span class="gain">+{c.max - c.points} pts <Hint text={t('proposals.gainHint')} /></span>
         </div>
-        <div class="muted">{c.label} · {c.detail}</div>
+        <div class="muted">{text.label} · {text.detail}</div>
         {#if filesFor(c).length}
           <div class="act">
             {#each filesFor(c) as f (f)}
-              <button onclick={() => edit(f)} disabled={!files}>Modifier <code>{f}</code>…</button>
+              <button onclick={() => edit(f)} disabled={!files}>{t('proposals.edit')} <code>{f}</code>…</button>
             {/each}
           </div>
         {/if}
         {#if templateForCriterion(c.id)}
           <div class="act">
-            {#if sent.includes(c.id)}<span class="pill">Dans Fichiers Claude</span>{/if}
+            {#if sent.includes(c.id)}<span class="pill">{t('proposals.inFiles')}</span>{/if}
             <button onclick={() => (designing = c)}
-              >{sent.includes(c.id) ? 'Concevoir à nouveau…' : 'Concevoir…'}</button
+              >{sent.includes(c.id) ? t('proposals.redesign') : t('proposals.design')}</button
             >
-            <Hint
-              text="Ouvre un modèle à adapter au dépôt, avec sa destination et ses défauts en direct. Une fois ajouté, il apparaît dans Fichiers Claude comme nouveau fichier à enregistrer dans le projet."
-            />
+            <Hint text={t('proposals.designHint')} />
           </div>
         {/if}
       </li>
     {/each}
     {#each result.memoryIssues as i, n (n)}
+      {@const text = issueText(i)}
       <li class="card">
         <div class="head">
-          <b>{i.fix}</b>
-          <span class="sev-{i.severity}"
-            >{i.severity === 'error' ? 'erreur' : i.severity === 'warning' ? 'avertissement' : 'suggestion'}</span
-          >
+          <b>{text.fix}</b>
+          <span class="sev-{i.severity}">{t(`severity.${i.severity}`)}</span>
         </div>
         <div class="muted">
           {#if i.file}<code>{i.file}</code> ·
-          {/if}{i.message}
+          {/if}{text.message}
         </div>
         {#if i.file}
           <div class="act">
-            <button onclick={() => edit(i.file!)} disabled={!files}>Modifier le fichier…</button>
-            <Hint
-              text="Ouvre le fichier avec ses défauts détectés en direct pendant la saisie, puis l'enregistre dans le dépôt et le ré-analyse."
-            />
+            <button onclick={() => edit(i.file!)} disabled={!files}>{t('proposals.editFile')}</button>
+            <Hint text={t('proposals.editFileHint')} />
           </div>
         {/if}
       </li>

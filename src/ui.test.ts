@@ -37,7 +37,7 @@ describe('ui smoke', () => {
     expect(render(Practices).body).toContain('Où va chaque fichier');
     expect(render(Reference).body).toContain('Critères de la note');
     i18n.lang = 'en';
-    expect(render(Reference).body).toContain('Repo scoring criteria');
+    expect(render(Reference).body).toContain('Repository scoring criteria');
     i18n.lang = 'fr';
     const empty = { score: 100, grade: 'A' as const, criteria: [], memoryIssues: [], memoryFiles: [] };
     expect(

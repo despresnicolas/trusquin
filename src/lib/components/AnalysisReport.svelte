@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { AnalysisRecord } from '#lib/history.ts';
+  import { criterionText, issueText, t } from '#lib/i18n.svelte.ts';
   import ScoreBadge from './ScoreBadge.svelte';
 
   let { record }: { record: AnalysisRecord } = $props();
   const result = $derived(record.result);
 
   const groups = [
-    { id: 'claude', label: 'Préparation pour Claude Code' },
-    { id: 'practices', label: 'Bonnes pratiques du repo (boucles de feedback)' },
+    { id: 'claude', label: 'ref.groupClaude' },
+    { id: 'practices', label: 'report.groupPractices' },
   ] as const;
   const icon = { pass: '✓', partial: '◐', fail: '✗', na: '–' };
 </script>
@@ -15,14 +16,16 @@
 <div class="card summary">
   <ScoreBadge score={result.score} label={result.grade} size="lg" />
   <div>
-    <b>{record.name}</b> · {record.fileCount} fichiers · mémoire : {result.memoryFiles.join(', ') || 'aucune'}
+    <b>{record.name}</b> · {t('analysis.files', { n: record.fileCount })} · {t('report.memory', {
+      files: result.memoryFiles.join(', ') || t('report.none'),
+    })}
     <div class="bars">
       {#each groups as g}
         {@const list = result.criteria.filter((c) => c.group === g.id && c.status !== 'na')}
         {@const got = list.reduce((s, c) => s + c.points, 0)}
         {@const max = list.reduce((s, c) => s + c.max, 0)}
         <div class="bar">
-          <span>{g.label}</span>
+          <span>{t(g.label)}</span>
           <meter min="0" {max} value={got}></meter>
           <span class="muted">{got}/{max}</span>
         </div>
@@ -32,27 +35,29 @@
 </div>
 
 {#if result.memoryIssues.length}
-  <h3>Problèmes dans les fichiers mémoire existants</h3>
+  <h3>{t('report.memoryIssues')}</h3>
   <ul>
     {#each result.memoryIssues as i}
+      {@const text = issueText(i)}
       <li class="sev-{i.severity}">
-        {#if i.file}<code>{i.file}</code>{/if}{i.message} <span class="muted">→ {i.fix}</span>
+        {#if i.file}<code>{i.file}</code>{/if}{text.message} <span class="muted">→ {text.fix}</span>
       </li>
     {/each}
   </ul>
 {/if}
 
 {#each groups as g}
-  <h3>{g.label}</h3>
+  <h3>{t(g.label)}</h3>
   <table>
     <tbody>
       {#each result.criteria.filter((c) => c.group === g.id) as c}
+        {@const text = criterionText(c)}
         <tr class={c.status}>
           <td class="icon">{icon[c.status]}</td>
           <td
-            ><b>{c.label}</b>
-            <div class="muted">{c.detail}</div>
-            {#if c.fix}<div class="fix">→ {c.fix}</div>{/if}</td
+            ><b>{text.label}</b>
+            <div class="muted">{text.detail}</div>
+            {#if text.fix}<div class="fix">→ {text.fix}</div>{/if}</td
           >
           <td class="pts">{c.status === 'na' ? 'n/a' : `${c.points}/${c.max}`}</td>
         </tr>
