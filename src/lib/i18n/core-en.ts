@@ -106,4 +106,37 @@ export const coreEn: Record<string, string> = {
     'The structure of a good skill: principle, common mistakes and why, steps, verification, details on demand.',
   'Agent : test-runner': 'Agent: test-runner',
   'Contexte isolé, outils restreints.': 'Isolated context, restricted tools.',
+
+  // Explications des fichiers générés (core/placement.ts) ; celles avec une valeur passent par fileExplanation()
+  'Mémoire racine lisible par tous les agents IA (Codex, Cursor, Claude…).':
+    'Root memory readable by every AI agent (Codex, Cursor, Claude…).',
+  'Point d’entrée Claude Code : importe AGENTS.md pour éviter la duplication.':
+    'Claude Code entry point: imports AGENTS.md to avoid duplication.',
+  'Mémoire racine versionnée, chargée à chaque session. Viser < 100 lignes.':
+    'Versioned root memory, loaded in every session. Aim for < 100 lines.',
+  'Règle thématique sans `paths` : chargée à chaque session, mais isolée pour rester lisible.':
+    'Topic rule without `paths`: loaded in every session, but kept separate to stay readable.',
+  'Préférences personnelles du projet. À garder dans .gitignore.':
+    'Personal preferences for the project. Keep in .gitignore.',
+  'Mémoire utilisateur, tous projets confondus. À fusionner dans ~/.claude/CLAUDE.md.':
+    'User memory, across all projects. Merge into ~/.claude/CLAUDE.md.',
+  'Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.':
+    'Skill: only the description is in context; the body loads when the task matches.',
+  'Sous-agent avec son propre contexte, délégué par Claude ou appelé par son nom.':
+    'Subagent with its own context, delegated by Claude or called by name.',
+  'Permissions et hooks versionnés : exécutés par le harness, pas interprétés par le modèle.':
+    'Versioned permissions and hooks: run by the harness, not interpreted by the model.',
 };
+
+/** Explications qui contiennent une valeur (chemins, dossier, nom) : motif français → anglais. */
+export const explanationsEn: [RegExp, string][] = [
+  [/^Chargée seulement quand Claude lit ou modifie (.+)\.$/, 'Loaded only when Claude reads or edits $1.'],
+  [
+    /^Mémoire de sous-dossier : chargée quand Claude travaille dans (.+)\/\. Prime sur la racine\.$/,
+    'Subfolder memory: loaded when Claude works in $1/. Takes precedence over the root.',
+  ],
+  [
+    /^Slash command \/(.+), lancée explicitement par l’utilisateur\.$/,
+    'Slash command /$1, run explicitly by the user.',
+  ],
+];

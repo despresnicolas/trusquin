@@ -2,7 +2,7 @@
   import { CATEGORY_LABELS } from '#lib/core/placement.ts';
   import { HOOK_EVENTS } from '#lib/core/quality.ts';
   import type { GeneratedFile, Issue, Kind, Rule, Scope } from '#lib/core/types.ts';
-  import { issueText, t, type Key } from '#lib/i18n.svelte.ts';
+  import { fileExplanation, issueText, t, type Key } from '#lib/i18n.svelte.ts';
   import Hint from './Hint.svelte';
 
   let { rule, files, issues, onremove }: { rule: Rule; files: GeneratedFile[]; issues: Issue[]; onremove: () => void } =
@@ -166,7 +166,7 @@
   <div class="dest">
     <span class="muted">{t('rule.destination')} <Hint text={t('rule.destinationHint')} />:</span>
     {#each destinations as f}
-      <code title={f.explanation}>{f.path}</code>
+      <code title={fileExplanation(f.explanation)}>{f.path}</code>
     {:else}
       <span class="muted">{rule.enabled ? '—' : t('rule.disabled')}</span>
     {/each}

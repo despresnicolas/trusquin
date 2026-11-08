@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run && pnpm test:go",
+    "test:i18n": "vitest run src/i18n-ui.test.ts src/lib/i18n.test.ts",
     "test:go": "mkdir -p dist && touch dist/.keep && go test ./...",
     "format": "prettier --write .",
     "lint": "eslint .",

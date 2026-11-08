@@ -2,7 +2,7 @@
   import { countInstructions } from '#lib/core/quality.ts';
   import type { GeneratedFile, Loading, QualityReport } from '#lib/core/types.ts';
   import { api } from '#lib/history.ts';
-  import { issueText, t } from '#lib/i18n.svelte.ts';
+  import { fileExplanation, issueText, t } from '#lib/i18n.svelte.ts';
   import FileView from './FileView.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
@@ -60,7 +60,7 @@
         <span class="spacer"></span>
         <button onclick={() => api.copy(selected.content)}>{t('preview.copy')}</button>
       </header>
-      <p class="muted">{selected.explanation}</p>
+      <p class="muted">{fileExplanation(selected.explanation)}</p>
       {#each fileIssues as i}{@const text = issueText(i)}
         <p class="sev-{i.severity}">
           {text.message} <span class="muted">→ {text.fix}</span>

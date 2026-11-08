@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeRepo } from './core/analyze';
 import { DECISION_TREE, isStep, PATTERNS, TEMPLATES, type Pattern, type Step } from './core/presets';
-import { localeOf, t } from './i18n.svelte';
+import { generate } from './core/placement';
+import { newRule, starterProject } from './core/presets';
+import { fileExplanation, i18n, localeOf, t } from './i18n.svelte';
 import { readFileSync } from 'node:fs';
 import { coreEn } from './i18n/core-en';
 import { criteriaEn } from './i18n/criteria-en';
@@ -53,6 +55,27 @@ describe('i18n', () => {
   it('translates every scoring criterion', () => {
     const ids = analyzeRepo({ paths: [], contents: {} }).criteria.map((c) => c.id);
     expect(ids.filter((id) => !(id in criteriaEn))).toEqual([]);
+  });
+
+  it('translates every generated file explanation', () => {
+    const scopes = ['project', 'topic', 'path', 'directory', 'local', 'user'] as const;
+    const project = {
+      ...starterProject(),
+      rules: [
+        ...scopes.map((scope) =>
+          newRule({ scope, targets: scope === 'directory' ? ['apps/api'] : ['src/**'], body: 'x' }),
+        ),
+        ...(['command', 'skill', 'agent', 'hook'] as const).map((kind) => newRule({ kind, name: kind, body: 'x' })),
+      ],
+    };
+    const lang = i18n.lang;
+    i18n.lang = 'en';
+    const untranslated = [project, { ...project, useAgentsMd: true }]
+      .flatMap((p) => generate(p))
+      .map((f) => fileExplanation(f.explanation))
+      .filter((s) => /[àâçéèêëîïôûùüœ]/i.test(s));
+    i18n.lang = lang;
+    expect(untranslated).toEqual([]);
   });
 
   it('returns a string for every key', () => {
