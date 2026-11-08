@@ -62,6 +62,8 @@
 </script>
 
 <div class="app">
+  <!-- macOS : bande invisible sur toute la largeur, à la place de la barre de titre masquée, pour déplacer la fenêtre. -->
+  {#if mac}<div class="titlebar" aria-hidden="true"></div>{/if}
   <!-- Glisser la colonne déplace la fenêtre (runtime Wails) ; les liens restent cliquables. -->
   <aside class:mac>
     <nav aria-label={t('nav.label')}>
@@ -170,10 +172,22 @@
     min-width: 0;
     padding: 28px 24px 60px;
   }
+  /* Hauteur = marge haute de main : au repos, la bande ne couvre aucun contenu. */
+  .titlebar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    height: 28px;
+    --wails-draggable: drag;
+  }
   /* Fenêtre étroite : la colonne devient une barre en haut, sans sous-titres ni raccourcis. */
   @media (max-width: 760px) {
     .app {
       grid-template-columns: minmax(0, 1fr);
+    }
+    /* La colonne, devenue barre du haut, sert déjà à déplacer la fenêtre ; la bande cacherait ses liens. */
+    .titlebar {
+      display: none;
     }
     aside {
       position: static;
