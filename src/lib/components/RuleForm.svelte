@@ -1,8 +1,8 @@
 <script lang="ts">
   import { CATEGORY_LABELS } from '#lib/core/placement.ts';
-  import { KIND_HINTS, KIND_LABELS, SCOPE_HINTS, SCOPE_LABELS } from '#lib/core/presets.ts';
   import { HOOK_EVENTS } from '#lib/core/quality.ts';
-  import type { GeneratedFile, Issue, Rule } from '#lib/core/types.ts';
+  import type { GeneratedFile, Issue, Kind, Rule, Scope } from '#lib/core/types.ts';
+  import { t, type Key } from '#lib/i18n.svelte.ts';
   import Hint from './Hint.svelte';
 
   let { rule, files, issues, onremove }: { rule: Rule; files: GeneratedFile[]; issues: Issue[]; onremove: () => void } =
@@ -10,6 +10,9 @@
 
   const destinations = $derived(files.filter((f) => f.sources.includes(rule.id)));
   const named = $derived(rule.kind === 'command' || rule.kind === 'skill' || rule.kind === 'agent');
+
+  const KINDS: Kind[] = ['rule', 'command', 'skill', 'agent', 'hook'];
+  const SCOPES: Scope[] = ['project', 'topic', 'path', 'directory', 'local', 'user'];
 
   function setTargets(value: string) {
     rule.targets = value
@@ -22,54 +25,56 @@
 <div class="form card">
   <div class="row">
     <label class="grow"
-      >Titre <Hint
-        text="Sert de titre de section (## Titre) dans le fichier généré. Court et parlant : Claude s'en sert pour situer la règle."
-      /><input bind:value={rule.title} placeholder="Ex. Endpoints API" /></label
+      >{t('rule.title')}
+      <Hint text={t('rule.titleHint')} /><input
+        bind:value={rule.title}
+        placeholder={t('rule.titlePlaceholder')}
+      /></label
     >
     <label
-      >Type <Hint text={KIND_HINTS[rule.kind]} />
+      >{t('rule.type')}
+      <Hint text={t(`kindHint.${rule.kind}`)} />
       <select bind:value={rule.kind}>
-        {#each Object.entries(KIND_LABELS) as [value, label]}<option {value}>{label}</option>{/each}
+        {#each KINDS as value (value)}<option {value}>{t(`kind.${value}`)}</option>{/each}
       </select>
     </label>
     <label class="toggle"
-      ><input type="checkbox" bind:checked={rule.enabled} /> Actif
-      <Hint
-        text="Décoché : la règle reste dans le projet mais n'est pas exportée. Utile pour tester sans supprimer."
-      /></label
+      ><input type="checkbox" bind:checked={rule.enabled} />
+      {t('rule.enabled')}
+      <Hint text={t('rule.enabledHint')} /></label
     >
   </div>
 
   {#if rule.kind === 'rule'}
     <div class="row">
       <label class="grow"
-        >S'applique à <Hint text={SCOPE_HINTS[rule.scope]} />
+        >{t('rule.appliesTo')}
+        <Hint text={t(`scopeHint.${rule.scope}`)} />
         <select bind:value={rule.scope}>
-          {#each Object.entries(SCOPE_LABELS) as [value, label]}<option {value}>{label}</option>{/each}
+          {#each SCOPES as value (value)}<option {value}>{t(`scope.${value}`)}</option>{/each}
         </select>
       </label>
       <label
-        >Catégorie <Hint
-          text="Regroupe les règles en sections, et nomme le fichier .claude/rules/<catégorie>.md pour la portée « Thème »."
-        />
+        >{t('rule.category')}
+        <Hint text={t('rule.categoryHint')} />
         <select bind:value={rule.category}>
-          {#each Object.entries(CATEGORY_LABELS) as [value, label]}<option {value}>{label}</option>{/each}
+          <!-- Libellés de CATEGORY_LABELS (core) : ils titrent aussi les sections générées, d'où la clé par catégorie. -->
+          {#each Object.keys(CATEGORY_LABELS) as value (value)}<option {value}>{t(`category.${value}` as Key)}</option
+            >{/each}
         </select>
       </label>
       {#if rule.scope === 'project'}
         <label class="toggle"
-          ><input type="checkbox" bind:checked={rule.critical} /> Critique
-          <Hint
-            text="Pour les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits) : placée en tête du CLAUDE.md et rappelée à la fin, là où Claude y prête le plus attention. 3 au maximum."
-          /></label
+          ><input type="checkbox" bind:checked={rule.critical} />
+          {t('rule.critical')}
+          <Hint text={t('rule.criticalHint')} /></label
         >
       {/if}
     </div>
     {#if rule.scope === 'path'}
       <label
-        >Globs (un par ligne) <Hint
-          text="Motifs de chemins relatifs à la racine : src/api/**/*.ts, **/*.test.ts. La règle n'est chargée que si Claude lit ou modifie un fichier qui correspond."
-        />
+        >{t('rule.globs')}
+        <Hint text={t('rule.globsHint')} />
         <textarea
           rows="2"
           value={rule.targets.join('\n')}
@@ -78,7 +83,8 @@
       </label>
     {:else if rule.scope === 'directory'}
       <label
-        >Dossier <Hint text="Chemin du sous-dossier (ex. apps/api) : la règle va dans apps/api/CLAUDE.md." />
+        >{t('rule.directory')}
+        <Hint text={t('rule.directoryHint')} />
         <input
           value={rule.targets[0] ?? ''}
           oninput={(e) => (rule.targets = [e.currentTarget.value.trim()])}
@@ -91,37 +97,34 @@
   {#if named}
     <div class="row">
       <label
-        >Nom (kebab-case) <Hint
-          text="Identifiant du fichier et de l'appel (/release, agent test-runner). Minuscules et tirets."
-        /><input bind:value={rule.name} placeholder="release" /></label
+        >{t('rule.name')}
+        <Hint text={t('rule.nameHint')} /><input bind:value={rule.name} placeholder="release" /></label
       >
       {#if rule.kind === 'agent'}
         <label
-          >Modèle
+          >{t('rule.model')}
           <select bind:value={rule.model}>
-            <option value={undefined}>par défaut</option><option>inherit</option><option>sonnet</option><option
-              >opus</option
-            ><option>haiku</option>
+            <option value={undefined}>{t('rule.modelDefault')}</option><option>inherit</option><option>sonnet</option
+            ><option>opus</option><option>haiku</option>
           </select>
         </label>
       {/if}
       {#if rule.kind === 'command'}
-        <label>Argument hint<input bind:value={rule.argumentHint} placeholder="[fichier]" /></label>
+        <label>Argument hint<input bind:value={rule.argumentHint} placeholder={t('rule.argumentPlaceholder')} /></label>
       {/if}
     </div>
     <label
-      >Description — quoi ET quand (c'est ce que Claude lit pour décider) <Hint
-        text={rule.kind === 'skill'
-          ? "Seule la description est lue tant que la skill ne sert pas. Dire ce qu'elle produit ET quand (« Use when… »), avec les mots qu'emploierait l'utilisateur même sans citer la skill. 1024 caractères max."
-          : "Ex. « Prépare une release : changelog, version, tag. Use when the user asks to release. » Sans le « quand », Claude ne saura pas l'utiliser au bon moment."}
-      />
+      >{t('rule.description')}
+      <Hint text={t(rule.kind === 'skill' ? 'rule.descriptionSkillHint' : 'rule.descriptionHint')} />
       <textarea rows="2" bind:value={rule.description}></textarea>
     </label>
     {#if rule.kind !== 'skill'}
       <label
-        >Outils autorisés <Hint
-          text="Limite ce que l'élément peut faire. Vide = outils par défaut. Restreindre (Read, Grep) rend un agent de revue plus sûr."
-        /><input bind:value={rule.tools} placeholder="Read, Grep, Bash(git diff:*)" /></label
+        >{t('rule.tools')}
+        <Hint text={t('rule.toolsHint')} /><input
+          bind:value={rule.tools}
+          placeholder="Read, Grep, Bash(git diff:*)"
+        /></label
       >
     {/if}
   {/if}
@@ -129,47 +132,43 @@
   {#if rule.kind === 'hook'}
     <div class="row">
       <label
-        >Événement <Hint
-          text="PostToolUse : après une action (formatter). PreToolUse : avant, peut bloquer (exit 2). Stop : quand Claude rend la main (lancer les tests)."
-        />
+        >{t('rule.event')}
+        <Hint text={t('rule.eventHint')} />
         <select bind:value={rule.event}
           >{#each HOOK_EVENTS as e}<option>{e}</option>{/each}</select
         >
       </label>
       <label class="grow"
-        >Matcher (outils) <Hint
-          text="Outils concernés, séparés par | : Edit|Write pour les modifications de fichiers. Vide = tous."
-        /><input bind:value={rule.matcher} placeholder="Edit|Write" /></label
+        >{t('rule.matcher')}
+        <Hint text={t('rule.matcherHint')} /><input bind:value={rule.matcher} placeholder="Edit|Write" /></label
       >
     </div>
     <label
-      >Commande (reçoit le JSON de l'événement sur stdin ; exit 2 = bloquer)
+      >{t('rule.command')}
       <textarea rows="3" bind:value={rule.command}></textarea>
     </label>
   {:else}
     <label
-      >{rule.kind === 'rule' ? 'Instructions (une par ligne, concrètes et vérifiables)' : 'Contenu (markdown)'}
+      >{t(rule.kind === 'rule' ? 'rule.instructions' : 'rule.content')}
       <Hint
-        text={rule.kind === 'rule'
-          ? 'Une instruction par ligne, vérifiable : « pnpm test avant de rendre la main » plutôt que « bien tester ». Éviter de recopier du code ou ce que le linter fait déjà.'
-          : rule.kind === 'skill'
-            ? 'Principe en une ligne, erreurs fréquentes avec leur raison, étapes numérotées, vérification en dernier. Moins de 500 lignes : le détail va dans des fichiers de référence que Claude ouvre quand une étape le demande.'
-            : "Les étapes à suivre, en markdown. Rester concis : ce contenu est chargé quand l'élément sert."}
+        text={t(
+          rule.kind === 'rule'
+            ? 'rule.instructionsHint'
+            : rule.kind === 'skill'
+              ? 'rule.skillBodyHint'
+              : 'rule.bodyHint',
+        )}
       />
       <textarea rows="9" bind:value={rule.body}></textarea>
     </label>
   {/if}
 
   <div class="dest">
-    <span class="muted"
-      >Destination <Hint
-        text="Fichier où la règle sera écrite, déduit du type et de la portée. Survoler le chemin pour savoir quand il est chargé."
-      />:</span
-    >
+    <span class="muted">{t('rule.destination')} <Hint text={t('rule.destinationHint')} />:</span>
     {#each destinations as f}
       <code title={f.explanation}>{f.path}</code>
     {:else}
-      <span class="muted">{rule.enabled ? '—' : 'désactivé, non exporté'}</span>
+      <span class="muted">{rule.enabled ? '—' : t('rule.disabled')}</span>
     {/each}
   </div>
 
@@ -181,7 +180,7 @@
     </ul>
   {/if}
 
-  <div><button class="ghost sev-error" onclick={onremove}>Supprimer</button></div>
+  <div><button class="ghost sev-error" onclick={onremove}>{t('common.delete')}</button></div>
 </div>
 
 <style>

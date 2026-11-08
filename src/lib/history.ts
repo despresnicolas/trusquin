@@ -1,3 +1,4 @@
+import { t } from './i18n.svelte';
 import { Clipboard, Dialogs } from '@wailsio/runtime';
 import { HistoryService, RepoService } from './bindings/trusquin';
 import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
@@ -67,11 +68,11 @@ export const api = {
       Directory: start?.trim() || undefined,
     }),
   /** Boîte de confirmation du système ; vrai si l'utilisateur valide `action`. */
-  ask: async (message: string, action = 'Supprimer') =>
+  ask: async (message: string, action = t('common.delete')) =>
     (await Dialogs.Question({
       Title: message,
       Buttons: [
-        { Label: 'Annuler', IsCancel: true },
+        { Label: t('common.cancel'), IsCancel: true },
         { Label: action, IsDefault: true },
       ],
     })) === action,

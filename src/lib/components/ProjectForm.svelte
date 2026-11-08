@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import { store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
 
@@ -6,36 +7,30 @@
 </script>
 
 <div class="card project">
+  <label>{t('form.name')} <Hint text={t('form.nameHint')} /><input bind:value={project.name} /></label>
   <label
-    >Nom du projet <Hint
-      text="Titre du CLAUDE.md et nom dans l'historique : deux projets du même nom partagent le même historique."
-    /><input bind:value={project.name} /></label
+    >{t('form.description')}
+    <Hint text={t('form.descriptionHint')} /><textarea rows="2" bind:value={project.description}></textarea></label
   >
   <label
-    >Description (le quoi, en une phrase) <Hint
-      text="Une phrase sur ce que fait le dépôt, en tête du CLAUDE.md. Aide Claude à trancher les cas ambigus."
-    /><textarea rows="2" bind:value={project.description}></textarea></label
-  >
-  <label
-    >Stack <Hint
-      text="Langages, frameworks, base, gestionnaire de paquets. Évite que Claude propose npm dans un projet pnpm."
-    /><input bind:value={project.stack} placeholder="SvelteKit, Fastify, PostgreSQL, pnpm" /></label
-  >
-  <label class="check"
-    ><input type="checkbox" bind:checked={project.useAgentsMd} /> Écrire dans AGENTS.md (multi-outils) + import dans
-    CLAUDE.md <Hint
-      text="À cocher si l'équipe utilise aussi Codex, Cursor… : la mémoire va dans AGENTS.md, que CLAUDE.md importe."
+    >{t('form.stack')}
+    <Hint text={t('form.stackHint')} /><input
+      bind:value={project.stack}
+      placeholder="SvelteKit, Fastify, PostgreSQL, pnpm"
     /></label
   >
+  <label class="check"
+    ><input type="checkbox" bind:checked={project.useAgentsMd} />
+    {t('form.agentsMd')}
+    <Hint text={t('form.agentsMdHint')} /></label
+  >
   <h4>
-    Permissions <span class="muted">(.claude/settings.json)</span>
-    <Hint
-      text="Autoriser évite les confirmations pour les commandes sûres (Bash(pnpm test:*)). Refuser protège les secrets (Read(./.env)). Un refus l'emporte toujours."
-    />
+    {t('form.permissions')} <span class="muted">(.claude/settings.json)</span>
+    <Hint text={t('form.permissionsHint')} />
   </h4>
   <div class="perms">
     <label
-      >Autoriser (une par ligne)
+      >{t('form.allow')}
       <textarea
         rows="3"
         value={project.permissions.allow.join('\n')}
@@ -46,7 +41,7 @@
             .filter(Boolean))}></textarea>
     </label>
     <label
-      >Refuser (une par ligne)
+      >{t('form.deny')}
       <textarea
         rows="3"
         value={project.permissions.deny.join('\n')}

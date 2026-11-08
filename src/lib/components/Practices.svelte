@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LOADING_LABELS } from '#lib/core/presets.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import type { Loading } from '#lib/core/types.ts';
 
   const GROUPS = [
@@ -166,7 +166,7 @@
           {#each FILES as f (f.path)}
             <tr>
               <td><code>{f.path}</code></td>
-              <td><span class="pill load-{f.loading}">{LOADING_LABELS[f.loading]}</span></td>
+              <td><span class="pill load-{f.loading}">{t(`loading.${f.loading}`)}</span></td>
               <td>{f.role}</td>
             </tr>
           {/each}

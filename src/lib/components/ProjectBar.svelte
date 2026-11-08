@@ -4,6 +4,7 @@
   import { newId, starterProject } from '#lib/core/presets.ts';
   import { exportZip, zipName } from '#lib/export.ts';
   import { api } from '#lib/history.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import { archive, store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
@@ -13,7 +14,7 @@
   const errors = $derived(store.errors);
   // Ce qui bloque l'export, avec la règle concernée quand il y en a une.
   const blocking = $derived(store.quality.issues.filter((i) => i.severity === 'error'));
-  const titleOf = (id: string) => store.project.rules.find((r) => r.id === id)?.title || 'Sans titre';
+  const titleOf = (id: string) => store.project.rules.find((r) => r.id === id)?.title || t('common.untitled');
 
   /** Les .md (CLAUDE.md, règles) et settings.json (hooks) ajoutent des règles au projet en cours. */
   async function importFiles(e: Event) {
@@ -30,15 +31,15 @@
     store.project.description ||= context.description;
     store.project.stack ||= context.stack;
     store.project.rules.push(...rules);
-    notice = rules.length ? `${rules.length} règle(s) importée(s).` : 'Aucune règle trouvée dans ces fichiers.';
+    notice = rules.length ? t('bar.imported', { n: rules.length }) : t('bar.noneFound');
     if (rules.length) await goto(`/generator?rule=${rules[0].id}`);
   }
 
   async function save() {
     try {
-      notice = `« ${(await archive()).name} » enregistré dans l'historique.`;
+      notice = t('bar.saved', { name: (await archive()).name });
     } catch (e) {
-      notice = `Non enregistré : ${(e as Error).message}`;
+      notice = t('bar.notSaved', { error: (e as Error).message });
     }
   }
 
@@ -53,7 +54,7 @@
       // Avec des erreurs bloquantes (dont « aucune règle »), rien n'est enregistré.
       if (!errors) await archive();
     } catch (e) {
-      notice = `Projet non enregistré dans l'historique, rien n'est remplacé : ${(e as Error).message}`;
+      notice = t('bar.resetFailed', { error: (e as Error).message });
       return;
     }
     store.project = starterProject();
@@ -63,70 +64,54 @@
 </script>
 
 <div class="bar card">
-  <b class="name">{store.project.name || 'Sans nom'}</b>
-  {#if store.empty}<span class="pill">à démarrer</span>{:else}<ScoreBadge score={store.quality.score} />{/if}
+  <b class="name">{store.project.name || t('common.unnamed')}</b>
+  {#if store.empty}<span class="pill">{t('bar.toStart')}</span>{:else}<ScoreBadge score={store.quality.score} />{/if}
   <span class="spacer"></span>
-  <button onclick={() => (resetting = true)}>Nouveau projet</button>
-  <Hint
-    text="Repart d'un projet vide. Le projet en cours est enregistré dans l'historique, sauf s'il a des erreurs bloquantes."
-  />
-  <label class="file"
-    >Importer (.md, settings.json)<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label
+  <button onclick={() => (resetting = true)}>{t('bar.new')}</button>
+  <Hint text={t('bar.newHint')} />
+  <label class="file">{t('bar.import')}<input type="file" accept=".md,.json" multiple onchange={importFiles} /></label>
+  <Hint text={t('bar.importHint')} />
+  <button onclick={save} disabled={errors > 0} title={errors ? t('bar.saveBlocked', { n: errors }) : undefined}
+    >{t('common.save')}</button
   >
-  <Hint
-    text="CLAUDE.md / AGENTS.md : une règle par section ##. Un autre .md devient une règle .claude/rules/. settings.json : ses hooks. Les règles s'ajoutent au projet en cours."
-  />
-  <button
-    onclick={save}
-    disabled={errors > 0}
-    title={errors ? `${errors} erreur(s) bloquante(s) à corriger avant d'enregistrer` : undefined}>Enregistrer</button
-  >
-  <Hint
-    text="Ajoute une version dans l'onglet Historique (en base). Rien n'est ajouté si rien n'a changé ; refusé tant qu'il reste des erreurs bloquantes."
-  />
+  <Hint text={t('bar.saveHint')} />
   <button
     class="primary"
     onclick={exportCurrent}
     disabled={errors > 0 || !store.files.length}
-    title={!store.files.length
-      ? 'Aucun fichier à exporter'
-      : errors
-        ? 'Export possible une fois les points ci-dessous réglés'
-        : undefined}>Exporter le zip</button
+    title={!store.files.length ? t('bar.noFiles') : errors ? t('bar.exportBlocked') : undefined}
+    >{t('bar.export')}</button
   >
-  <Hint
-    text="Fichiers prêts à décompresser à la racine du dépôt, plus un rapport de qualité. Disponible quand il ne reste aucune erreur bloquante."
-  />
+  <Hint text={t('bar.exportHint')} />
 </div>
 
 {#if resetting}
   <div class="card confirm" role="alert">
     {#if store.empty}
-      <span>Le projet en cours est vide : rien à enregistrer.</span>
+      <span>{t('bar.resetEmpty')}</span>
     {:else if errors}
-      <span class="sev-error"
-        >Le projet en cours a {errors} erreur(s) bloquante(s) : il ne sera pas enregistré et sera perdu.</span
-      >
+      <span class="sev-error">{t('bar.resetLost', { n: errors })}</span>
     {:else}
-      <span>Le projet en cours sera enregistré dans l'historique puis remplacé.</span>
+      <span>{t('bar.resetSaved')}</span>
     {/if}
-    <button class="primary" onclick={reset}>Nouveau projet</button>
-    <button class="ghost" onclick={() => (resetting = false)}>Annuler</button>
+    <button class="primary" onclick={reset}>{t('bar.new')}</button>
+    <button class="ghost" onclick={() => (resetting = false)}>{t('common.cancel')}</button>
   </div>
 {/if}
 {#if store.empty}
   <p class="card todo">
-    Projet vide : ajoute une première règle pour pouvoir exporter.
-    <a href="/generator?view=guide">Choisir un élément avec le guide</a> ou importer un CLAUDE.md existant.
+    {t('bar.emptyTodo')}
+    <a href="/generator?view=guide">{t('bar.emptyGuide')}</a>
+    {t('bar.emptyImport')}
   </p>
 {:else if blocking.length}
   <div class="card todo" role="status">
-    <b>Pour exporter, il reste {blocking.length} point{blocking.length > 1 ? 's' : ''} à régler :</b>
+    <b>{t(blocking.length > 1 ? 'bar.blockingMany' : 'bar.blockingOne', { n: blocking.length })}</b>
     <ul>
       {#each blocking as i, n (n)}
         <li>
           {i.message} <span class="muted">→ {i.fix}</span>
-          {#if i.ruleId}<a href="/generator?rule={i.ruleId}">Ouvrir « {titleOf(i.ruleId)} »</a>{/if}
+          {#if i.ruleId}<a href="/generator?rule={i.ruleId}">{t('bar.openRule', { title: titleOf(i.ruleId) })}</a>{/if}
         </li>
       {/each}
     </ul>

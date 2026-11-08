@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { KIND_LABELS, SCOPE_LABELS, newRule } from '#lib/core/presets.ts';
+  import { newRule } from '#lib/core/presets.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import { store } from '#lib/state.svelte.ts';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
@@ -37,11 +38,12 @@
             class:off={!rule.enabled}
             onclick={() => (selectedId = rule.id)}
           >
-            <span class="title">{rule.title || rule.name || 'Sans titre'}</span>
-            {#if rule.critical && rule.kind === 'rule' && rule.scope === 'project'}<span class="pill">critique</span
+            <span class="title">{rule.title || rule.name || t('common.untitled')}</span>
+            {#if rule.critical && rule.kind === 'rule' && rule.scope === 'project'}<span class="pill"
+                >{t('rules.critical')}</span
               >{/if}
             <span class="pill"
-              >{rule.kind === 'rule' ? SCOPE_LABELS[rule.scope].split(' (')[0] : KIND_LABELS[rule.kind]}</span
+              >{rule.kind === 'rule' ? t(`scope.${rule.scope}`).split(' (')[0] : t(`kind.${rule.kind}`)}</span
             >
             {#if n.some((i) => i.severity === 'error')}<span class="sev-error">●</span>
             {:else if n.some((i) => i.severity === 'warning')}<span class="sev-warning">●</span>{/if}
@@ -51,8 +53,8 @@
     </ul>
 
     <div class="actions">
-      <button onclick={() => add()}>+ Règle vide</button>
-      <a class="from-pattern" href="/generator?view=guide">+ Via le guide</a>
+      <button onclick={() => add()}>{t('rules.addEmpty')}</button>
+      <a class="from-pattern" href="/generator?view=guide">{t('rules.viaGuide')}</a>
     </div>
   </aside>
 
@@ -62,7 +64,7 @@
         <RuleForm rule={selected} {files} issues={issuesFor(selected.id)} onremove={() => remove(selected.id)} />
       {/key}
     {:else}
-      <div class="card muted">Ajoute une règle ou pars d'un modèle.</div>
+      <div class="card muted">{t('rules.empty')}</div>
     {/if}
   </section>
 </div>
