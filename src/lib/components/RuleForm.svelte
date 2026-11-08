@@ -2,7 +2,7 @@
   import { CATEGORY_LABELS } from '#lib/core/placement.ts';
   import { HOOK_EVENTS } from '#lib/core/quality.ts';
   import type { GeneratedFile, Issue, Kind, Rule, Scope } from '#lib/core/types.ts';
-  import { t, type Key } from '#lib/i18n.svelte.ts';
+  import { issueText, t, type Key } from '#lib/i18n.svelte.ts';
   import Hint from './Hint.svelte';
 
   let { rule, files, issues, onremove }: { rule: Rule; files: GeneratedFile[]; issues: Issue[]; onremove: () => void } =
@@ -175,7 +175,8 @@
   {#if issues.length}
     <ul class="issues">
       {#each issues as i}
-        <li class="sev-{i.severity}">{i.message} <span class="muted">→ {i.fix}</span></li>
+        {@const text = issueText(i)}
+        <li class="sev-{i.severity}">{text.message} <span class="muted">→ {text.fix}</span></li>
       {/each}
     </ul>
   {/if}

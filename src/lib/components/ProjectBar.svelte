@@ -4,7 +4,7 @@
   import { newId, starterProject } from '#lib/core/presets.ts';
   import { exportZip, zipName } from '#lib/export.ts';
   import { api } from '#lib/history.ts';
-  import { t } from '#lib/i18n.svelte.ts';
+  import { issueText, t } from '#lib/i18n.svelte.ts';
   import { archive, store } from '#lib/state.svelte.ts';
   import Hint from './Hint.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
@@ -109,8 +109,9 @@
     <b>{t(blocking.length > 1 ? 'bar.blockingMany' : 'bar.blockingOne', { n: blocking.length })}</b>
     <ul>
       {#each blocking as i, n (n)}
+        {@const text = issueText(i)}
         <li>
-          {i.message} <span class="muted">→ {i.fix}</span>
+          {text.message} <span class="muted">→ {text.fix}</span>
           {#if i.ruleId}<a href="/generator?rule={i.ruleId}">{t('bar.openRule', { title: titleOf(i.ruleId) })}</a>{/if}
         </li>
       {/each}

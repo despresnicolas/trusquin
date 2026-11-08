@@ -1,6 +1,8 @@
+import type { Issue } from './core/types';
 import { coreEn } from './i18n/core-en';
 import { en } from './i18n/en';
 import { fr, type Key } from './i18n/fr';
+import { issuesEn, secretKindsEn } from './i18n/issues-en';
 
 export type { Key };
 export type Lang = 'system' | 'fr' | 'en';
@@ -35,10 +37,23 @@ export const i18n = new I18n();
 
 /** Texte traduit ; `{nom}` est remplacé par `params.nom`. Réactif : lit `i18n.locale`. */
 export function t(key: Key, params: Record<string, string | number> = {}): string {
-  return DICTS[i18n.locale][key].replace(/\{(\w+)\}/g, (m, name: string) => String(params[name] ?? m));
+  return fill(DICTS[i18n.locale][key], params);
+}
+
+function fill(text: string, params: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (m, name: string) => String(params[name] ?? m));
 }
 
 /** Texte venant de core (guide, modèles), écrit en français : traduit via i18n/core-en.ts, inchangé sinon. */
 export function tc(text: string): string {
   return i18n.locale === 'en' ? (coreEn[text] ?? text) : text;
+}
+
+/** Message et correction d'un contrôle qualité dans la langue de l'interface ; repli sur le français de core. */
+export function issueText(issue: Issue): { message: string; fix: string } {
+  const en = issuesEn[issue.code];
+  if (i18n.locale !== 'en' || !en) return issue;
+  const params = { ...issue.params };
+  if (typeof params.kind === 'string') params.kind = secretKindsEn[params.kind] ?? params.kind;
+  return { message: fill(en.message, params), fix: fill(en.fix, params) };
 }

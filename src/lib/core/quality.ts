@@ -96,6 +96,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
     issues.push({
       severity: 'error',
       code: 'root-too-long',
+      params: { n: count, max: LIMITS.rootError },
       file,
       message: `${count} lignes : au-delà de ${LIMITS.rootError}, Claude suit moins bien les consignes.`,
       fix: 'Déplacer les sections spécifiques dans .claude/rules/ avec `paths`, ou en skills.',
@@ -104,6 +105,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
     issues.push({
       severity: 'warning',
       code: 'root-long',
+      params: { n: count, max: LIMITS.rootWarn },
       file,
       message: `${count} lignes : viser moins de ${LIMITS.rootWarn} lignes pour la racine.`,
       fix: 'Garder la racine comme index ; détailler ailleurs.',
@@ -112,6 +114,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
     issues.push({
       severity: 'warning',
       code: 'file-long',
+      params: { n: count },
       file,
       message: `${count} lignes dans un seul fichier de règles.`,
       fix: 'Découper par thème ou par chemin.',
@@ -124,6 +127,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
     issues.push({
       severity: 'warning',
       code: 'vague',
+      params: { terms: vague.join(', ') },
       file,
       message: `Formulations vagues : ${vague.map((v) => `« ${v} »`).join(', ')}.`,
       fix: 'Remplacer par une règle vérifiable (commande, seuil, exemple de fichier). Test : « sans cette ligne, Claude se tromperait-il ? »',
@@ -135,6 +139,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
       issues.push({
         severity: 'error',
         code: 'secret',
+        params: { kind: label },
         file,
         message: `Secret probable (${label}).`,
         fix: 'Retirer la valeur, la mettre dans .env (gitignoré) et ne référencer que le nom de variable.',
@@ -152,6 +157,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
     issues.push({
       severity: 'info',
       code: 'negative-phrasing',
+      params: { n: negative.length, lines: negative.slice(0, 5).join(', ') + (negative.length > 5 ? '…' : '') },
       file,
       message: `${negative.length} consigne(s) formulée(s) en interdiction sans alternative (ligne ${negative.slice(0, 5).join(', ')}${negative.length > 5 ? '…' : ''}).`,
       fix: "Dire quoi faire : « Utiliser TypeScript strict » plutôt que « Pas de any ». Garder l'interdiction seulement suivie de l'alternative (« … : utiliser X »).",
@@ -167,6 +173,7 @@ export function lintMemoryText(file: string, text: string, isRoot = false): Issu
       issues.push({
         severity: 'info',
         code: 'code-copy',
+        params: { n: i - fenceStart - 1, line: fenceStart + 1 },
         file,
         message: `Bloc de code de ${i - fenceStart - 1} lignes (ligne ${fenceStart + 1}).`,
         fix: 'Pointer vers le fichier source (`chemin:ligne`) plutôt que copier : une copie devient obsolète.',
@@ -186,6 +193,7 @@ export function lintSkill(label: string, description: string, body: string): Iss
     issues.push({
       severity: 'warning',
       code: 'no-trigger',
+      params: { label },
       message: `Description de « ${label} » sans situation déclenchante.`,
       fix: 'Finir par « Use when… » avec les demandes de l’utilisateur, y compris celles qui ne citent pas le nom de la skill.',
     });
@@ -197,6 +205,7 @@ export function lintSkill(label: string, description: string, body: string): Iss
       issues.push({
         severity: 'warning',
         code: 'long-skill',
+        params: { label, n: lines, max: LIMITS.skillLines },
         message: `SKILL.md de « ${label} » : ${lines} lignes (max conseillé ${LIMITS.skillLines}).`,
         fix: 'Garder les étapes dans SKILL.md et déplacer le détail dans des fichiers de référence, lus seulement quand une étape le demande.',
       });
@@ -205,6 +214,7 @@ export function lintSkill(label: string, description: string, body: string): Iss
       issues.push({
         severity: 'info',
         code: 'no-workflow',
+        params: { label },
         message: `« ${label} » : pas d’étapes numérotées.`,
         fix: 'Écrire la procédure en étapes ordonnées (1., 2., 3.) : Claude les suit dans l’ordre au lieu de deviner.',
       });
@@ -213,6 +223,7 @@ export function lintSkill(label: string, description: string, body: string): Iss
       issues.push({
         severity: 'info',
         code: 'no-verification',
+        params: { label },
         message: `« ${label} » : aucune étape de vérification.`,
         fix: 'Finir par une vérification concrète (commande de test, critère mesurable) pour que Claude contrôle son résultat.',
       });
@@ -231,6 +242,7 @@ function ruleIssues(rule: Rule): Issue[] {
       ...base,
       severity: 'error',
       code: 'empty',
+      params: { label },
       message: `« ${label} » est vide.`,
       fix: 'Écrire le contenu ou désactiver l’élément.',
     });
@@ -242,6 +254,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'error',
         code: 'no-paths',
+        params: { label },
         message: `« ${label} » : portée « chemins » sans glob.`,
         fix: 'Ajouter un glob, ex. `src/api/**/*.ts`.',
       });
@@ -253,6 +266,7 @@ function ruleIssues(rule: Rule): Issue[] {
             ...base,
             severity: 'warning',
             code: 'bad-glob',
+            params: { glob },
             message: `Glob « ${glob} » : relatif à la racine, sans espace.`,
             fix: 'Écrire `src/**/*.ts` et non `/src/...`.',
           });
@@ -266,6 +280,7 @@ function ruleIssues(rule: Rule): Issue[] {
           ...base,
           severity: 'error',
           code: 'no-dir',
+          params: { label },
           message: `« ${label} » : portée « dossier » sans dossier.`,
           fix: 'Indiquer le dossier, ex. `apps/api`.',
         });
@@ -274,6 +289,7 @@ function ruleIssues(rule: Rule): Issue[] {
           ...base,
           severity: 'error',
           code: 'dir-glob',
+          params: { dir },
           message: `« ${dir} » est un glob, pas un dossier.`,
           fix: 'Utiliser la portée « chemins » pour un glob.',
         });
@@ -286,6 +302,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'info',
         code: 'heavy-rule',
+        params: { label, n: lineCount },
         message: `« ${label} » : ${lineCount} lignes chargées à chaque session.`,
         fix: 'Si c’est une procédure ponctuelle, en faire une skill (chargée à la demande).',
       });
@@ -295,6 +312,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'info',
         code: 'linter-job',
+        params: { label },
         message: `« ${label} » décrit du formatage.`,
         fix: 'Confier ça au formatter/linter + hook PostToolUse. Ne pas demander au LLM le travail d’un linter.',
       });
@@ -304,6 +322,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'warning',
         code: 'command-not-exact',
+        params: { label },
         message: `« ${label} » : aucune commande exacte entre backticks.`,
         fix: 'Écrire la commande complète, ex. `pnpm test -- path/to/file`.',
       });
@@ -317,6 +336,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'error',
         code: 'bad-name',
+        params: { name },
         message: `Nom « ${name} » invalide.`,
         fix: 'kebab-case, minuscules, chiffres et tirets, 64 caractères max.',
       });
@@ -327,6 +347,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: rule.kind === 'command' ? 'warning' : 'error',
         code: 'no-description',
+        params: { label },
         message: `« ${label} » sans description.`,
         fix: 'Décrire quoi ET quand l’utiliser : c’est ce que Claude lit pour décider.',
       });
@@ -335,6 +356,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'warning',
         code: 'short-description',
+        params: { label },
         message: `Description de « ${label} » trop courte pour déclencher au bon moment.`,
         fix: 'Ajouter « Use when… » avec les situations déclencheuses.',
       });
@@ -343,6 +365,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'error',
         code: 'long-description',
+        params: { label },
         message: `Description de « ${label} » > 1024 caractères.`,
         fix: 'Résumer ; mettre le détail dans le corps.',
       });
@@ -358,6 +381,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'error',
         code: 'hook-no-command',
+        params: { label },
         message: `Hook « ${label} » sans commande.`,
         fix: "Ex. `jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write`.",
       });
@@ -367,6 +391,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'error',
         code: 'hook-event',
+        params: { label, events: HOOK_EVENTS.join(', ') },
         message: `Hook « ${label} » : événement inconnu.`,
         fix: `Choisir parmi ${HOOK_EVENTS.join(', ')}.`,
       });
@@ -376,6 +401,7 @@ function ruleIssues(rule: Rule): Issue[] {
         ...base,
         severity: 'info',
         code: 'hook-matcher',
+        params: { label },
         message: `Hook « ${label} » s’exécute après chaque outil.`,
         fix: 'Restreindre avec un matcher, ex. `Edit|Write`.',
       });
@@ -402,6 +428,7 @@ function crossRuleIssues(rules: Rule[]): Issue[] {
         issues.push({
           severity: 'warning',
           code: 'duplicate',
+          params: { title: other.title, line: line.trim() },
           ruleId: rule.id,
           message: `Ligne dupliquée avec « ${other.title} » : « ${line.trim()} ».`,
           fix: 'Garder une seule source de vérité.',
@@ -424,6 +451,7 @@ function crossRuleIssues(rules: Rule[]): Issue[] {
       issues.push({
         severity: 'warning',
         code: 'contradiction',
+        params: { span, allowed: other.title, denied: rule.title },
         ruleId: rule.id,
         message: `\`${span}\` est à la fois demandé (« ${other.title} ») et interdit (« ${rule.title} »).`,
         fix: 'Clarifier quand l’un ou l’autre s’applique, ou supprimer une des deux règles.',
@@ -446,6 +474,7 @@ function crossRuleIssues(rules: Rule[]): Issue[] {
     issues.push({
       severity: 'warning',
       code: 'package-manager',
+      params: { managers: [...managers].join(', ') },
       message: `Plusieurs gestionnaires de paquets : ${[...managers].join(', ')}.`,
       fix: 'N’en garder qu’un ; Claude choisira sinon au hasard.',
     });
@@ -501,6 +530,7 @@ function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
     issues.push({
       severity: 'warning',
       code: 'too-many-critical',
+      params: { n: critical.length, max: LIMITS.criticalRules },
       file: 'CLAUDE.md',
       message: `${critical.length} règles critiques : au-delà de ${LIMITS.criticalRules}, plus rien ne ressort.`,
       fix: 'Garder critiques seulement les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits).',
@@ -522,6 +552,7 @@ function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
       issues.push({
         severity: 'error',
         code: 'collision',
+        params: { n, path },
         file: path,
         message: `${n} éléments génèrent ${path}.`,
         fix: 'Renommer un des éléments.',
@@ -552,6 +583,7 @@ export function checkProject(project: Project, files = generate(project)): Quali
     issues.push({
       severity: 'warning',
       code: 'instruction-budget',
+      params: { n: alwaysLoadedInstructions, max: LIMITS.alwaysInstructions },
       message: `${alwaysLoadedInstructions} instructions chargées à chaque session (budget ≈ ${LIMITS.alwaysInstructions}).`,
       fix: 'Passer des règles en portée « chemins » ou en skills.',
     });
