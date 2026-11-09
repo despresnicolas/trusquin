@@ -1,0 +1,34 @@
+name: macOS
+
+# Compatibilité macOS : tests, .app signé ad hoc, architectures, version minimale annoncée et démarrage,
+# sur chaque version de macOS proposée par GitHub (Apple Silicon et Intel). Script commun : build/darwin/check.sh.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS 14 Sonoma (Apple Silicon), runner: macos-14 }
+          - { name: macOS 15 Sequoia (Apple Silicon), runner: macos-15 }
+          - { name: macOS 15 Sequoia (Intel), runner: macos-15-intel }
+          - { name: macOS 26 Tahoe (Apple Silicon), runner: macos-26 }
+          # Binaire universel (celui de la release) : arm64 + amd64 dans le même .app.
+          - { name: Universel (arm64 + amd64), runner: macos-15, universal: '1' }
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+      - run: bash build/darwin/check.sh
+        env: { UNIVERSAL: '${{ matrix.universal }}' }
