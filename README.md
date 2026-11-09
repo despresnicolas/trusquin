@@ -68,7 +68,7 @@ Project already set up? Open **Analyze a repository**, pick the folder and impor
 | A procedure to run on demand | `.claude/skills/<name>/SKILL.md`        |
 | An automatic check           | `.claude/settings.json` (hook)          |
 
-📖 Full placement, quality scale, analysis criteria and data location (in French): [docs/fonctionnement.md](docs/fonctionnement.md).
+📖 Full placement, quality scale, analysis criteria and data location: [docs/how-it-works.md](docs/how-it-works.md).
 
 ## 🗺️ Roadmap
 

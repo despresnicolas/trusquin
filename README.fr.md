@@ -68,7 +68,7 @@ Projet déjà configuré ? Ouvrez **Analyse de dépôt**, choisissez le dossier 
 | Une procédure à lancer à la demande     | `.claude/skills/<nom>/SKILL.md`        |
 | Un contrôle automatique                 | `.claude/settings.json` (hook)         |
 
-📖 Placement complet, barème qualité, critères d'analyse et emplacement des données : [docs/fonctionnement.md](docs/fonctionnement.md).
+📖 Placement complet, barème qualité, critères d'analyse et emplacement des données : [docs/how-it-works.fr.md](docs/how-it-works.fr.md).
 
 ## 🗺️ Feuille de route
 

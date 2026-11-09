@@ -1,5 +1,7 @@
 # Fonctionnement détaillé
 
+[English](how-it-works.md) · **Français**
+
 ## Où va chaque règle
 
 | Portée / type      | Fichier généré                               | Chargement                       |
