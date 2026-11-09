@@ -1,151 +1,65 @@
 <script lang="ts">
-  import { LOADING_LABELS } from '#lib/core/presets.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import type { Loading } from '#lib/core/types.ts';
 
-  const GROUPS = [
-    {
-      id: 'contenu',
-      title: 'Ce qu’elle dit',
-      lead: 'Une consigne précise et utile, que Claude ne devinerait pas seul.',
-    },
-    { id: 'placement', title: 'Où elle vit', lead: 'Chargée seulement quand elle sert, ou confiée à un hook.' },
-    { id: 'entretien', title: 'Comment elle vieillit', lead: 'Sûre, cohérente, et mise à jour avec le projet.' },
-  ];
+  const GROUPS = ['contenu', 'placement', 'entretien'] as const;
 
-  /** Principes d'une bonne règle : contre-exemple, version réussie et contrôle qui le vérifie. */
+  /** Principes d'une bonne règle : contre-exemple, version réussie et contrôle qui le vérifie (textes : pr.<id>.* dans i18n, check vide = pas de contrôle). */
   const PRINCIPLES = [
-    {
-      group: 'contenu',
-      title: 'Vérifiable',
-      why: 'Claude doit pouvoir savoir s’il l’a respectée.',
-      bad: '« Écrire des tests »',
-      good: '« Test à côté du code : foo.ts → foo.test.ts, lancé par pnpm test »',
-      check: 'formulations vagues',
-    },
-    {
-      group: 'contenu',
-      title: 'Formulée en positif',
-      why: 'Dire quoi faire : une interdiction seule laisse Claude deviner l’alternative.',
-      bad: '« Pas de any »',
-      good: '« TypeScript strict ; valeur inconnue typée unknown »',
-      check: 'interdiction sans alternative',
-    },
-    {
-      group: 'contenu',
-      title: 'Non déductible',
-      why: 'Test de suppression : sans cette ligne, Claude se tromperait-il ? Sinon, la retirer.',
-      bad: '« Le projet utilise Git »',
-      good: '« Branches : feat/<ticket>-<slug> »',
-      check: '',
-    },
-    {
-      group: 'contenu',
-      title: 'Montrer un exemple',
-      why: 'Un fichier exemplaire du dépôt vaut mieux qu’une description de style.',
-      bad: '« Composants propres et cohérents »',
-      good: '« Nouveau composant : suivre src/components/Button.svelte »',
-      check: 'fichiers exemplaires cités',
-    },
-    {
-      group: 'contenu',
-      title: 'Pointer plutôt que copier',
-      why: 'Un extrait recopié vieillit ; le chemin reste juste.',
-      bad: 'Un bloc de 20 lignes de code dans CLAUDE.md',
-      good: '« Erreurs HTTP : httpError() de src/errors.ts:12 »',
-      check: 'bloc de code copié',
-    },
-    {
-      group: 'placement',
-      title: 'Confiée au hook si elle doit arriver à 100 %',
-      why: 'Le texte dépend de la bonne volonté du modèle ; un hook s’exécute à chaque fois.',
-      bad: '« Toujours formater avec Prettier »',
-      good: 'Hook PostToolUse Edit|Write qui lance Prettier',
-      check: 'travail de linter, aucun hook',
-    },
-    {
-      group: 'placement',
-      title: 'Au bon endroit',
-      why: 'Chargée seulement quand elle sert : la racine reste un index court.',
-      bad: '40 lignes sur l’API dans le CLAUDE.md racine',
-      good: '.claude/rules/api.md avec paths: apps/api/**',
-      check: 'racine longue, règle lourde, budget d’instructions',
-    },
-    {
-      group: 'placement',
-      title: 'Critique : ancrée en haut et en bas',
-      why: 'Les 3 consignes les plus oubliées ouvrent le CLAUDE.md et sont rappelées à la fin.',
-      bad: '« Lancer les tests » perdu au milieu de 80 lignes',
-      good: 'Règle cochée « Critique » : en tête et dans « Rappels »',
-      check: 'plus de 3 règles critiques',
-    },
-    {
-      group: 'entretien',
-      title: 'Sûre et cohérente',
-      why: 'Les secrets restent dans .env ; une consigne n’a qu’une seule version.',
-      bad: '« Clé API : sk-… » ; « pnpm » ici, « npm » ailleurs',
-      good: '« Clé API dans .env : OPENAI_API_KEY » ; un seul gestionnaire',
-      check: 'secret, contradiction, doublon',
-    },
-    {
-      group: 'entretien',
-      title: 'Vivante',
-      why: 'Ajouter une règle quand Claude répète une erreur, retirer celles devenues inutiles.',
-      bad: 'Un CLAUDE.md écrit une fois puis oublié',
-      good: 'Ré-analyser le dépôt et suivre le score dans l’historique',
-      check: '',
-    },
-  ];
+    { group: 'contenu', id: 'checkable' },
+    { group: 'contenu', id: 'positive' },
+    { group: 'contenu', id: 'notObvious' },
+    { group: 'contenu', id: 'example' },
+    { group: 'contenu', id: 'point' },
+    { group: 'placement', id: 'hook' },
+    { group: 'placement', id: 'place' },
+    { group: 'placement', id: 'critical' },
+    { group: 'entretien', id: 'safe' },
+    { group: 'entretien', id: 'living' },
+  ] as const;
 
-  /** La boucle de travail, en quatre temps. */
-
-  const FILES: { path: string; loading: Loading; role: string }[] = [
-    { path: 'CLAUDE.md', loading: 'always', role: 'Index court du projet, moins de 100 lignes.' },
-    { path: 'AGENTS.md', loading: 'always', role: 'Optionnel : mémoire multi-outils, importée par @AGENTS.md.' },
-    { path: '.claude/rules/testing.md', loading: 'always', role: 'Règles d’un thème, sans paths.' },
-    {
-      path: '.claude/rules/api.md',
-      loading: 'on-path',
-      role: 'paths: apps/api/** : lu quand Claude touche ces fichiers.',
-    },
-    { path: 'apps/api/CLAUDE.md', loading: 'on-path', role: 'Lu quand Claude travaille dans apps/api.' },
-    {
-      path: '.claude/skills/release/SKILL.md',
-      loading: 'on-demand',
-      role: 'Description toujours visible, contenu chargé quand il sert.',
-    },
-    { path: '.claude/commands/review.md', loading: 'on-demand', role: '/review, lancé à la main.' },
-    { path: '.claude/agents/test-runner.md', loading: 'on-demand', role: 'Sous-agent avec son propre contexte.' },
-    { path: '.claude/settings.json', loading: 'deterministic', role: 'Permissions et hooks, appliqués à coup sûr.' },
-    { path: 'CLAUDE.local.md', loading: 'personal', role: 'Tes préférences pour ce dépôt, gitignoré.' },
-    { path: '~/.claude/CLAUDE.md', loading: 'personal', role: 'Tes préférences pour tous tes projets.' },
-  ];
+  const FILES = [
+    { id: 'claude', path: 'CLAUDE.md', loading: 'always' },
+    { id: 'agents', path: 'AGENTS.md', loading: 'always' },
+    { id: 'topic', path: '.claude/rules/testing.md', loading: 'always' },
+    { id: 'paths', path: '.claude/rules/api.md', loading: 'on-path' },
+    { id: 'directory', path: 'apps/api/CLAUDE.md', loading: 'on-path' },
+    { id: 'skill', path: '.claude/skills/release/SKILL.md', loading: 'on-demand' },
+    { id: 'command', path: '.claude/commands/review.md', loading: 'on-demand' },
+    { id: 'agent', path: '.claude/agents/test-runner.md', loading: 'on-demand' },
+    { id: 'settings', path: '.claude/settings.json', loading: 'deterministic' },
+    { id: 'local', path: 'CLAUDE.local.md', loading: 'personal' },
+    { id: 'user', path: '~/.claude/CLAUDE.md', loading: 'personal' },
+  ] as const satisfies readonly { id: string; path: string; loading: Loading }[];
 </script>
 
 <div class="page">
   <header>
-    <h1>Bonnes pratiques</h1>
-    <p class="lead">Ce que Trusquin vérifie, et pourquoi : une consigne utile, au bon endroit, tenue à jour.</p>
+    <h1>{t('nav.practices')}</h1>
+    <p class="lead">{t('practices.lead')}</p>
   </header>
 
   <section>
-    <h2>Ce qui fait une bonne règle</h2>
+    <h2>{t('practices.goodRule')}</h2>
     <div class="groups">
-      {#each GROUPS as g (g.id)}
+      {#each GROUPS as g (g)}
         <div>
-          <h3>{g.title}</h3>
-          <p class="muted">{g.lead}</p>
+          <h3>{t(`group.${g}.title`)}</h3>
+          <p class="muted">{t(`group.${g}.lead`)}</p>
           <ul class="principles">
-            {#each PRINCIPLES.filter((p) => p.group === g.id) as p (p.title)}
+            {#each PRINCIPLES.filter((p) => p.group === g) as p (p.id)}
               <li>
                 <details>
-                  <summary><b>{p.title}</b><span class="muted">{p.why}</span></summary>
+                  <summary><b>{t(`pr.${p.id}.title`)}</b><span class="muted">{t(`pr.${p.id}.why`)}</span></summary>
                   <dl>
-                    <dt class="bad"><span aria-hidden="true">✗</span> À éviter</dt>
-                    <dd>{p.bad}</dd>
-                    <dt class="good"><span aria-hidden="true">✓</span> À préférer</dt>
-                    <dd>{p.good}</dd>
+                    <dt class="bad"><span aria-hidden="true">✗</span> {t('practices.avoid')}</dt>
+                    <dd>{t(`pr.${p.id}.bad`)}</dd>
+                    <dt class="good"><span aria-hidden="true">✓</span> {t('practices.prefer')}</dt>
+                    <dd>{t(`pr.${p.id}.good`)}</dd>
                   </dl>
-                  {#if p.check}<p class="check">Vérifié par Trusquin : {p.check}</p>{/if}
+                  {#if t(`pr.${p.id}.check`)}<p class="check">
+                      {t('practices.checked', { check: t(`pr.${p.id}.check`) })}
+                    </p>{/if}
                 </details>
               </li>
             {/each}
@@ -156,18 +70,22 @@
   </section>
 
   <section>
-    <h2>Où va chaque fichier, et quand Claude le lit</h2>
+    <h2>{t('practices.files')}</h2>
     <div class="table-wrap card">
       <table>
         <thead>
-          <tr><th scope="col">Fichier</th><th scope="col">Chargement</th><th scope="col">Rôle</th></tr>
+          <tr
+            ><th scope="col">{t('practices.file')}</th><th scope="col">{t('practices.loading')}</th><th scope="col"
+              >{t('practices.role')}</th
+            ></tr
+          >
         </thead>
         <tbody>
           {#each FILES as f (f.path)}
             <tr>
               <td><code>{f.path}</code></td>
-              <td><span class="pill load-{f.loading}">{LOADING_LABELS[f.loading]}</span></td>
-              <td>{f.role}</td>
+              <td><span class="pill load-{f.loading}">{t(`loading.${f.loading}`)}</span></td>
+              <td>{t(`file.${f.id}`)}</td>
             </tr>
           {/each}
         </tbody>

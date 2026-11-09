@@ -188,6 +188,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     memoryIssues.push({
       severity: 'error',
       code: 'broken-import',
+      params: { path: p },
       file: rootPath,
       message: `Import @${p} introuvable.`,
       fix: 'Corriger le chemin ou retirer l’import.',
@@ -203,6 +204,7 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
     memoryIssues.push({
       severity: 'warning',
       code: 'agents-not-imported',
+      params: { dir },
       file,
       message: 'Aucun CLAUDE.md voisin n’importe ce fichier : Claude Code ne le lit pas.',
       fix: `Ajouter la ligne \`@AGENTS.md\` en tête de ${dir}CLAUDE.md (le créer si besoin).`,

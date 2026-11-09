@@ -12,6 +12,8 @@ Générateur Svelte qui transforme des règles (quoi + à quoi ça s'applique) e
 - Bindings après un changement de signature Go : `wails3 generate bindings -clean=true -ts -i -d src/lib/bindings`
 - Tests : `pnpm test` (Vitest puis `go test ./...`) ; Go seul : `pnpm test:go`
 - Un seul test : `pnpm exec vitest run src/lib/core/core.test.ts -t "nom"` ; Go : `go test -run TestNom ./...`
+- Linux (Ubuntu 24.04+, Pop!_OS, Debian 13+) : `docker run --rm -v "$PWD":/src:ro debian:trixie bash /src/build/linux/check.sh` (même script que `.github/workflows/linux.yml`)
+- Traductions : `pnpm test:i18n` (rend chaque écran en anglais, échoue sur du français ; inclus dans `pnpm test`)
 - Types Svelte + TS : `pnpm check`
 - Lint : `pnpm lint` ; format : `pnpm format` (vérif : `pnpm format:check`) ; Go : `gofmt -l .`
 - Avant de rendre la main : `pnpm check && pnpm lint && pnpm test`

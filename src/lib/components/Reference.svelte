@@ -1,115 +1,88 @@
 <script lang="ts" module>
   import { LIMITS } from '#lib/core/quality.ts';
+  import type { Severity } from '#lib/core/types.ts';
 
-  /** Contrôles qualité (export du générateur) et problèmes des fichiers mémoire (analyse). */
-  export const CHECKS: { code: string; level: 'Erreur' | 'Avertissement' | 'Info'; text: string }[] = [
-    { code: 'root-too-long', level: 'Erreur', text: `CLAUDE.md racine de plus de ${LIMITS.rootError} lignes.` },
-    { code: 'root-long', level: 'Avertissement', text: `CLAUDE.md racine de plus de ${LIMITS.rootWarn} lignes.` },
-    { code: 'file-long', level: 'Avertissement', text: `Fichier de règles de plus de ${LIMITS.otherWarn} lignes.` },
-    {
-      code: 'vague',
-      level: 'Avertissement',
-      text: 'Formulation vague (« de qualité », « propre »…) au lieu d’une règle vérifiable.',
-    },
-    { code: 'secret', level: 'Erreur', text: 'Secret probable (clé, jeton, mot de passe) dans un fichier.' },
-    { code: 'negative-phrasing', level: 'Info', text: 'Interdiction sans alternative : dire quoi faire à la place.' },
-    { code: 'code-copy', level: 'Info', text: 'Long bloc de code copié : pointer vers le fichier plutôt.' },
-    {
-      code: 'no-trigger',
-      level: 'Avertissement',
-      text: 'Description de skill ou d’agent sans situation déclenchante.',
-    },
-    { code: 'long-skill', level: 'Avertissement', text: `SKILL.md de plus de ${LIMITS.skillLines} lignes.` },
-    { code: 'no-workflow', level: 'Info', text: 'Skill sans étapes numérotées.' },
-    { code: 'no-verification', level: 'Info', text: 'Skill sans étape de vérification.' },
-    { code: 'empty', level: 'Erreur', text: 'Élément vide.' },
-    { code: 'no-paths', level: 'Erreur', text: 'Portée « chemins » sans glob.' },
-    { code: 'bad-glob', level: 'Avertissement', text: 'Glob mal formé : relatif à la racine, sans espace.' },
-    { code: 'no-dir', level: 'Erreur', text: 'Portée « dossier » sans dossier.' },
-    { code: 'dir-glob', level: 'Erreur', text: 'Un glob donné à la place d’un dossier.' },
-    { code: 'heavy-rule', level: 'Info', text: 'Longue règle chargée à chaque session : la limiter à des chemins.' },
-    { code: 'linter-job', level: 'Info', text: 'Règle de formatage : c’est le travail d’un linter ou d’un hook.' },
-    {
-      code: 'command-not-exact',
-      level: 'Avertissement',
-      text: 'Règle de commandes sans commande exacte entre backticks.',
-    },
-    { code: 'bad-name', level: 'Erreur', text: 'Nom de commande, skill ou agent invalide.' },
-    { code: 'no-description', level: 'Erreur', text: 'Commande, skill ou agent sans description.' },
-    {
-      code: 'short-description',
-      level: 'Avertissement',
-      text: 'Description trop courte pour déclencher au bon moment.',
-    },
-    { code: 'long-description', level: 'Erreur', text: 'Description de plus de 1024 caractères.' },
-    { code: 'hook-no-command', level: 'Erreur', text: 'Hook sans commande.' },
-    { code: 'hook-event', level: 'Erreur', text: 'Hook sur un événement inconnu.' },
-    { code: 'hook-matcher', level: 'Info', text: 'Hook lancé après chaque outil, sans filtre.' },
-    { code: 'duplicate', level: 'Avertissement', text: 'Même ligne dans deux règles.' },
-    { code: 'contradiction', level: 'Avertissement', text: 'Une commande à la fois demandée et interdite.' },
-    { code: 'package-manager', level: 'Avertissement', text: 'Plusieurs gestionnaires de paquets cités.' },
-    { code: 'no-rules', level: 'Erreur', text: 'Aucune règle active : rien à envoyer à Claude.' },
-    {
-      code: 'no-commands',
-      level: 'Avertissement',
-      text: 'Aucune commande build, test ou lint dans la mémoire racine.',
-    },
-    { code: 'no-context', level: 'Info', text: 'Description ou stack du projet manquante.' },
-    { code: 'no-hooks', level: 'Info', text: 'Aucun hook : format et lint reposent sur le modèle.' },
-    { code: 'no-deny', level: 'Info', text: 'Aucune permission refusée.' },
-    {
-      code: 'too-many-critical',
-      level: 'Avertissement',
-      text: `Plus de ${LIMITS.criticalRules} règles critiques : plus rien ne ressort.`,
-    },
-    { code: 'local-gitignore', level: 'Info', text: 'CLAUDE.local.md doit rester hors du dépôt (.gitignore).' },
-    { code: 'collision', level: 'Erreur', text: 'Plusieurs éléments génèrent le même fichier.' },
-    {
-      code: 'instruction-budget',
-      level: 'Avertissement',
-      text: `Plus de ${LIMITS.alwaysInstructions} instructions chargées à chaque session.`,
-    },
-    { code: 'broken-import', level: 'Erreur', text: 'Import `@fichier` vers un fichier absent.' },
-    {
-      code: 'agents-not-imported',
-      level: 'Avertissement',
-      text: 'AGENTS.md présent mais pas importé depuis CLAUDE.md.',
-    },
-    { code: 'settings-json', level: 'Erreur', text: 'settings.json illisible (JSON invalide).' },
+  /** Contrôles qualité (export du générateur) et problèmes des fichiers mémoire (analyse) ; texte : check.<code> (i18n). */
+  export const CHECKS: { code: string; severity: Severity; max?: number }[] = [
+    { code: 'root-too-long', severity: 'error', max: LIMITS.rootError },
+    { code: 'root-long', severity: 'warning', max: LIMITS.rootWarn },
+    { code: 'file-long', severity: 'warning', max: LIMITS.otherWarn },
+    { code: 'vague', severity: 'warning' },
+    { code: 'secret', severity: 'error' },
+    { code: 'negative-phrasing', severity: 'info' },
+    { code: 'code-copy', severity: 'info' },
+    { code: 'no-trigger', severity: 'warning' },
+    { code: 'long-skill', severity: 'warning', max: LIMITS.skillLines },
+    { code: 'no-workflow', severity: 'info' },
+    { code: 'no-verification', severity: 'info' },
+    { code: 'empty', severity: 'error' },
+    { code: 'no-paths', severity: 'error' },
+    { code: 'bad-glob', severity: 'warning' },
+    { code: 'no-dir', severity: 'error' },
+    { code: 'dir-glob', severity: 'error' },
+    { code: 'heavy-rule', severity: 'info' },
+    { code: 'linter-job', severity: 'info' },
+    { code: 'command-not-exact', severity: 'warning' },
+    { code: 'bad-name', severity: 'error' },
+    { code: 'no-description', severity: 'error' },
+    { code: 'short-description', severity: 'warning' },
+    { code: 'long-description', severity: 'error' },
+    { code: 'hook-no-command', severity: 'error' },
+    { code: 'hook-event', severity: 'error' },
+    { code: 'hook-matcher', severity: 'info' },
+    { code: 'duplicate', severity: 'warning' },
+    { code: 'contradiction', severity: 'warning' },
+    { code: 'package-manager', severity: 'warning' },
+    { code: 'no-rules', severity: 'error' },
+    { code: 'no-commands', severity: 'warning' },
+    { code: 'no-context', severity: 'info' },
+    { code: 'no-hooks', severity: 'info' },
+    { code: 'no-deny', severity: 'info' },
+    { code: 'too-many-critical', severity: 'warning', max: LIMITS.criticalRules },
+    { code: 'local-gitignore', severity: 'info' },
+    { code: 'collision', severity: 'error' },
+    { code: 'instruction-budget', severity: 'warning', max: LIMITS.alwaysInstructions },
+    { code: 'broken-import', severity: 'error' },
+    { code: 'agents-not-imported', severity: 'warning' },
+    { code: 'settings-json', severity: 'error' },
   ];
 </script>
 
 <script lang="ts">
   import { analyzeRepo } from '#lib/core/analyze.ts';
+  import { criterionLabel, t, type Key } from '#lib/i18n.svelte.ts';
 
   // Un dépôt vide passe par tous les critères : la liste reste celle que la notation utilise vraiment.
   const CRITERIA = analyzeRepo({ paths: [], contents: {} }).criteria;
   const GROUPS = [
-    { id: 'claude', label: 'Préparation pour Claude Code' },
-    { id: 'practices', label: 'Bonnes pratiques du repo' },
+    { id: 'claude', label: 'ref.groupClaude' },
+    { id: 'practices', label: 'ref.groupPractices' },
+  ] as const;
+  const LEVELS = [
+    { severity: 'info', label: 'ref.infos' },
+    { severity: 'warning', label: 'ref.warnings' },
+    { severity: 'error', label: 'ref.errors' },
   ] as const;
 </script>
 
 <div class="reference">
   <header>
-    <h1>Référentiel</h1>
-    <p class="lead">Toutes les règles que Trusquin applique pour noter un dépôt et contrôler les fichiers.</p>
+    <h1>{t('nav.reference')}</h1>
+    <p class="lead">{t('ref.lead')}</p>
   </header>
 
   <section>
-    <h2>Contrôles des fichiers</h2>
-    <p class="muted">
-      Vérifiés sur l’export du générateur et sur les fichiers mémoire d’un dépôt. Une erreur bloque l’export.
-    </p>
-    {#each ['Info', 'Avertissement', 'Erreur'] as level (level)}
-      {@const list = CHECKS.filter((c) => c.level === level)}
-      <h3 class={level}>{level === 'Info' ? 'Infos' : `${level}s`} <span class="muted">{list.length}</span></h3>
+    <h2>{t('ref.checks')}</h2>
+    <p class="muted">{t('ref.checksLead')}</p>
+    {#each LEVELS as level (level.severity)}
+      {@const list = CHECKS.filter((c) => c.severity === level.severity)}
+      <h3 class={level.severity}>{t(level.label)} <span class="muted">{list.length}</span></h3>
       <table>
         <tbody>
           {#each list as c (c.code)}
             <tr>
               <td class="code"><code>{c.code}</code></td>
-              <td>{c.text}</td>
+              <td>{t(`check.${c.code}` as Key, { max: c.max ?? '' })}</td>
             </tr>
           {/each}
         </tbody>
@@ -118,16 +91,16 @@
   </section>
 
   <section>
-    <h2>Critères de la note d’un dépôt</h2>
-    <p class="muted">Chaque critère rapporte ses points s’il est rempli, la moitié s’il l’est en partie.</p>
+    <h2>{t('ref.criteria')}</h2>
+    <p class="muted">{t('ref.criteriaLead')}</p>
     {#each GROUPS as g (g.id)}
       {@const list = CRITERIA.filter((c) => c.group === g.id)}
-      <h3>{g.label} <span class="muted">{list.reduce((s, c) => s + c.max, 0)} pts</span></h3>
+      <h3>{t(g.label)} <span class="muted">{list.reduce((s, c) => s + c.max, 0)} pts</span></h3>
       <table>
         <tbody>
           {#each list as c (c.id)}
             <tr>
-              <td>{c.label}</td>
+              <td>{criterionLabel(c)}</td>
               <td class="pts">{c.max} pts</td>
             </tr>
           {/each}
@@ -184,13 +157,13 @@
     width: 220px;
     white-space: nowrap;
   }
-  .Erreur {
+  .error {
     color: var(--err);
   }
-  .Avertissement {
+  .warning {
     color: var(--warn);
   }
-  .Info {
+  .info {
     color: var(--info);
   }
 </style>

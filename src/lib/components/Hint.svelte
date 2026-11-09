@@ -1,5 +1,7 @@
 <script lang="ts">
   // Infobulle de conseil : au survol et au focus clavier ; lue par les lecteurs d'écran via aria-label.
+  import { t } from '#lib/i18n.svelte.ts';
+
   let { text }: { text: string } = $props();
 
   const WIDTH = 300;
@@ -25,7 +27,7 @@
   class="hint"
   tabindex="0"
   role="img"
-  aria-label="Aide : {text}"
+  aria-label={t('hint.label', { text })}
   onmouseenter={show}
   onmouseleave={() => (open = false)}
   onfocus={show}

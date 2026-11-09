@@ -92,6 +92,8 @@ export interface Issue {
   code: string;
   message: string;
   fix: string;
+  /** Valeurs insérées dans le message, pour que l'interface le traduise à partir de `code`. */
+  params?: Record<string, string | number>;
   file?: string;
   ruleId?: string;
 }

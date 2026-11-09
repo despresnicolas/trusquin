@@ -1,8 +1,8 @@
 <script lang="ts">
   import { countInstructions } from '#lib/core/quality.ts';
-  import { LOADING_LABELS } from '#lib/core/presets.ts';
   import type { GeneratedFile, Loading, QualityReport } from '#lib/core/types.ts';
   import { api } from '#lib/history.ts';
+  import { fileExplanation, issueText, t } from '#lib/i18n.svelte.ts';
   import FileView from './FileView.svelte';
   import ScoreBadge from './ScoreBadge.svelte';
 
@@ -17,13 +17,17 @@
 
 <div class="bar card">
   <ScoreBadge score={quality.score} />
-  <span><b>{files.length}</b> fichiers · <b>{quality.alwaysLoadedInstructions}</b> instructions toujours chargées</span>
-  {#if errors.length}<span class="sev-error">{errors.length} erreur(s) bloquante(s)</span>{/if}
+  <span
+    ><b>{files.length}</b>
+    {t('preview.files')} · <b>{quality.alwaysLoadedInstructions}</b>
+    {t('preview.alwaysLoaded')}</span
+  >
+  {#if errors.length}<span class="sev-error">{t('preview.errors', { n: errors.length })}</span>{/if}
 </div>
 <p class="muted hint">
-  « Exporter le zip » (en haut) : décompresser à la racine du repo. Le zip contient aussi
-  <code>_trusquin-report.md</code> (rapport, à ne pas committer). Les fichiers <code>~/</code> sont rangés dans
-  <code>_home/</code>.
+  {t('preview.hintZip')} <code>_trusquin-report.md</code>
+  {t('preview.hintReport')} <code>~/</code>
+  {t('preview.hintHome')} <code>_home/</code>.
 </p>
 
 <div class="layout">
@@ -31,7 +35,7 @@
     {#each order as loading}
       {@const group = files.filter((f) => f.loading === loading)}
       {#if group.length}
-        <h4>{LOADING_LABELS[loading]}</h4>
+        <h4>{t(`loading.${loading}`)}</h4>
         {#each group as f}
           <button class="ghost" class:active={f.path === selected?.path} onclick={() => (selectedPath = f.path)}>
             <code>{f.path}</code>
@@ -48,16 +52,19 @@
     <article class="card">
       <header>
         <code class="path">{selected.path}</code>
-        <span class="pill">{LOADING_LABELS[selected.loading]}</span>
-        <span class="pill">{selected.content.split('\n').length - 1} lignes</span>
+        <span class="pill">{t(`loading.${selected.loading}`)}</span>
+        <span class="pill">{t('preview.lines', { n: selected.content.split('\n').length - 1 })}</span>
         {#if !selected.path.endsWith('.json')}<span class="pill"
-            >{countInstructions(selected.content)} instructions</span
+            >{t('preview.instructions', { n: countInstructions(selected.content) })}</span
           >{/if}
         <span class="spacer"></span>
-        <button onclick={() => api.copy(selected.content)}>Copier</button>
+        <button onclick={() => api.copy(selected.content)}>{t('preview.copy')}</button>
       </header>
-      <p class="muted">{selected.explanation}</p>
-      {#each fileIssues as i}<p class="sev-{i.severity}">{i.message} <span class="muted">→ {i.fix}</span></p>{/each}
+      <p class="muted">{fileExplanation(selected.explanation)}</p>
+      {#each fileIssues as i}{@const text = issueText(i)}
+        <p class="sev-{i.severity}">
+          {text.message} <span class="muted">→ {text.fix}</span>
+        </p>{/each}
       <FileView path={selected.path} content={selected.content} />
     </article>
   {/if}

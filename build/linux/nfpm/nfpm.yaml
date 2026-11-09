@@ -25,8 +25,9 @@ contents:
     dst: "/usr/share/applications/trusquin.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
+# GTK >= 4.10 : Wails 3.1 utilise GtkFileDialog ; sans version, le .deb s'installerait sur Ubuntu 22.04 / Debian 12 (GTK 4.6 / 4.8) puis planterait.
 depends:
-  - libgtk-4-1
+  - libgtk-4-1 (>= 4.10)
   - libwebkitgtk-6.0-4
 
 # Distribution-specific overrides for different package formats

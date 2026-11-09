@@ -13,7 +13,11 @@ import ProjectForm from './lib/components/ProjectForm.svelte';
 import Proposals from './lib/components/Proposals.svelte';
 import Quality from './lib/components/Quality.svelte';
 import RulesEditor from './lib/components/RulesEditor.svelte';
+import { i18n } from './lib/i18n.svelte';
 import { store } from './lib/state.svelte';
+
+// Les textes attendus sont en français ; sans ça, Node (en-US) rendrait l'interface en anglais.
+i18n.lang = 'fr';
 
 describe('ui smoke', () => {
   it('renders every page component without throwing', () => {
@@ -26,9 +30,15 @@ describe('ui smoke', () => {
     expect(render(Generator).body).toContain('Que veux-tu faire');
     expect(render(Guide).body).toContain('Doit-il arriver à 100 %');
     expect(render(Home).body).toContain('Que veux-tu faire');
+    i18n.lang = 'en';
+    expect(render(Home).body).toContain('What do you want to do?');
+    i18n.lang = 'fr';
     expect(render(Practices).body).toContain('Ce qui fait une bonne règle');
     expect(render(Practices).body).toContain('Où va chaque fichier');
     expect(render(Reference).body).toContain('Critères de la note');
+    i18n.lang = 'en';
+    expect(render(Reference).body).toContain('Repository scoring criteria');
+    i18n.lang = 'fr';
     const empty = { score: 100, grade: 'A' as const, criteria: [], memoryIssues: [], memoryFiles: [] };
     expect(
       render(Proposals, { props: { root: '/tmp', result: empty, sent: [], onadd: () => {}, onsaved: () => {} } }).body,

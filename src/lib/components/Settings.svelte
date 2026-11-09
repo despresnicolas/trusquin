@@ -1,22 +1,21 @@
 <script lang="ts">
+  import { i18n, LANG_KEY, t, type Key, type Lang } from '#lib/i18n.svelte.ts';
   import { Events } from '@wailsio/runtime';
 
   type Theme = 'light' | 'dark' | 'system';
-  type Lang = 'system' | 'fr' | 'en';
   const THEME_KEY = 'trusquin:theme';
-  const LANG_KEY = 'trusquin:lang';
-  const THEMES: { id: Theme; label: string }[] = [
-    { id: 'light', label: 'Clair' },
-    { id: 'dark', label: 'Sombre' },
-    { id: 'system', label: 'Système' },
+  const THEMES: { id: Theme; label: Key }[] = [
+    { id: 'light', label: 'settings.light' },
+    { id: 'dark', label: 'settings.dark' },
+    { id: 'system', label: 'settings.system' },
   ];
 
   // Catégories de la colonne de gauche ; l'icône est un tracé SVG 24×24 au trait.
   const CATEGORIES = [
-    { id: 'appearance', label: 'Apparence', icon: 'M14 4l6 6-9 9H5v-6zM11 7l6 6' },
+    { id: 'appearance', label: 'settings.appearance', icon: 'M14 4l6 6-9 9H5v-6zM11 7l6 6' },
     {
       id: 'language',
-      label: 'Langue',
+      label: 'settings.language',
       icon: 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18',
     },
   ] as const;
@@ -25,7 +24,6 @@
   let category = $state<(typeof CATEGORIES)[number]['id']>('appearance');
   // Choix enregistrés ; le thème est posé par app.html avant le rendu.
   let theme = $state<Theme>(read(THEME_KEY, ['light', 'dark'], 'system'));
-  let lang = $state<Lang>(read(LANG_KEY, ['fr', 'en'], 'system'));
   // Choix en cours dans le dialogue : le thème s'applique à la volée, « Enregistrer » le conserve.
   let draftTheme = $state<Theme>('system');
   let draftLang = $state<Lang>('system');
@@ -51,7 +49,7 @@
   /** Ouvre les réglages : menu Trusquin (⌘,) ou bouton de la colonne (+layout.svelte). */
   export function show() {
     draftTheme = theme;
-    draftLang = lang;
+    draftLang = i18n.lang;
     dialog.showModal();
   }
 
@@ -62,9 +60,9 @@
 
   function save() {
     theme = draftTheme;
-    lang = draftLang;
+    i18n.lang = draftLang;
     store(THEME_KEY, theme);
-    store(LANG_KEY, lang);
+    store(LANG_KEY, draftLang);
     dialog.close();
   }
 
@@ -84,30 +82,30 @@
   }}
 >
   <header>
-    <h3 id="settings-title">Réglages</h3>
-    <button class="ghost" aria-label="Fermer" onclick={() => dialog.close()}>×</button>
+    <h3 id="settings-title">{t('settings.title')}</h3>
+    <button class="ghost" aria-label={t('settings.close')} onclick={() => dialog.close()}>×</button>
   </header>
 
   <div class="layout">
-    <nav aria-label="Catégories">
+    <nav aria-label={t('settings.categories')}>
       {#each CATEGORIES as c (c.id)}
         <button class="ghost" aria-current={category === c.id ? 'page' : undefined} onclick={() => (category = c.id)}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d={c.icon} /></svg>
-          {c.label}
+          {t(c.label)}
         </button>
       {/each}
     </nav>
 
     {#if category === 'appearance'}
       <section>
-        <h4 id="theme-title">Thème</h4>
+        <h4 id="theme-title">{t('settings.theme')}</h4>
         <div class="themes" role="radiogroup" aria-labelledby="theme-title">
-          {#each THEMES as t (t.id)}
-            <label class="theme" class:selected={draftTheme === t.id}>
+          {#each THEMES as th (th.id)}
+            <label class="theme" class:selected={draftTheme === th.id}>
               <!-- Aperçu façon diff : color-scheme fait résoudre les variables light-dark() d'app.css dans le thème montré ;
                « Système » superpose le sombre sur la moitié droite. -->
               <span class="preview" aria-hidden="true">
-                {#each t.id === 'system' ? ['light', 'dark'] : [t.id] as scheme (scheme)}
+                {#each th.id === 'system' ? ['light', 'dark'] : [th.id] as scheme (scheme)}
                   <span class="screen {scheme}" style="color-scheme: {scheme}">
                     <span class="bar">
                       {#each [1, 2, 3] as n (n)}<span class="tab"></span>{/each}
@@ -139,11 +137,11 @@
                 <input
                   type="radio"
                   name="theme"
-                  value={t.id}
+                  value={th.id}
                   bind:group={draftTheme}
                   onchange={() => apply(draftTheme)}
                 />
-                {t.label}
+                {t(th.label)}
               </span>
             </label>
           {/each}
@@ -152,21 +150,21 @@
     {:else}
       <section>
         <label class="lang"
-          ><span>Langue de l'interface</span>
+          ><span>{t('settings.uiLanguage')}</span>
           <select bind:value={draftLang}>
-            <option value="system">Système</option>
+            <option value="system">{t('settings.system')}</option>
             <option value="fr">Français</option>
-            <option value="en" disabled>English (bientôt)</option>
+            <option value="en">English</option>
           </select>
         </label>
-        <p class="muted">« Système » suit la langue de macOS. L'interface n'existe pour l'instant qu'en français.</p>
+        <p class="muted">{t('settings.languageHint')}</p>
       </section>
     {/if}
   </div>
 
   <footer>
-    <button onclick={() => dialog.close()}>Annuler</button>
-    <button class="primary" onclick={save}>Enregistrer</button>
+    <button onclick={() => dialog.close()}>{t('settings.cancel')}</button>
+    <button class="primary" onclick={save}>{t('settings.save')}</button>
   </footer>
 </dialog>
 

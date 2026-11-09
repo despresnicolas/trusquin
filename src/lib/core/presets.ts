@@ -1,4 +1,4 @@
-import type { Kind, Loading, Project, Rule, Scope } from './types';
+import type { Kind, Project, Rule, Scope } from './types';
 
 export function newId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -247,9 +247,10 @@ export function templateForCriterion(id: string): Template | undefined {
   return TEMPLATES.find((t) => t.label === CRITERION_TEMPLATES[id]);
 }
 
-export function starterProject(): Project {
+/** `name` : l'interface passe le nom par défaut traduit ; core reste sans i18n. */
+export function starterProject(name = 'Mon projet'): Project {
   return {
-    name: 'Mon projet',
+    name,
     description: '',
     stack: '',
     useAgentsMd: false,
@@ -257,54 +258,6 @@ export function starterProject(): Project {
     rules: [],
   };
 }
-
-export const KIND_LABELS: Record<Kind, string> = {
-  rule: 'Règle',
-  command: 'Slash command',
-  skill: 'Skill',
-  agent: 'Sous-agent',
-  hook: 'Hook',
-};
-
-export const SCOPE_LABELS: Record<Scope, string> = {
-  project: 'Projet (CLAUDE.md racine)',
-  topic: 'Thème (.claude/rules/, toujours chargé)',
-  path: 'Chemins (.claude/rules/ + paths)',
-  directory: 'Dossier (<dossier>/CLAUDE.md)',
-  local: 'Perso projet (CLAUDE.local.md)',
-  user: 'Perso global (~/.claude/CLAUDE.md)',
-};
-
-/** Conseils affichés en infobulle : quand choisir chaque type. */
-export const KIND_HINTS: Record<Kind, string> = {
-  rule: 'Une consigne que Claude doit connaître. Concrète et vérifiable (« lancer pnpm test avant de rendre la main »), pas un souhait vague.',
-  command:
-    'Un prompt réutilisable lancé à la main par /nom. Pour une tâche répétée que tu déclenches toi-même (revue, release).',
-  skill:
-    "Un savoir-faire chargé seulement quand la description correspond à la demande. Idéal pour une procédure longue rarement utile : ne coûte rien tant qu'elle ne sert pas.",
-  agent:
-    'Un sous-agent avec son propre contexte et ses outils. Pour une tâche isolable (tests, revue) dont seul le résumé compte.',
-  hook: "Une commande exécutée automatiquement par Claude Code sur un événement. Pour ce qui doit arriver à coup sûr (format, lint, blocage d'un fichier) : ne dépend pas de la bonne volonté du modèle.",
-};
-
-export const SCOPE_HINTS: Record<Scope, string> = {
-  project:
-    'Chargé à chaque session. Réserver aux essentiels (commandes, architecture) : viser moins de 100 lignes au total.',
-  topic: 'Fichier séparé par thème, toujours chargé. Range la mémoire sans alléger le contexte.',
-  path: 'Chargé seulement quand Claude touche des fichiers qui correspondent aux globs. Le meilleur choix pour une règle propre à une partie du code : elle ne coûte rien ailleurs.',
-  directory:
-    'CLAUDE.md dans un sous-dossier, chargé quand Claude y travaille. Pratique en monorepo (apps/api, apps/web).',
-  local: 'Tes préférences pour ce dépôt, non versionnées (CLAUDE.local.md à mettre dans .gitignore).',
-  user: 'Tes préférences pour tous tes projets (~/.claude/CLAUDE.md). Rien de propre à ce dépôt.',
-};
-
-export const LOADING_LABELS: Record<Loading, string> = {
-  always: 'Toujours chargé',
-  'on-path': 'Chargé selon les fichiers touchés',
-  'on-demand': 'À la demande',
-  personal: 'Personnel, non versionné',
-  deterministic: 'Exécuté par le harness',
-};
 
 /** Situation type → élément Claude Code et emplacement. `kind` / `scope` relient le pattern à ses modèles. */
 export interface Pattern {

@@ -4,6 +4,7 @@
   import { checkProject } from '#lib/core/quality.ts';
   import type { Criterion, Rule } from '#lib/core/types.ts';
   import { api } from '#lib/history.ts';
+  import { criterionText, t, tc } from '#lib/i18n.svelte.ts';
   import RuleForm from './RuleForm.svelte';
   import { untrack } from 'svelte';
 
@@ -33,6 +34,7 @@
   // Fichiers que produit cette règle : écrits tels quels seulement s'ils n'existent pas (sinon on écraserait le reste du fichier).
   const own = $derived(files.filter((f) => f.sources.includes(rule.id)));
   const clashes = $derived(own.filter((f) => existing.includes(f.path)).map((f) => f.path));
+  const text = $derived(criterionText(criterion));
   let failure = $state('');
   let dialog: HTMLDialogElement;
 
@@ -55,31 +57,31 @@
 
 <dialog bind:this={dialog} {onclose} aria-labelledby="draft-title">
   <header>
-    <h3 id="draft-title">{criterion.label}</h3>
-    <button class="ghost" aria-label="Fermer" onclick={() => dialog.close()}>×</button>
+    <h3 id="draft-title">{text.label}</h3>
+    <button class="ghost" aria-label={t('settings.close')} onclick={() => dialog.close()}>×</button>
   </header>
-  <p class="muted">{criterion.detail} → {criterion.fix}</p>
-  <p class="hint">Modèle « {template.label} » : {template.hint} Adapter le contenu au dépôt avant de l'ajouter.</p>
+  <p class="muted">{text.detail} → {text.fix}</p>
+  <p class="hint">{t('draft.template', { label: tc(template.label), hint: tc(template.hint) })}</p>
 
   <RuleForm {rule} {files} {issues} onremove={() => dialog.close()} />
 
   {#if failure}<p class="sev-error">{failure}</p>{/if}
   <footer>
     {#if clashes.length}
-      <span class="muted">{clashes.join(', ')} existe déjà : passer par les fichiers Claude pour le compléter.</span>
+      <span class="muted">{t('draft.clash', { files: clashes.join(', ') })}</span>
     {/if}
-    <button class="ghost" onclick={() => dialog.close()}>Annuler</button>
+    <button class="ghost" onclick={() => dialog.close()}>{t('common.cancel')}</button>
     <button
       onclick={() => {
         onadd($state.snapshot(rule));
         dialog.close();
-      }}>Ajouter aux fichiers Claude</button
+      }}>{t('draft.addToFiles')}</button
     >
     <button
       class="primary"
       onclick={write}
       disabled={!own.length || clashes.length > 0}
-      title={own.map((f) => f.path).join(', ')}>Créer dans le dépôt</button
+      title={own.map((f) => f.path).join(', ')}>{t('draft.create')}</button
     >
   </footer>
 </dialog>

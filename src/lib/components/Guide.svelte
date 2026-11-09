@@ -3,7 +3,6 @@
   import {
     DECISION_TREE,
     isStep,
-    KIND_HINTS,
     newRule,
     PATTERNS,
     templatesFor,
@@ -11,6 +10,7 @@
     type Step,
     type Template,
   } from '#lib/core/presets.ts';
+  import { t, tc } from '#lib/i18n.svelte.ts';
   import { store } from '#lib/state.svelte.ts';
 
   // Données constantes : pas besoin de proxys profonds.
@@ -33,26 +33,23 @@
     scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function use(t: Template) {
-    const rule = newRule(t.rule);
+  function use(template: Template) {
+    const rule = newRule(template.rule);
     store.project.rules.push(rule);
     goto(`/generator?rule=${rule.id}`);
   }
 </script>
 
-<p class="muted">
-  Réponds à quelques questions : le guide indique l'élément Claude Code adapté, où il sera placé, et les modèles à
-  ajouter au projet.
-</p>
+<p class="muted">{t('guide.intro')}</p>
 
 <section class="card tree">
   {#if trail.length}
     <ol class="trail">
-      {#each trail as t, i (i)}
+      {#each trail as answer, i (i)}
         <li>
-          <button class="ghost" onclick={() => backTo(i)} title="Changer cette réponse">
-            <span class="muted">{t.step.question}</span>
-            <b>{t.label}</b>
+          <button class="ghost" onclick={() => backTo(i)} title={t('guide.changeAnswer')}>
+            <span class="muted">{tc(answer.step.question)}</span>
+            <b>{tc(answer.label)}</b>
           </button>
         </li>
       {/each}
@@ -61,33 +58,33 @@
 
   {#if isStep(node)}
     {@const step = node}
-    <p class="question">{step.question}</p>
-    {#if step.hint}<p class="muted">{step.hint}</p>{/if}
+    <p class="question">{tc(step.question)}</p>
+    {#if step.hint}<p class="muted">{tc(step.hint)}</p>{/if}
     <div class="choices">
       {#each step.choices as c (c.label)}
-        <button onclick={() => choose(step, c)}>{c.label}</button>
+        <button onclick={() => choose(step, c)}>{tc(c.label)}</button>
       {/each}
     </div>
   {:else}
     {@const p = node}
     <div class="result">
-      <p class="question">{p.answer}</p>
-      <p><code>{p.where}</code></p>
-      {#if p.kind}<p class="muted">{KIND_HINTS[p.kind]}</p>{/if}
+      <p class="question">{tc(p.answer)}</p>
+      <p><code>{tc(p.where)}</code></p>
+      {#if p.kind}<p class="muted">{t(`kindHint.${p.kind}`)}</p>{/if}
     </div>
-    {#each templatesFor(p) as t (t.label)}
+    {#each templatesFor(p) as template (template.label)}
       <div class="template">
         <div>
-          <b>{t.label}</b>
-          <div class="muted">{t.hint}</div>
+          <b>{tc(template.label)}</b>
+          <div class="muted">{tc(template.hint)}</div>
         </div>
-        <button onclick={() => use(t)}>Ajouter au projet</button>
+        <button onclick={() => use(template)}>{t('guide.add')}</button>
       </div>
     {:else}
       {#if !p.kind}
-        <a href="/generator?view=project">Régler à l'étape « Décrire le projet »</a>
+        <a href="/generator?view=project">{t('guide.setInProject')}</a>
       {:else}
-        <p class="muted">Pas de modèle : partir d'une règle vide.</p>
+        <p class="muted">{t('guide.noTemplate')}</p>
       {/if}
     {/each}
   {/if}
@@ -98,22 +95,22 @@
       onclick={() => {
         trail = [];
         node = DECISION_TREE;
-      }}>↺ Recommencer</button
+      }}>{t('guide.restart')}</button
     >
   {/if}
 </section>
 
 <details>
-  <summary>Tous les cas</summary>
+  <summary>{t('guide.allCases')}</summary>
   <div class="scroll-x">
     <table>
-      <thead><tr><th>Situation</th><th>Élément</th><th>Emplacement</th></tr></thead>
+      <thead><tr><th>{t('guide.situation')}</th><th>{t('guide.item')}</th><th>{t('guide.location')}</th></tr></thead>
       <tbody>
         {#each PATTERNS as p (p.question)}
           <tr>
-            <td>{p.question}</td>
-            <td><button class="ghost link" onclick={() => show(p)}>{p.answer}</button></td>
-            <td><code>{p.where}</code></td>
+            <td>{tc(p.question)}</td>
+            <td><button class="ghost link" onclick={() => show(p)}>{tc(p.answer)}</button></td>
+            <td><code>{tc(p.where)}</code></td>
           </tr>
         {/each}
       </tbody>

@@ -5,6 +5,7 @@
   import { newId, starterProject } from '#lib/core/presets.ts';
   import type { ClaudeFile, ClaudeFileGroup, Rule } from '#lib/core/types.ts';
   import { api } from '#lib/history.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import { archive, store } from '#lib/state.svelte.ts';
   import FileView from './FileView.svelte';
   import Hint from './Hint.svelte';
@@ -61,18 +62,12 @@
     const contents = Object.fromEntries((files ?? []).map((f) => [f.path, f.content]));
     const repo = { paths: Object.keys(contents), contents };
     if (store.errors) {
-      if (
-        !(await api.ask(
-          `Le projet en cours a ${store.errors} erreur(s) bloquante(s) et ne sera pas enregistré. Continuer ?`,
-          'Continuer',
-        ))
-      )
-        return;
+      if (!(await api.ask(t('files.askContinue', { n: store.errors }), t('files.continue')))) return;
     } else {
       try {
         await archive();
       } catch (e) {
-        failure = `Projet en cours non enregistré, rien n'est remplacé : ${(e as Error).message}`;
+        failure = t('bar.resetFailed', { error: (e as Error).message });
         return;
       }
     }
@@ -89,38 +84,34 @@
 {#if failure}
   <p class="sev-error">{failure}</p>
 {:else if !files}
-  <p class="muted">Lecture du dépôt…</p>
+  <p class="muted">{t('files.reading')}</p>
 {:else}
   <div class="toolbar">
     <span class="muted">
       {#if added.length}
-        {added.length} fichier(s) à enregistrer dans le projet
-        <Hint
-          text="Les propositions conçues ne sont pas écrites dans le dépôt. « Créer un nouveau projet » les ajoute au Générateur avec les règles existantes : vérifier, puis exporter le zip."
-        />
+        {t('files.toSave', { n: added.length })}
+        <Hint text={t('files.toSaveHint')} />
       {:else}
-        Conçois une proposition (onglet Propositions) pour l'ajouter ici.
+        {t('files.designFirst')}
       {/if}
     </span>
-    <button class="primary" onclick={createProject} disabled={!entries.length}>Créer un nouveau projet</button>
-    <Hint
-      text="Ouvre le Générateur avec les règles importées de ce dépôt et les propositions conçues. Le projet en cours est d'abord enregistré dans l'historique."
-    />
+    <button class="primary" onclick={createProject} disabled={!entries.length}>{t('files.createProject')}</button>
+    <Hint text={t('files.createProjectHint')} />
   </div>
 
   {#if !entries.length}
-    <p class="muted">Aucun fichier Claude Code (CLAUDE.md, .claude/…) dans ce dépôt.</p>
+    <p class="muted">{t('files.none')}</p>
   {:else}
     <div class="layout">
       <nav class="card">
         {#each groups as group}
           {@const list = entries.filter((e) => e.group === group)}
           {#if list.length}
-            <h4>{CLAUDE_FILE_LABELS[group]} <span class="muted">{list.length}</span></h4>
+            <h4>{t(`fileGroup.${group}`)} <span class="muted">{list.length}</span></h4>
             {#each list as e (e.path)}
               <button class="ghost" class:active={e.path === selected?.path} onclick={() => (selectedPath = e.path)}>
                 <code>{e.path}</code>
-                {#if e.draft}<span class="pill new">{e.file ? 'modifié' : 'nouveau'}</span>{/if}
+                {#if e.draft}<span class="pill new">{e.file ? t('files.modified') : t('files.new')}</span>{/if}
               </button>
             {/each}
           {/if}
@@ -131,16 +122,20 @@
           <header>
             <code class="path">{selected.path}</code>
             {#if selected.draft}
-              <span class="pill new">{selected.file ? 'Modifié' : 'Nouveau'} · à enregistrer dans le projet</span>
+              <span class="pill new"
+                >{selected.file ? t('files.modifiedCap') : t('files.newCap')} · {t('files.toSaveOne')}</span
+              >
               <span class="spacer"></span>
-              <button class="ghost" onclick={() => selected.draft!.sources.forEach(onremove)}>Retirer</button>
+              <button class="ghost" onclick={() => selected.draft!.sources.forEach(onremove)}
+                >{t('files.remove')}</button
+              >
             {/if}
           </header>
           {#if selected.file}
             <FileView path={selected.path} content={selected.file.content} />
           {/if}
           {#if selected.draft}
-            {#if selected.file}<h4>Ajout proposé</h4>{/if}
+            {#if selected.file}<h4>{t('files.proposed')}</h4>{/if}
             <FileView path={selected.path} content={selected.draft.content} />
           {/if}
         </article>

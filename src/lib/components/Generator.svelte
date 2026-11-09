@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import { t, type Key } from '#lib/i18n.svelte.ts';
   import { GOALS, STEP_TITLES, stepHref, type Goal, type StepView } from '#lib/goals.ts';
   import { store } from '#lib/state.svelte.ts';
   import GoalChooser from './GoalChooser.svelte';
@@ -16,51 +17,35 @@
   let { initial = '', view = 'start', goal }: { initial?: string; view?: View; goal?: Goal } = $props();
 
   /** Ce que l'utilisateur fait à chaque étape, pourquoi, et quand elle est terminée. */
-  const STEPS: Record<StepView, { why: string; todo: string[]; status: () => string }> = {
+  const STEPS: Record<StepView, { why: Key; todo: Key[]; status: () => string }> = {
     project: {
-      why: 'Ces informations ouvrent le CLAUDE.md : Claude les lit au début de chaque session pour comprendre le dépôt.',
-      todo: [
-        'Un nom, puis une phrase sur ce que fait le dépôt.',
-        'La stack : langages, frameworks, gestionnaire de paquets.',
-        'Facultatif : les commandes autorisées sans confirmation et les fichiers interdits (.env).',
-      ],
+      why: 'gen.projectWhy',
+      todo: ['gen.projectTodo1', 'gen.projectTodo2', 'gen.projectTodo3'],
       status: () =>
         !store.project.name.trim()
-          ? 'Il manque le nom du projet.'
+          ? t('gen.projectNoName')
           : !store.project.description.trim()
-            ? 'Ajoute une description : elle aide Claude à trancher les cas ambigus.'
+            ? t('gen.projectNoDescription')
             : '',
     },
     guide: {
-      why: 'Règle, hook, skill, sous-agent ou commande : chacun est chargé à un moment différent. Le bon choix évite d’alourdir le contexte.',
-      todo: [
-        'Réponds aux questions : le guide indique l’élément adapté et où il sera placé.',
-        '« Ajouter au projet » sur un modèle : il s’ouvre à l’étape suivante pour l’adapter.',
-        'Tu sais déjà ce que tu veux ? Passe directement à l’étape suivante.',
-      ],
+      why: 'gen.guideWhy',
+      todo: ['gen.guideTodo1', 'gen.guideTodo2', 'gen.guideTodo3'],
       status: () => '',
     },
     rules: {
-      why: 'Chaque règle dit quoi faire et à quoi elle s’applique ; Trusquin en déduit le fichier et son emplacement.',
-      todo: [
-        'Pour chaque règle : une consigne précise, vérifiable, formulée en positif.',
-        'Les pastilles rouges et orange signalent ce qui est à corriger.',
-        'Une autre règle à ajouter ? « Via le guide » ou « Règle vide ».',
-      ],
-      status: () => (store.project.rules.length ? '' : 'Aucune règle pour l’instant : ajoute au moins une règle.'),
+      why: 'gen.rulesWhy',
+      todo: ['gen.rulesTodo1', 'gen.rulesTodo2', 'gen.rulesTodo3'],
+      status: () => (store.project.rules.length ? '' : t('gen.rulesNone')),
     },
     export: {
-      why: 'Le contrôle qualité repère ce qui ferait déraper Claude : secrets, consignes vagues, CLAUDE.md trop long.',
-      todo: [
-        'Corrige les erreurs bloquantes (un clic mène à la règle concernée).',
-        'Relis chaque fichier dans l’aperçu.',
-        '« Exporter le zip » en haut, puis décompresse-le à la racine du dépôt et committe CLAUDE.md et .claude/.',
-      ],
-      status: () => (store.errors ? `${store.errors} erreur(s) bloquante(s) à corriger avant d’exporter.` : ''),
+      why: 'gen.exportWhy',
+      todo: ['gen.exportTodo1', 'gen.exportTodo2', 'gen.exportTodo3'],
+      status: () => (store.errors ? t('gen.exportErrors', { n: store.errors }) : ''),
     },
     history: {
-      why: 'Chaque enregistrement crée une version : rouvrir l’une d’elles remplace le projet en cours, après l’avoir enregistré.',
-      todo: ['Clique sur « Ouvrir » à côté du projet à reprendre : tu passes aux règles.'],
+      why: 'gen.historyWhy',
+      todo: ['gen.historyTodo1'],
       status: () => '',
     },
   };
@@ -83,19 +68,19 @@
 </script>
 
 {#if view === 'start'}
-  <h2>Que veux-tu faire ?</h2>
-  <p class="muted">Choisis un objectif : Trusquin t’accompagne ensuite étape par étape.</p>
+  <h2>{t('home.goals')}</h2>
+  <p class="muted">{t('generator.chooseGoal')}</p>
   <GoalChooser />
 {:else if step}
   <ProjectBar />
 
-  <nav class="stepper" aria-label="Étapes : {GOALS[current].title}">
-    <a href={href('start')} class="change">↺ Changer d’objectif</a>
+  <nav class="stepper" aria-label={t('gen.steps', { goal: t(GOALS[current].title) })}>
+    <a href={href('start')} class="change">{t('gen.changeGoal')}</a>
     <ol>
       {#each steps as s, i (s)}
         <li class:done={i < index}>
           <a href={href(s)} aria-current={s === view ? 'step' : undefined}>
-            <span class="num">{i < index ? '✓' : i + 1}</span>{STEP_TITLES[s]}
+            <span class="num">{i < index ? '✓' : i + 1}</span>{t(STEP_TITLES[s])}
           </a>
         </li>
       {/each}
@@ -103,10 +88,10 @@
   </nav>
 
   <section class="card explain">
-    <h2>Étape {index + 1} sur {steps.length} · {STEP_TITLES[view as StepView]}</h2>
-    <p>{step.why}</p>
+    <h2>{t('gen.stepOf', { n: index + 1, total: steps.length, title: t(STEP_TITLES[view as StepView]) })}</h2>
+    <p>{t(step.why)}</p>
     <ul>
-      {#each step.todo as t (t)}<li>{t}</li>{/each}
+      {#each step.todo as key (key)}<li>{t(key)}</li>{/each}
     </ul>
     {#if step.status()}<p class="sev-warning" role="status">{step.status()}</p>{/if}
   </section>
@@ -127,14 +112,14 @@
 
   <div class="nav">
     {#if index > 0}
-      <a class="button" href={href(steps[index - 1])}>← {STEP_TITLES[steps[index - 1]]}</a>
+      <a class="button" href={href(steps[index - 1])}>← {t(STEP_TITLES[steps[index - 1]])}</a>
     {/if}
     <span class="spacer"></span>
     {#if index < steps.length - 1}
-      <a class="button primary" href={href(steps[index + 1])}>{STEP_TITLES[steps[index + 1]]} →</a>
+      <a class="button primary" href={href(steps[index + 1])}>{t(STEP_TITLES[steps[index + 1]])} →</a>
     {:else}
       <!-- Fin du parcours : la boucle continue par la ré-analyse du dépôt une fois le zip décompressé et committé. -->
-      <a class="button primary" href="/analyze">Ré-analyser le dépôt →</a>
+      <a class="button primary" href="/analyze">{t('gen.reanalyze')}</a>
     {/if}
   </div>
 {/if}

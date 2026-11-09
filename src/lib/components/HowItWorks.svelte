@@ -1,38 +1,31 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import GradeScale from './GradeScale.svelte';
 
-  /** La boucle de travail, en quatre temps. */
+  /** La boucle de travail, en quatre temps (clés i18n/fr.ts). */
   const LOOP = [
-    { title: 'Analyser', text: 'Trusquin note le dépôt sur 100 et liste les propositions, triées par points gagnés.' },
-    {
-      title: 'Corriger',
-      text: 'Modifier ou créer les fichiers depuis les propositions, ou les écrire dans le générateur.',
-    },
-    {
-      title: 'Exporter',
-      text: 'Vérifier le contrôle qualité, exporter le zip et le décompresser à la racine du dépôt.',
-    },
-    { title: 'Ré-analyser', text: 'Committer CLAUDE.md et .claude/, puis ré-analyser pour voir la note monter.' },
-  ];
+    { title: 'loop.analyze', text: 'loop.analyzeText' },
+    { title: 'loop.fix', text: 'loop.fixText' },
+    { title: 'loop.export', text: 'loop.exportText' },
+    { title: 'loop.reanalyze', text: 'loop.reanalyzeText' },
+  ] as const;
 </script>
 
 <section>
-  <h2>Comment ça marche</h2>
+  <h2>{t('home.how')}</h2>
   <ol>
     {#each LOOP as s, i (s.title)}
       <li>
         <span class="num" aria-hidden="true">{i + 1}</span>
-        <b>{s.title}</b>
-        <p class="muted">{s.text}</p>
+        <b>{t(s.title)}</b>
+        <p class="muted">{t(s.text)}</p>
       </li>
     {/each}
   </ol>
-  <h3>La notation</h3>
+  <h3>{t('home.grading')}</h3>
   <div class="note">
     <GradeScale grade="A" />
-    <p class="muted">
-      L'analyse donne une note sur 100, traduite en lettre de A à E. Objectif : <b>A</b>, 85 et plus.
-    </p>
+    <p class="muted">{t('home.gradingText')} <b>A</b>{t('home.gradingGoal')}</p>
   </div>
 </section>
 

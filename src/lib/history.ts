@@ -1,3 +1,4 @@
+import { issueText, t } from './i18n.svelte';
 import { Clipboard, Dialogs } from '@wailsio/runtime';
 import { HistoryService, RepoService } from './bindings/trusquin';
 import { analyzeRepo, claudeFiles, IGNORED_DIRS, TEXT_FILES } from './core/analyze';
@@ -67,11 +68,11 @@ export const api = {
       Directory: start?.trim() || undefined,
     }),
   /** Boîte de confirmation du système ; vrai si l'utilisateur valide `action`. */
-  ask: async (message: string, action = 'Supprimer') =>
+  ask: async (message: string, action = t('common.delete')) =>
     (await Dialogs.Question({
       Title: message,
       Buttons: [
-        { Label: 'Annuler', IsCancel: true },
+        { Label: t('common.cancel'), IsCancel: true },
         { Label: action, IsDefault: true },
       ],
     })) === action,
@@ -104,7 +105,7 @@ export const api = {
     const report = checkProject(project);
     const blocking = report.issues.filter((i) => i.severity === 'error');
     if (blocking.length)
-      throw new Error(`${blocking.length} erreur(s) bloquante(s), projet non enregistré : ${blocking[0].message}`);
+      throw new Error(t('history.blockedSave', { n: blocking.length, message: issueText(blocking[0]).message }));
     return (await HistoryService.SaveProject(project, report.score)) as ProjectVersion;
   },
   forgetProject: async (name: string) => ({ deleted: await HistoryService.DeleteProject(name) }),

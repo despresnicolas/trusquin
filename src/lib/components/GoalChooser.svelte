@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import { GOALS, STEP_TITLES, stepHref, type Goal } from '#lib/goals.ts';
 
   const goals = Object.entries(GOALS) as [Goal, (typeof GOALS)[Goal]][];
@@ -7,15 +8,15 @@
 <!-- Point d'entrée des parcours : accueil et « Changer d'objectif » du générateur. -->
 <div class="goals">
   <a class="card goal" href="/analyze">
-    <b>Améliorer un dépôt existant</b>
-    <span class="muted">Noter le dépôt, puis corriger ou créer ses fichiers Claude depuis les propositions.</span>
-    <span class="muted small">Analyser → Propositions → Ré-analyser</span>
+    <b>{t('goal.improve')}</b>
+    <span class="muted">{t('goal.improveText')}</span>
+    <span class="muted small">{t('goal.improveSteps')}</span>
   </a>
   {#each goals as [id, g] (id)}
     <a class="card goal" href={stepHref(id, g.steps[0])}>
-      <b>{g.title}</b>
-      <span class="muted">{g.text}</span>
-      <span class="muted small">{g.steps.map((s) => STEP_TITLES[s]).join(' → ')}</span>
+      <b>{t(g.title)}</b>
+      <span class="muted">{t(g.text)}</span>
+      <span class="muted small">{g.steps.map((s) => t(STEP_TITLES[s])).join(' → ')}</span>
     </a>
   {/each}
 </div>
