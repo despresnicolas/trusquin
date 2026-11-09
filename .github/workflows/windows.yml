@@ -25,7 +25,10 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
-      - run: choco install nsis -y --no-progress
+      # Le paquet choco n'ajoute pas makensis au PATH.
+      - run: |
+          choco install nsis -y --no-progress
+          "${env:ProgramFiles(x86)}\NSIS" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
       - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
