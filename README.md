@@ -33,9 +33,21 @@ Trusquin is a free desktop app for developers who use [Claude Code](https://clau
 - 🌍 **English and French**: the interface follows the system language (changeable in Settings); generated files stay in French.
 - 🔒 **100% local**: no account, no network calls, your data stays in a SQLite database on your machine.
 
-## 🚀 Quick start
+## 🚀 Install
 
-> ℹ️ No prebuilt release is published yet: build the app from source.
+Download the file for your system from the [Releases](https://github.com/despresnicolas/trusquin/releases) page:
+
+| System                                           | File                                                      |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| macOS 12+ (Apple Silicon and Intel)              | `trusquin-macos-universal.zip`                            |
+| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`                            |
+| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) or `.AppImage` |
+
+> ⚠️ Trusquin is not signed by Apple or Microsoft yet, so your system warns you on first launch.
+> **macOS**: when the app is refused, open System Settings → Privacy & Security and click **Open Anyway**.
+> **Windows**: on "Windows protected your PC", click **More info → Run anyway**.
+
+### Build from source
 
 **Requirements:** [Go](https://go.dev/dl/) 1.26+, [Node.js](https://nodejs.org/), [pnpm](https://pnpm.io/installation).
 
@@ -72,7 +84,8 @@ Project already set up? Open **Analyze a repository**, pick the folder and impor
 
 ## 🗺️ Roadmap
 
-- [ ] Prebuilt binaries for macOS, Windows and Linux
+- [x] Prebuilt binaries for macOS, Windows and Linux
+- [ ] Signed and notarized macOS app, signed Windows installer
 - [ ] Screenshots and animated demo
 
 ## 🤝 Contributing

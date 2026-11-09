@@ -1,6 +1,8 @@
 name: Release
 
-# Un tag v* compile et empaquette l'application sur chaque OS, puis publie une release GitHub.
+# Un tag v* compile et empaquette l'application sur chaque OS, vérifie chaque paquet (installation et démarrage)
+# sur les systèmes visés, puis publie une release GitHub. Lancé à la main (workflow_dispatch) : tout sauf la
+# publication, pour tester une release avant de poser le tag.
 on:
   push:
     tags: ['v*']
@@ -12,45 +14,113 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            artifacts: bin/*.app
-          - os: windows-latest
+          - os: macos-15
+            artifacts: bin/trusquin-macos-universal.zip
+          - os: windows-2025
             artifacts: bin/*-installer.exe
           # Ubuntu 24.04 = même base que Pop!_OS 24.04 (GTK4 + WebKitGTK 6.0 requis par Wails 3.1).
           - os: ubuntu-24.04
             artifacts: |
               bin/*.deb
               bin/*.AppImage
+    name: Paquet ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - if: startsWith(github.ref, 'refs/tags/')
+        name: Le tag correspond à la version de package.json
+        shell: bash
+        run: test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
+      # libfuse2t64 : linuxdeploy (génération de l'AppImage) est lui-même une AppImage.
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev libfuse2
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev libfuse2t64
+      # Le paquet choco n'ajoute pas makensis au PATH.
       - if: runner.os == 'Windows'
-        run: choco install nsis -y
+        run: |
+          choco install nsis -y --no-progress
+          "${env:ProgramFiles(x86)}\NSIS" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
       - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
       - run: pnpm install --frozen-lockfile
-      - run: wails3 package
-      # Le .app est un dossier : on le zippe pour l'upload.
+      - run: pnpm test
+
+      # Binaire universel : un seul .app pour Apple Silicon et Intel. Le .app est un dossier : on le zippe.
       - if: runner.os == 'macOS'
-        run: cd bin && ditto -c -k --keepParent trusquin.app trusquin-macos.zip
+        run: |
+          wails3 task darwin:package:universal
+          cd bin && ditto -c -k --keepParent trusquin.app trusquin-macos-universal.zip
+      - if: runner.os == 'Windows'
+        run: wails3 package
+      - if: runner.os == 'Linux'
+        run: |
+          wails3 task linux:create:deb
+          wails3 task linux:create:appimage
+      - run: ls -l bin
       - uses: actions/upload-artifact@v4
         with:
           name: trusquin-${{ runner.os }}
-          path: ${{ runner.os == 'macOS' && 'bin/trusquin-macos.zip' || matrix.artifacts }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+  # Chaque paquet publié est installé et lancé sur les systèmes visés, avec les mêmes scripts que la CI.
+  verify-macos:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel, macos-26]
+    name: Vérif. ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      # Go sert à vérifier la version minimale de macOS annoncée (voir check.sh).
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, cache: false }
+      - uses: actions/download-artifact@v4
+        with: { name: trusquin-macOS, path: pkg }
+      - run: ditto -x -k pkg/trusquin-macos-universal.zip pkg
+      - run: bash build/darwin/check.sh
+        env: { APP: pkg/trusquin.app, UNIVERSAL: '1' }
+
+  verify-windows:
+    needs: package
+    name: Vérif. Windows 11
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: trusquin-Windows, path: pkg }
+      - run: ./build/windows/check.ps1 (Get-ChildItem pkg\*-installer.exe | Select-Object -First 1).FullName
+        shell: pwsh
+
+  verify-linux:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu:24.04, debian:trixie]
+        pkg: [deb, AppImage]
+    name: Vérif. ${{ matrix.image }} (${{ matrix.pkg }})
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: trusquin-Linux, path: pkg }
+      - run: docker run --rm -v "$PWD":/src:ro -e PKG="/src/$(ls pkg/*.${{ matrix.pkg }})" ${{ matrix.image }} bash /src/build/linux/check.sh
 
   release:
-    needs: package
+    needs: [verify-macos, verify-windows, verify-linux]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
-      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes
+      # shortcut: toute release est marquée pré-version (bêta), retirer --prerelease à la 1.0.
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --prerelease --generate-notes --notes "$(cat .github/release-notes.md)"
         env: { GH_TOKEN: '${{ github.token }}' }

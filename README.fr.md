@@ -33,9 +33,21 @@ Trusquin est une application de bureau gratuite pour les développeurs qui utili
 - 🌍 **Français et anglais** : l'interface suit la langue du système (modifiable dans les réglages) ; les fichiers générés restent en français.
 - 🔒 **100 % local** : aucun compte, aucun envoi réseau, vos données restent dans une base SQLite sur votre machine.
 
-## 🚀 Démarrage rapide
+## 🚀 Installation
 
-> ℹ️ Aucune version précompilée n'est encore publiée : l'application se compile depuis les sources.
+Téléchargez le fichier de votre système sur la page [Releases](https://github.com/despresnicolas/trusquin/releases) :
+
+| Système                                          | Fichier                                                   |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| macOS 12+ (Apple Silicon et Intel)               | `trusquin-macos-universal.zip`                            |
+| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`                            |
+| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) ou `.AppImage` |
+
+> ⚠️ Trusquin n'est pas encore signé par Apple ni par Microsoft : votre système vous avertit au premier lancement.
+> **macOS** : si l'app est refusée, ouvrez Réglages Système → Confidentialité et sécurité et cliquez sur **Ouvrir quand même**.
+> **Windows** : sur « Windows a protégé votre ordinateur », cliquez sur **Informations complémentaires → Exécuter quand même**.
+
+### Compiler depuis les sources
 
 **Prérequis :** [Go](https://go.dev/dl/) 1.26+, [Node.js](https://nodejs.org/), [pnpm](https://pnpm.io/installation).
 
@@ -72,7 +84,8 @@ Projet déjà configuré ? Ouvrez **Analyse de dépôt**, choisissez le dossier 
 
 ## 🗺️ Feuille de route
 
-- [ ] Binaires précompilés pour macOS, Windows et Linux
+- [x] Binaires précompilés pour macOS, Windows et Linux
+- [ ] App macOS signée et notarisée, installeur Windows signé
 - [ ] Captures d'écran et démo animée
 
 ## 🤝 Contribuer

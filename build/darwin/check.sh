@@ -3,19 +3,21 @@
 # minimale de macOS annoncée est tenue. Prérequis : Go, Node, pnpm, wails3 (installés par la CI, présents en local).
 #   CI : .github/workflows/macos.yml
 #   local : bash build/darwin/check.sh   (UNIVERSAL=1 pour le binaire arm64 + amd64)
+# Avec APP=<chemin d'un .app déjà construit> (release.yml), ne compile rien : vérifie ce .app.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-APP=bin/trusquin.app
-PLIST=build/darwin/Info.plist
 echo "== macOS $(sw_vers -productVersion) ($(uname -m)), $(go version | cut -d' ' -f3)"
 
-echo "== Tests"
-pnpm install --frozen-lockfile
-pnpm test
+if [ -z "${APP:-}" ]; then
+  echo "== Tests"
+  pnpm install --frozen-lockfile
+  pnpm test
 
-echo "== Paquet .app"
-if [ "${UNIVERSAL:-}" = 1 ]; then wails3 task darwin:package:universal; else wails3 package; fi
+  echo "== Paquet .app"
+  if [ "${UNIVERSAL:-}" = 1 ]; then wails3 task darwin:package:universal; else wails3 package; fi
+  APP=bin/trusquin.app
+fi
 BIN="$APP/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
 
 echo "== Bundle"
@@ -29,7 +31,7 @@ for a in $expected; do
 done
 
 echo "== Version minimale de macOS"
-declared=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$PLIST")
+declared=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")
 minos=$(otool -l "$BIN" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}')
 # Le binaire garde le minos demandé à l'éditeur de liens : seul le Go utilisé dit le vrai minimum
 # (Go 1.26 : macOS 12 ; Go 1.27+ : macOS 13, cf. notes de version).

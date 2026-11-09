@@ -16,8 +16,6 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    env:
-      APP_DIR: C:\Program Files\Trusquin\Trusquin
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -38,28 +36,5 @@ jobs:
           wails3 package
           Get-ChildItem bin
 
-      - name: Installation silencieuse
-        run: |
-          $installer = Get-ChildItem bin\*-installer.exe | Select-Object -First 1
-          $p = Start-Process $installer.FullName -ArgumentList '/S' -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Installeur : code $($p.ExitCode)" }
-          foreach ($f in "$env:APP_DIR\trusquin.exe", "$env:APP_DIR\uninstall.exe", "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Trusquin.lnk") {
-            if (-not (Test-Path $f)) { throw "Absent après installation : $f" }
-          }
-          Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\TrusquinTrusquin' | Select-Object DisplayName, DisplayVersion, Publisher
-
-      - name: Démarrage (15 s)
-        run: |
-          $p = Start-Process "$env:APP_DIR\trusquin.exe" -PassThru
-          Start-Sleep -Seconds 15
-          if ($p.HasExited) { throw "L'application s'est arrêtée (code $($p.ExitCode)) avant 15 s" }
-          Stop-Process -Id $p.Id -Force
-          "OK : $((Get-CimInstance Win32_OperatingSystem).Caption) $([Environment]::OSVersion.Version)"
-
-      - name: Désinstallation silencieuse
-        run: |
-          # _?= : l'uninstaller NSIS s'exécute sur place et rend la main à la fin (sinon il se copie et revient tout de suite).
-          $p = Start-Process "$env:APP_DIR\uninstall.exe" -ArgumentList '/S', "_?=$env:APP_DIR" -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Désinstalleur : code $($p.ExitCode)" }
-          if (Test-Path "$env:APP_DIR\trusquin.exe") { throw 'trusquin.exe toujours présent après désinstallation' }
-          if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\TrusquinTrusquin') { throw 'Clé de désinstallation toujours présente' }
+      # Même script que la vérification des installeurs publiés (release.yml).
+      - run: ./build/windows/check.ps1 (Get-ChildItem bin\*-installer.exe | Select-Object -First 1).FullName
