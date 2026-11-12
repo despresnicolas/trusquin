@@ -232,14 +232,213 @@ export function lintSkill(label: string, description: string, body: string): Iss
   return issues;
 }
 
-function ruleIssues(rule: Rule): Issue[] {
+/** Portée « chemins » : au moins un glob, chacun relatif à la racine et sans espace. */
+function pathScopeIssues(rule: Rule, label: string): Issue[] {
   const issues: Issue[] = [];
-  const base = { ruleId: rule.id };
-  const label = rule.title || rule.name || rule.id;
+  if (!rule.targets.length) {
+    issues.push({
+      severity: 'error',
+      code: 'no-paths',
+      params: { label },
+      message: `« ${label} » : portée « chemins » sans glob.`,
+      fix: 'Ajouter un glob, ex. `src/api/**/*.ts`.',
+    });
+  }
+  for (const glob of rule.targets.filter((g) => /^\/|\s/.test(g))) {
+    issues.push({
+      severity: 'warning',
+      code: 'bad-glob',
+      params: { glob },
+      message: `Glob « ${glob} » : relatif à la racine, sans espace.`,
+      fix: 'Écrire `src/**/*.ts` et non `/src/...`.',
+    });
+  }
+  return issues;
+}
 
+/** Portée « dossier » : un vrai dossier, pas un glob. */
+function directoryScopeIssues(rule: Rule, label: string): Issue[] {
+  const dir = rule.targets[0] ?? '';
+  if (!dir.trim()) {
+    return [
+      {
+        severity: 'error',
+        code: 'no-dir',
+        params: { label },
+        message: `« ${label} » : portée « dossier » sans dossier.`,
+        fix: 'Indiquer le dossier, ex. `apps/api`.',
+      },
+    ];
+  }
+  if (/[*?[\]]/.test(dir)) {
+    return [
+      {
+        severity: 'error',
+        code: 'dir-glob',
+        params: { dir },
+        message: `« ${dir} » est un glob, pas un dossier.`,
+        fix: 'Utiliser la portée « chemins » pour un glob.',
+      },
+    ];
+  }
+  return [];
+}
+
+/** Contenu d'une règle mémoire : poids si toujours chargée, formatage, commandes exactes. */
+function memoryContentIssues(rule: Rule, label: string): Issue[] {
+  const issues: Issue[] = [];
+  const alwaysLoaded = rule.scope === 'project' || rule.scope === 'topic';
+  const lineCount = rule.body.split('\n').filter((l) => l.trim()).length;
+  if (alwaysLoaded && lineCount > LIMITS.ruleLines) {
+    issues.push({
+      severity: 'info',
+      code: 'heavy-rule',
+      params: { label, n: lineCount },
+      message: `« ${label} » : ${lineCount} lignes chargées à chaque session.`,
+      fix: 'Si c’est une procédure ponctuelle, en faire une skill (chargée à la demande).',
+    });
+  }
+  if (LINTER_JOB.test(rule.body)) {
+    issues.push({
+      severity: 'info',
+      code: 'linter-job',
+      params: { label },
+      message: `« ${label} » décrit du formatage.`,
+      fix: 'Confier ça au formatter/linter + hook PostToolUse. Ne pas demander au LLM le travail d’un linter.',
+    });
+  }
+  if (rule.category === 'commands' && !/`[^`]+`/.test(rule.body)) {
+    issues.push({
+      severity: 'warning',
+      code: 'command-not-exact',
+      params: { label },
+      message: `« ${label} » : aucune commande exacte entre backticks.`,
+      fix: 'Écrire la commande complète, ex. `pnpm test -- path/to/file`.',
+    });
+  }
+  return issues;
+}
+
+/** Problèmes propres à la portée : glob pour « chemins », dossier pour « dossier ». */
+function scopeIssues(rule: Rule, label: string): Issue[] {
+  if (rule.scope === 'path') return pathScopeIssues(rule, label);
+  if (rule.scope === 'directory') return directoryScopeIssues(rule, label);
+  return [];
+}
+
+/** Commande, skill ou agent : nom en kebab-case. */
+function nameIssues(rule: Rule): Issue[] {
+  const name = rule.name || slug(rule.title);
+  if (NAME_RE.test(name) && name.length <= 64) return [];
+  return [
+    {
+      severity: 'error',
+      code: 'bad-name',
+      params: { name },
+      message: `Nom « ${name} » invalide.`,
+      fix: 'kebab-case, minuscules, chiffres et tirets, 64 caractères max.',
+    },
+  ];
+}
+
+/** Description : présente, assez longue pour déclencher (sauf commande), pas plus de 1024 caractères. */
+function descriptionIssues(rule: Rule, label: string): Issue[] {
+  const description = rule.description?.trim() ?? '';
+  if (!description) {
+    return [
+      {
+        severity: rule.kind === 'command' ? 'warning' : 'error',
+        code: 'no-description',
+        params: { label },
+        message: `« ${label} » sans description.`,
+        fix: 'Décrire quoi ET quand l’utiliser : c’est ce que Claude lit pour décider.',
+      },
+    ];
+  }
+  if (rule.kind !== 'command' && description.length < 40) {
+    return [
+      {
+        severity: 'warning',
+        code: 'short-description',
+        params: { label },
+        message: `Description de « ${label} » trop courte pour déclencher au bon moment.`,
+        fix: 'Ajouter « Use when… » avec les situations déclencheuses.',
+      },
+    ];
+  }
+  if (description.length > 1024) {
+    return [
+      {
+        severity: 'error',
+        code: 'long-description',
+        params: { label },
+        message: `Description de « ${label} » > 1024 caractères.`,
+        fix: 'Résumer ; mettre le détail dans le corps.',
+      },
+    ];
+  }
+  return [];
+}
+
+/** Hook : commande, événement connu, matcher pour les événements d'outil. */
+function hookIssues(rule: Rule, label: string): Issue[] {
+  const issues: Issue[] = [];
+  if (!rule.command?.trim()) {
+    issues.push({
+      severity: 'error',
+      code: 'hook-no-command',
+      params: { label },
+      message: `Hook « ${label} » sans commande.`,
+      fix: "Ex. `jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write`.",
+    });
+  }
+  if (!rule.event || !HOOK_EVENTS.includes(rule.event)) {
+    issues.push({
+      severity: 'error',
+      code: 'hook-event',
+      params: { label, events: HOOK_EVENTS.join(', ') },
+      message: `Hook « ${label} » : événement inconnu.`,
+      fix: `Choisir parmi ${HOOK_EVENTS.join(', ')}.`,
+    });
+  }
+  if ((rule.event === 'PreToolUse' || rule.event === 'PostToolUse') && !rule.matcher) {
+    issues.push({
+      severity: 'info',
+      code: 'hook-matcher',
+      params: { label },
+      message: `Hook « ${label} » s’exécute après chaque outil.`,
+      fix: 'Restreindre avec un matcher, ex. `Edit|Write`.',
+    });
+  }
+  return issues;
+}
+
+/** Problèmes selon le type d'élément, dans l'ordre d'affichage. */
+function kindIssues(rule: Rule, label: string): Issue[] {
+  switch (rule.kind) {
+    case 'rule':
+      return [...scopeIssues(rule, label), ...memoryContentIssues(rule, label)];
+    case 'command':
+    case 'agent':
+      return [...nameIssues(rule), ...descriptionIssues(rule, label)];
+    case 'skill':
+      return [
+        ...nameIssues(rule),
+        ...descriptionIssues(rule, label),
+        ...lintSkill(label, rule.description ?? '', rule.body),
+      ];
+    case 'hook':
+      return hookIssues(rule, label);
+    default:
+      return [];
+  }
+}
+
+function ruleIssues(rule: Rule): Issue[] {
+  const label = rule.title || rule.name || rule.id;
+  const issues: Issue[] = [];
   if (rule.kind !== 'hook' && !rule.body.trim()) {
     issues.push({
-      ...base,
       severity: 'error',
       code: 'empty',
       params: { label },
@@ -247,168 +446,8 @@ function ruleIssues(rule: Rule): Issue[] {
       fix: 'Écrire le contenu ou désactiver l’élément.',
     });
   }
-
-  if (rule.kind === 'rule') {
-    if (rule.scope === 'path' && !rule.targets.length) {
-      issues.push({
-        ...base,
-        severity: 'error',
-        code: 'no-paths',
-        params: { label },
-        message: `« ${label} » : portée « chemins » sans glob.`,
-        fix: 'Ajouter un glob, ex. `src/api/**/*.ts`.',
-      });
-    }
-    if (rule.scope === 'path') {
-      for (const glob of rule.targets) {
-        if (/^\/|\s/.test(glob)) {
-          issues.push({
-            ...base,
-            severity: 'warning',
-            code: 'bad-glob',
-            params: { glob },
-            message: `Glob « ${glob} » : relatif à la racine, sans espace.`,
-            fix: 'Écrire `src/**/*.ts` et non `/src/...`.',
-          });
-        }
-      }
-    }
-    if (rule.scope === 'directory') {
-      const dir = rule.targets[0] ?? '';
-      if (!dir.trim()) {
-        issues.push({
-          ...base,
-          severity: 'error',
-          code: 'no-dir',
-          params: { label },
-          message: `« ${label} » : portée « dossier » sans dossier.`,
-          fix: 'Indiquer le dossier, ex. `apps/api`.',
-        });
-      } else if (/[*?[\]]/.test(dir)) {
-        issues.push({
-          ...base,
-          severity: 'error',
-          code: 'dir-glob',
-          params: { dir },
-          message: `« ${dir} » est un glob, pas un dossier.`,
-          fix: 'Utiliser la portée « chemins » pour un glob.',
-        });
-      }
-    }
-    const alwaysLoaded = rule.scope === 'project' || rule.scope === 'topic';
-    const lineCount = rule.body.split('\n').filter((l) => l.trim()).length;
-    if (alwaysLoaded && lineCount > LIMITS.ruleLines) {
-      issues.push({
-        ...base,
-        severity: 'info',
-        code: 'heavy-rule',
-        params: { label, n: lineCount },
-        message: `« ${label} » : ${lineCount} lignes chargées à chaque session.`,
-        fix: 'Si c’est une procédure ponctuelle, en faire une skill (chargée à la demande).',
-      });
-    }
-    if (LINTER_JOB.test(rule.body)) {
-      issues.push({
-        ...base,
-        severity: 'info',
-        code: 'linter-job',
-        params: { label },
-        message: `« ${label} » décrit du formatage.`,
-        fix: 'Confier ça au formatter/linter + hook PostToolUse. Ne pas demander au LLM le travail d’un linter.',
-      });
-    }
-    if (rule.category === 'commands' && !/`[^`]+`/.test(rule.body)) {
-      issues.push({
-        ...base,
-        severity: 'warning',
-        code: 'command-not-exact',
-        params: { label },
-        message: `« ${label} » : aucune commande exacte entre backticks.`,
-        fix: 'Écrire la commande complète, ex. `pnpm test -- path/to/file`.',
-      });
-    }
-  }
-
-  if (rule.kind === 'command' || rule.kind === 'skill' || rule.kind === 'agent') {
-    const name = rule.name || slug(rule.title);
-    if (!NAME_RE.test(name) || name.length > 64) {
-      issues.push({
-        ...base,
-        severity: 'error',
-        code: 'bad-name',
-        params: { name },
-        message: `Nom « ${name} » invalide.`,
-        fix: 'kebab-case, minuscules, chiffres et tirets, 64 caractères max.',
-      });
-    }
-    const description = rule.description?.trim() ?? '';
-    if (!description) {
-      issues.push({
-        ...base,
-        severity: rule.kind === 'command' ? 'warning' : 'error',
-        code: 'no-description',
-        params: { label },
-        message: `« ${label} » sans description.`,
-        fix: 'Décrire quoi ET quand l’utiliser : c’est ce que Claude lit pour décider.',
-      });
-    } else if (rule.kind !== 'command' && description.length < 40) {
-      issues.push({
-        ...base,
-        severity: 'warning',
-        code: 'short-description',
-        params: { label },
-        message: `Description de « ${label} » trop courte pour déclencher au bon moment.`,
-        fix: 'Ajouter « Use when… » avec les situations déclencheuses.',
-      });
-    } else if (description.length > 1024) {
-      issues.push({
-        ...base,
-        severity: 'error',
-        code: 'long-description',
-        params: { label },
-        message: `Description de « ${label} » > 1024 caractères.`,
-        fix: 'Résumer ; mettre le détail dans le corps.',
-      });
-    }
-  }
-
-  if (rule.kind === 'skill')
-    issues.push(...lintSkill(label, rule.description ?? '', rule.body).map((i) => ({ ...base, ...i })));
-
-  if (rule.kind === 'hook') {
-    if (!rule.command?.trim()) {
-      issues.push({
-        ...base,
-        severity: 'error',
-        code: 'hook-no-command',
-        params: { label },
-        message: `Hook « ${label} » sans commande.`,
-        fix: "Ex. `jq -r '.tool_input.file_path' | xargs pnpm exec prettier --write`.",
-      });
-    }
-    if (!rule.event || !HOOK_EVENTS.includes(rule.event)) {
-      issues.push({
-        ...base,
-        severity: 'error',
-        code: 'hook-event',
-        params: { label, events: HOOK_EVENTS.join(', ') },
-        message: `Hook « ${label} » : événement inconnu.`,
-        fix: `Choisir parmi ${HOOK_EVENTS.join(', ')}.`,
-      });
-    }
-    if ((rule.event === 'PreToolUse' || rule.event === 'PostToolUse') && !rule.matcher) {
-      issues.push({
-        ...base,
-        severity: 'info',
-        code: 'hook-matcher',
-        params: { label },
-        message: `Hook « ${label} » s’exécute après chaque outil.`,
-        fix: 'Restreindre avec un matcher, ex. `Edit|Write`.',
-      });
-    }
-  }
-
-  return issues;
+  issues.push(...kindIssues(rule, label));
+  return issues.map((i) => ({ ruleId: rule.id, ...i }));
 }
 
 function crossRuleIssues(rules: Rule[]): Issue[] {
