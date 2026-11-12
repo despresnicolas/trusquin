@@ -692,72 +692,105 @@ export function importedPath(name: string): string {
   return `.claude/rules/${name}`;
 }
 
-/** Reconstruit des règles à partir des fichiers mémoire existants d'un repo. */
-export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
-  const rules: Rule[] = [];
-  const base = { enabled: true, targets: [] as string[] };
-  const add = (title: string, body: string, scope: Rule['scope'], targets: string[] = [], category?: Category) =>
-    rules.push({
-      ...base,
-      id: newId(),
-      kind: 'rule',
-      title,
-      body,
-      scope,
-      targets,
-      category: category ?? categoryOf(title),
-    });
+/** Règle importée, avant attribution de son id. */
+type RuleDraft = Omit<Rule, 'id' | 'enabled'>;
 
-  for (const [path, text] of Object.entries(repo.contents)) {
-    if (path === 'CLAUDE.md' || path === 'AGENTS.md') {
-      // « Rappels » répète les règles critiques déjà importées ailleurs dans le fichier.
-      for (const s of splitSections(text)) if (s.title !== 'Rappels') add(s.title, s.body, 'project');
-    } else if (path === 'CLAUDE.local.md') {
-      for (const s of splitSections(text)) add(s.title, s.body, 'local');
-    } else if (/\/CLAUDE\.md$/.test(path)) {
-      const dir = path.replace(/\/CLAUDE\.md$/, '');
-      for (const s of splitSections(text)) add(s.title, s.body, 'directory', [dir]);
-    } else if (/^\.claude\/rules\/.*\.md$/.test(path)) {
-      const fm = frontmatterOf(text) ?? '';
-      const inline = fm.match(/^paths:[ \t]*(\[.*\]|\S.*)$/m)?.[1];
-      const globs = inline
-        ? inline
-            .replace(/^\[|\]$/g, '')
-            .split(',')
-            .map((g) => g.trim().replace(/^["']|["']$/g, ''))
-            .filter(Boolean)
-        : [...fm.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?\s*$/gm)].map((m) => m[1]);
-      const name = path.split('/').pop()!.replace(/\.md$/, '');
-      const sections = splitSections(text);
-      const list = sections.length ? sections : [{ title: name, body: stripFrontmatter(text).trim() }];
-      for (const s of list) add(s.title, s.body, globs.length ? 'path' : 'topic', globs, categoryOf(name));
-    }
+type HookGroup = { matcher?: string; hooks?: { command?: string }[] };
+
+/** Une règle par section ; catégorie déduite du titre de section sauf si imposée. */
+function sectionRules(
+  sections: { title: string; body: string }[],
+  scope: Rule['scope'],
+  targets: string[] = [],
+  category?: Category,
+): RuleDraft[] {
+  return sections.map((s) => ({
+    kind: 'rule',
+    title: s.title,
+    body: s.body,
+    scope,
+    targets: [...targets],
+    category: category ?? categoryOf(s.title),
+  }));
+}
+
+/** Globs du `paths:` d'une règle : en ligne (`paths: a, b` ou `[a, b]`) ou en liste YAML. */
+function frontmatterGlobs(text: string): string[] {
+  const fm = frontmatterOf(text) ?? '';
+  const inline = fm.match(/^paths:[ \t]*(\[.*\]|\S.*)$/m)?.[1];
+  if (!inline) return [...fm.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?\s*$/gm)].map((m) => m[1]);
+  return inline
+    .replace(/^\[|\]$/g, '')
+    .split(',')
+    .map((g) => g.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+}
+
+/** .claude/rules/*.md : portée « chemins » si `paths:`, sinon thème ; fichier sans section = une seule règle. */
+function ruleFileRules(path: string, text: string): RuleDraft[] {
+  const globs = frontmatterGlobs(text);
+  const name = path.split('/').pop()!.replace(/\.md$/, '');
+  const sections = splitSections(text);
+  const list = sections.length ? sections : [{ title: name, body: stripFrontmatter(text).trim() }];
+  return sectionRules(list, globs.length ? 'path' : 'topic', globs, categoryOf(name));
+}
+
+/** Règles tirées d'un fichier mémoire du dépôt ; aucune pour les autres fichiers. */
+function fileRules(path: string, text: string): RuleDraft[] {
+  if (path === 'CLAUDE.md' || path === 'AGENTS.md') {
+    // « Rappels » répète les règles critiques déjà importées ailleurs dans le fichier.
+    return sectionRules(
+      splitSections(text).filter((s) => s.title !== 'Rappels'),
+      'project',
+    );
   }
+  if (path === 'CLAUDE.local.md') return sectionRules(splitSections(text), 'local');
+  if (/\/CLAUDE\.md$/.test(path)) {
+    return sectionRules(splitSections(text), 'directory', [path.replace(/\/CLAUDE\.md$/, '')]);
+  }
+  if (/^\.claude\/rules\/.*\.md$/.test(path)) return ruleFileRules(path, text);
+  return [];
+}
 
-  let hooks: Record<string, { matcher?: string; hooks?: { command?: string }[] }[]> = {};
+/** Hooks de .claude/settings.json, vides si le JSON est invalide. */
+function readHooks(contents: RepoSnapshot['contents']): Record<string, unknown> {
   try {
-    hooks = JSON.parse(repo.contents['.claude/settings.json'] ?? '{}').hooks ?? {};
+    return JSON.parse(contents['.claude/settings.json'] ?? '{}').hooks ?? {};
   } catch {
     // settings.json invalide : déjà signalé par analyzeRepo
+    return {};
   }
-  for (const [event, groups] of Object.entries(hooks)) {
-    for (const group of Array.isArray(groups) ? groups : []) {
-      for (const h of group.hooks ?? []) {
-        if (!h.command) continue;
-        rules.push({
-          ...base,
-          id: newId(),
-          kind: 'hook',
-          title: `${event} ${group.matcher ?? ''}`.trim(),
-          body: '',
-          scope: 'project',
-          category: 'other',
-          event: event as HookEvent,
-          matcher: group.matcher,
-          command: h.command,
-        });
-      }
-    }
-  }
-  return rules;
+}
+
+/** Un hook par commande d'un groupe (matcher partagé). */
+function groupHookRules(event: string, group: HookGroup): RuleDraft[] {
+  return (group.hooks ?? [])
+    .filter((h) => h.command)
+    .map((h) => ({
+      kind: 'hook',
+      title: `${event} ${group.matcher ?? ''}`.trim(),
+      body: '',
+      scope: 'project',
+      targets: [],
+      category: 'other',
+      event: event as HookEvent,
+      matcher: group.matcher,
+      command: h.command,
+    }));
+}
+
+function hookRules(hooks: Record<string, unknown>): RuleDraft[] {
+  return Object.entries(hooks).flatMap(([event, groups]) =>
+    (Array.isArray(groups) ? (groups as HookGroup[]) : []).flatMap((group) => groupHookRules(event, group)),
+  );
+}
+
+/** Reconstruit des règles à partir des fichiers mémoire existants d'un repo. */
+export function importRules(repo: RepoSnapshot, newId: () => string): Rule[] {
+  const drafts = [
+    ...Object.entries(repo.contents).flatMap(([path, text]) => fileRules(path, text)),
+    ...hookRules(readHooks(repo.contents)),
+  ];
+  // ids attribués dans l'ordre : fichiers d'abord, puis hooks.
+  return drafts.map((draft) => ({ enabled: true, id: newId(), ...draft }));
 }
