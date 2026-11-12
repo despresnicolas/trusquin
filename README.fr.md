@@ -37,11 +37,11 @@ Trusquin est une application de bureau gratuite pour les développeurs qui utili
 
 Téléchargez le fichier de votre système sur la page [Releases](https://github.com/despresnicolas/trusquin/releases) :
 
-| Système                                          | Fichier                                                   |
-| ------------------------------------------------ | --------------------------------------------------------- |
-| macOS 12+ (Apple Silicon et Intel)               | `trusquin-macos-universal.zip`                            |
-| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`                            |
-| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) ou `.AppImage` |
+| Système                                          | Fichier                                    |
+| ------------------------------------------------ | ------------------------------------------ |
+| macOS 12+ (Apple Silicon et Intel)               | `trusquin-macos-universal.zip`             |
+| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`             |
+| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) |
 
 > ⚠️ Trusquin n'est pas encore signé par Apple ni par Microsoft : votre système vous avertit au premier lancement.
 > **macOS** : si l'app est refusée, ouvrez Réglages Système → Confidentialité et sécurité et cliquez sur **Ouvrir quand même**.

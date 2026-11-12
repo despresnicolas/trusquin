@@ -3,7 +3,7 @@
 # (Debian/Ubuntu et dérivées : Pop!_OS, Mint…). Lancé en root dans un conteneur propre :
 #   CI : .github/workflows/linux.yml
 #   local : docker run --rm -v "$PWD":/src:ro debian:trixie bash /src/build/linux/check.sh
-# Avec PKG=<chemin d'un .deb ou d'un .AppImage déjà construit> (release.yml), ne compile rien : vérifie
+# Avec PKG=<chemin d'un .deb déjà construit> (release.yml), ne compile rien : vérifie
 # seulement que ce paquet s'installe et démarre sur un système sans outils de développement.
 set -euo pipefail
 
@@ -60,28 +60,15 @@ else
   PKG=$(ls "$WORK"/bin/*.deb)
 fi
 
-case "$PKG" in
-  *.deb)
-    echo "== Installation du .deb (les dépendances déclarées doivent exister sur cette distribution)"
-    apt-get install -y -qq "$PKG" >/dev/null
-    dpkg -s trusquin | grep -E '^(Status|Version|Depends):'
-    BIN=/usr/local/bin/trusquin
-    ;;
-  *.AppImage)
-    echo "== AppImage"
-    BIN=/tmp/trusquin.AppImage
-    cp "$PKG" "$BIN" && chmod +x "$BIN"
-    # Pas de FUSE dans un conteneur : l'AppImage s'extrait puis se lance.
-    export APPIMAGE_EXTRACT_AND_RUN=1
-    ;;
-  *) echo "Paquet non géré : $PKG" && exit 1 ;;
-esac
+echo "== Installation du .deb (les dépendances déclarées doivent exister sur cette distribution)"
+apt-get install -y -qq "$PKG" >/dev/null
+dpkg -s trusquin | grep -E '^(Status|Version|Depends):'
 
 echo "== Démarrage (écran virtuel, 15 s)"
 # Conteneur sans GPU ni namespaces : WebKit sans sandbox ni accélération ; en usage normal ces variables ne servent pas.
 export WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1
 set +e
-dbus-run-session -- xvfb-run -a timeout 15 "$BIN" >/tmp/trusquin.log 2>&1
+dbus-run-session -- xvfb-run -a timeout 15 /usr/local/bin/trusquin >/tmp/trusquin.log 2>&1
 status=$?
 set -e
 if [ "$status" -ne 124 ]; then

@@ -20,9 +20,8 @@ jobs:
             artifacts: bin/*-installer.exe
           # Ubuntu 24.04 = même base que Pop!_OS 24.04 (GTK4 + WebKitGTK 6.0 requis par Wails 3.1).
           - os: ubuntu-24.04
-            artifacts: |
-              bin/*.deb
-              bin/*.AppImage
+            # Pas d'AppImage : celle de wails3 n'embarque pas GTK/WebKit (libharfbuzz.so.0 absent au lancement).
+            artifacts: bin/*.deb
     name: Paquet ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,9 +35,8 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
-      # libfuse2t64 : linuxdeploy (génération de l'AppImage) est lui-même une AppImage.
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev libfuse2t64
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
       # Le paquet choco n'ajoute pas makensis au PATH.
       - if: runner.os == 'Windows'
         run: |
@@ -56,9 +54,7 @@ jobs:
       - if: runner.os == 'Windows'
         run: wails3 package
       - if: runner.os == 'Linux'
-        run: |
-          wails3 task linux:create:deb
-          wails3 task linux:create:appimage
+        run: wails3 task linux:create:deb
       - run: ls -l bin
       - uses: actions/upload-artifact@v4
         with:
@@ -103,14 +99,13 @@ jobs:
       fail-fast: false
       matrix:
         image: [ubuntu:24.04, debian:trixie]
-        pkg: [deb, AppImage]
-    name: Vérif. ${{ matrix.image }} (${{ matrix.pkg }})
+    name: Vérif. ${{ matrix.image }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: trusquin-Linux, path: pkg }
-      - run: docker run --rm -v "$PWD":/src:ro -e PKG="/src/$(ls pkg/*.${{ matrix.pkg }})" ${{ matrix.image }} bash /src/build/linux/check.sh
+      - run: docker run --rm -v "$PWD":/src:ro -e PKG="/src/$(ls pkg/*.deb)" ${{ matrix.image }} bash /src/build/linux/check.sh
 
   release:
     needs: [verify-macos, verify-windows, verify-linux]

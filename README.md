@@ -37,11 +37,11 @@ Trusquin is a free desktop app for developers who use [Claude Code](https://clau
 
 Download the file for your system from the [Releases](https://github.com/despresnicolas/trusquin/releases) page:
 
-| System                                           | File                                                      |
-| ------------------------------------------------ | --------------------------------------------------------- |
-| macOS 12+ (Apple Silicon and Intel)              | `trusquin-macos-universal.zip`                            |
-| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`                            |
-| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) or `.AppImage` |
+| System                                           | File                                       |
+| ------------------------------------------------ | ------------------------------------------ |
+| macOS 12+ (Apple Silicon and Intel)              | `trusquin-macos-universal.zip`             |
+| Windows 11 (x64)                                 | `trusquin-amd64-installer.exe`             |
+| Ubuntu 24.04+, Pop!\_OS 24.04+, Debian 13+ (x64) | `.deb` (`sudo apt install ./trusquin.deb`) |
 
 > ⚠️ Trusquin is not signed by Apple or Microsoft yet, so your system warns you on first launch.
 > **macOS**: when the app is refused, open System Settings → Privacy & Security and click **Open Anyway**.
