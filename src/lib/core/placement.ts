@@ -153,91 +153,104 @@ function settingsFile(project: Project, hooks: Rule[]): string | null {
   return Object.keys(settings).length ? JSON.stringify(settings, null, 2) + '\n' : null;
 }
 
-/** Calcule l'emplacement et le contenu de chaque fichier à partir des règles. */
-export function generate(project: Project): GeneratedFile[] {
-  const active = project.rules.filter((r) => r.enabled);
-  const rules = active.filter((r) => r.kind === 'rule');
-  const hooks = active.filter((r) => r.kind === 'hook');
-  const files: GeneratedFile[] = [];
-  const ids = (list: Rule[]) => list.map((r) => r.id);
+const ids = (list: Rule[]) => list.map((r) => r.id);
 
-  const projectRules = rules.filter((r) => r.scope === 'project');
-  const root = rootMemory(project, projectRules, hooks);
-  if (project.useAgentsMd) {
-    files.push({
+const byScope = (rules: Rule[], scope: Rule['scope']) => rules.filter((r) => r.scope === scope);
+
+/** Mémoire racine : CLAUDE.md seul, ou AGENTS.md importé par un CLAUDE.md d'une ligne. */
+function rootFiles(project: Project, projectRules: Rule[], hooks: Rule[]): GeneratedFile[] {
+  const content = rootMemory(project, projectRules, hooks);
+  if (!project.useAgentsMd) {
+    return [
+      {
+        path: 'CLAUDE.md',
+        content,
+        loading: 'always',
+        explanation: 'Mémoire racine versionnée, chargée à chaque session. Viser < 100 lignes.',
+        sources: ids(projectRules),
+      },
+    ];
+  }
+  return [
+    {
       path: 'AGENTS.md',
-      content: root,
+      content,
       loading: 'always',
       explanation: 'Mémoire racine lisible par tous les agents IA (Codex, Cursor, Claude…).',
       sources: ids(projectRules),
-    });
-    files.push({
+    },
+    {
       path: 'CLAUDE.md',
       content: '@AGENTS.md\n',
       loading: 'always',
       explanation: 'Point d’entrée Claude Code : importe AGENTS.md pour éviter la duplication.',
       sources: [],
-    });
-  } else {
-    files.push({
-      path: 'CLAUDE.md',
-      content: root,
-      loading: 'always',
-      explanation: 'Mémoire racine versionnée, chargée à chaque session. Viser < 100 lignes.',
-      sources: ids(projectRules),
-    });
-  }
+    },
+  ];
+}
 
-  for (const [category, list] of groupBy(
-    rules.filter((r) => r.scope === 'topic'),
-    (r) => r.category,
-  )) {
-    files.push({
-      path: `.claude/rules/${category}.md`,
-      content: finalize(`# ${CATEGORY_LABELS[category as Category]}\n\n${sections(list)}`),
-      loading: 'always',
-      explanation: 'Règle thématique sans `paths` : chargée à chaque session, mais isolée pour rester lisible.',
-      sources: ids(list),
-    });
-  }
+/** Un .claude/rules/<catégorie>.md par catégorie de règles thématiques. */
+function topicFiles(rules: Rule[]): GeneratedFile[] {
+  return [...groupBy(byScope(rules, 'topic'), (r) => r.category)].map(([category, list]) => ({
+    path: `.claude/rules/${category}.md`,
+    content: finalize(`# ${CATEGORY_LABELS[category as Category]}\n\n${sections(list)}`),
+    loading: 'always',
+    explanation: 'Règle thématique sans `paths` : chargée à chaque session, mais isolée pour rester lisible.',
+    sources: ids(list),
+  }));
+}
 
-  const pathRules = rules.filter((r) => r.scope === 'path');
+/** Nom d'un fichier de règles à chemins. Une seule règle : son titre. Sinon : catégorie + dossiers fixes + extension du glob. */
+function pathFileBase(list: Rule[]): string {
+  const first = list[0];
+  if (list.length === 1 && first.title) return slug(first.title);
+  const glob = first.targets[0] ?? '';
+  const anchor = glob.split('/').filter((p) => p && !/[*?[{]/.test(p));
+  const ext = glob.match(/\*\.(\w+)$/)?.[1];
+  return slug([first.category, ...anchor, ext].filter(Boolean).join('-'));
+}
+
+/** `base`, ou `base-2`, `base-3`… s'il est déjà pris ; le nom retenu est ajouté à `used`. */
+function uniqueName(base: string, used: Set<string>): string {
+  let name = base;
+  for (let i = 2; used.has(name); i++) name = `${base}-${i}`;
+  used.add(name);
+  return name;
+}
+
+/** Un fichier par groupe de règles de même catégorie et mêmes globs, chargé seulement sur ces chemins. */
+function pathFiles(rules: Rule[]): GeneratedFile[] {
   const used = new Set<string>();
-  for (const list of groupBy(pathRules, (r) => `${r.category}|${[...r.targets].sort().join(',')}`).values()) {
-    const first = list[0];
-    // Une seule règle : son titre. Sinon : catégorie + dossiers fixes + extension du glob.
-    const glob = first.targets[0] ?? '';
-    const anchor = glob.split('/').filter((p) => p && !/[*?[{]/.test(p));
-    const ext = glob.match(/\*\.(\w+)$/)?.[1];
-    const base = slug(
-      list.length === 1 && first.title ? first.title : [first.category, ...anchor, ext].filter(Boolean).join('-'),
-    );
-    let name = base;
-    for (let i = 2; used.has(name); i++) name = `${base}-${i}`;
-    used.add(name);
-    files.push({
-      path: `.claude/rules/${name}.md`,
-      content: finalize(frontmatter({ paths: first.targets }) + sections(list)),
+  const groups = groupBy(byScope(rules, 'path'), (r) => `${r.category}|${[...r.targets].sort().join(',')}`);
+  return [...groups.values()].map((list) => {
+    const { targets } = list[0];
+    return {
+      path: `.claude/rules/${uniqueName(pathFileBase(list), used)}.md`,
+      content: finalize(frontmatter({ paths: targets }) + sections(list)),
       loading: 'on-path',
-      explanation: `Chargée seulement quand Claude lit ou modifie ${first.targets.join(', ')}.`,
+      explanation: `Chargée seulement quand Claude lit ou modifie ${targets.join(', ')}.`,
       sources: ids(list),
-    });
-  }
+    };
+  });
+}
 
-  for (const [dir, list] of groupBy(
-    rules.filter((r) => r.scope === 'directory'),
-    (r) => (r.targets[0] ?? '').replace(/^\.?\/+|\/+$/g, ''),
-  )) {
-    files.push({
-      path: `${dir ? `${dir}/` : ''}CLAUDE.md`,
-      content: finalize(`# ${dir || 'racine'}\n\n${sections(list)}`),
-      loading: 'on-path',
-      explanation: `Mémoire de sous-dossier : chargée quand Claude travaille dans ${dir}/. Prime sur la racine.`,
-      sources: ids(list),
-    });
-  }
+/** Un CLAUDE.md par dossier ciblé. */
+function directoryFiles(rules: Rule[]): GeneratedFile[] {
+  const groups = groupBy(byScope(rules, 'directory'), (r) => (r.targets[0] ?? '').replace(/^\.?\/+|\/+$/g, ''));
+  return [...groups].map(([dir, list]) => ({
+    path: `${dir ? `${dir}/` : ''}CLAUDE.md`,
+    content: finalize(`# ${dir || 'racine'}\n\n${sections(list)}`),
+    loading: 'on-path',
+    explanation: `Mémoire de sous-dossier : chargée quand Claude travaille dans ${dir}/. Prime sur la racine.`,
+    sources: ids(list),
+  }));
+}
 
-  const local = rules.filter((r) => r.scope === 'local');
+/** Préférences personnelles : CLAUDE.local.md (projet) et ~/.claude/CLAUDE.md (utilisateur), si non vides. */
+function personalFiles(rules: Rule[]): GeneratedFile[] {
+  const local = byScope(rules, 'local');
+  const user = byScope(rules, 'user');
+  const files: GeneratedFile[] = [];
   if (local.length) {
     files.push({
       path: 'CLAUDE.local.md',
@@ -247,8 +260,6 @@ export function generate(project: Project): GeneratedFile[] {
       sources: ids(local),
     });
   }
-
-  const user = rules.filter((r) => r.scope === 'user');
   if (user.length) {
     files.push({
       path: `${USER_PREFIX}.claude/CLAUDE.md`,
@@ -258,58 +269,76 @@ export function generate(project: Project): GeneratedFile[] {
       sources: ids(user),
     });
   }
+  return files;
+}
 
-  for (const rule of active.filter((r) => r.kind === 'command')) {
-    const name = slug(rule.name || rule.title);
-    files.push({
-      path: `.claude/commands/${name}.md`,
-      content: finalize(
-        frontmatter({
-          description: rule.description,
-          'argument-hint': rule.argumentHint,
-          'allowed-tools': rule.tools,
-        }) + rule.body,
-      ),
-      loading: 'on-demand',
-      explanation: `Slash command /${name}, lancée explicitement par l’utilisateur.`,
-      sources: [rule.id],
-    });
-  }
+const fileName = (rule: Rule) => slug(rule.name || rule.title);
 
-  for (const rule of active.filter((r) => r.kind === 'skill')) {
-    const name = slug(rule.name || rule.title);
-    files.push({
-      path: `.claude/skills/${name}/SKILL.md`,
-      content: finalize(frontmatter({ name, description: rule.description }) + rule.body),
-      loading: 'on-demand',
-      explanation: 'Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.',
-      sources: [rule.id],
-    });
-  }
+function commandFile(rule: Rule): GeneratedFile {
+  const name = fileName(rule);
+  const fields = { description: rule.description, 'argument-hint': rule.argumentHint, 'allowed-tools': rule.tools };
+  return {
+    path: `.claude/commands/${name}.md`,
+    content: finalize(frontmatter(fields) + rule.body),
+    loading: 'on-demand',
+    explanation: `Slash command /${name}, lancée explicitement par l’utilisateur.`,
+    sources: [rule.id],
+  };
+}
 
-  for (const rule of active.filter((r) => r.kind === 'agent')) {
-    const name = slug(rule.name || rule.title);
-    files.push({
-      path: `.claude/agents/${name}.md`,
-      content: finalize(
-        frontmatter({ name, description: rule.description, tools: rule.tools, model: rule.model }) + rule.body,
-      ),
-      loading: 'on-demand',
-      explanation: 'Sous-agent avec son propre contexte, délégué par Claude ou appelé par son nom.',
-      sources: [rule.id],
-    });
-  }
+function skillFile(rule: Rule): GeneratedFile {
+  const name = fileName(rule);
+  return {
+    path: `.claude/skills/${name}/SKILL.md`,
+    content: finalize(frontmatter({ name, description: rule.description }) + rule.body),
+    loading: 'on-demand',
+    explanation: 'Skill : seule la description est en contexte, le corps est chargé quand la tâche correspond.',
+    sources: [rule.id],
+  };
+}
 
-  const settings = settingsFile(project, hooks);
-  if (settings) {
-    files.push({
+function agentFile(rule: Rule): GeneratedFile {
+  const name = fileName(rule);
+  const fields = { name, description: rule.description, tools: rule.tools, model: rule.model };
+  return {
+    path: `.claude/agents/${name}.md`,
+    content: finalize(frontmatter(fields) + rule.body),
+    loading: 'on-demand',
+    explanation: 'Sous-agent avec son propre contexte, délégué par Claude ou appelé par son nom.',
+    sources: [rule.id],
+  };
+}
+
+/** .claude/settings.json, seulement s'il y a des permissions ou des hooks. */
+function settingsFiles(project: Project, hooks: Rule[]): GeneratedFile[] {
+  const content = settingsFile(project, hooks);
+  if (!content) return [];
+  return [
+    {
       path: '.claude/settings.json',
-      content: settings,
+      content,
       loading: 'deterministic',
       explanation: 'Permissions et hooks versionnés : exécutés par le harness, pas interprétés par le modèle.',
       sources: ids(hooks),
-    });
-  }
+    },
+  ];
+}
 
-  return files;
+/** Calcule l'emplacement et le contenu de chaque fichier à partir des règles. */
+export function generate(project: Project): GeneratedFile[] {
+  const active = project.rules.filter((r) => r.enabled);
+  const ofKind = (kind: Rule['kind']) => active.filter((r) => r.kind === kind);
+  const rules = ofKind('rule');
+  const hooks = ofKind('hook');
+  return [
+    ...rootFiles(project, byScope(rules, 'project'), hooks),
+    ...topicFiles(rules),
+    ...pathFiles(rules),
+    ...directoryFiles(rules),
+    ...personalFiles(rules),
+    ...ofKind('command').map(commandFile),
+    ...ofKind('skill').map(skillFile),
+    ...ofKind('agent').map(agentFile),
+    ...settingsFiles(project, hooks),
+  ];
 }
