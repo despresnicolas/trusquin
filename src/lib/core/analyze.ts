@@ -470,31 +470,48 @@ function localIgnoredCriterion({ read, paths }: RepoContext): Criterion {
   );
 }
 
-/** Bonnes pratiques générales : ce qui donne à Claude des boucles de feedback. */
-function practiceCriteria({ has, find, read }: RepoContext): Criterion[] {
-  const tests = find(/(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/);
-  const pkg = read('package.json');
+const TEST_FILES = /(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/;
+const LINTER_FILES =
+  /(^|\/)(\.?eslint(rc)?[^/]*|eslint\.config\.[cm]?[jt]s|biome\.jsonc?|\.golangci\.ya?ml|\.rubocop\.yml|ruff\.toml|\.flake8|phpstan\.neon(\.dist)?|clippy\.toml)$/;
+const FORMATTER_FILES =
+  /(^|\/)(\.prettierrc[^/]*|prettier\.config\.[cm]?js|biome\.jsonc?|\.editorconfig|rustfmt\.toml|\.php-cs-fixer(\.dist)?\.php)$/;
+const TYPED_FILES = /(^|\/)tsconfig[^/]*\.json$|(^|\/)(mypy\.ini|pyrightconfig\.json)$|\.go$|\.rs$/;
+const CI_FILES =
+  /^\.github\/workflows\/.+\.ya?ml$|^\.gitlab-ci\.yml$|^\.circleci\/|^Jenkinsfile$|^bitbucket-pipelines\.yml$/;
+const LOCK_FILES =
+  /^(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|Cargo\.lock|go\.sum|composer\.lock|Gemfile\.lock)$/;
+
+/** Linter, formatter et typage : un fichier de config, ou leur section dans pyproject.toml / package.json. */
+function toolsFound({ has, read }: RepoContext): { linter: boolean; formatter: boolean; typed: boolean } {
   const pyproject = read('pyproject.toml');
-  const gitignore = read('.gitignore');
-  const linter =
-    has(
-      /(^|\/)(\.?eslint(rc)?[^/]*|eslint\.config\.[cm]?[jt]s|biome\.jsonc?|\.golangci\.ya?ml|\.rubocop\.yml|ruff\.toml|\.flake8|phpstan\.neon(\.dist)?|clippy\.toml)$/,
-    ) || /\[tool\.(ruff|flake8|pylint)\]/.test(pyproject);
-  const formatter =
-    has(
-      /(^|\/)(\.prettierrc[^/]*|prettier\.config\.[cm]?js|biome\.jsonc?|\.editorconfig|rustfmt\.toml|\.php-cs-fixer(\.dist)?\.php)$/,
-    ) ||
-    /"prettier"/.test(pkg) ||
-    /\[tool\.(black|ruff\.format)\]/.test(pyproject);
-  const typed =
-    has(/(^|\/)tsconfig[^/]*\.json$|(^|\/)(mypy\.ini|pyrightconfig\.json)$|\.go$|\.rs$/) ||
-    /\[tool\.(mypy|pyright)\]/.test(pyproject);
-  const ci = has(
-    /^\.github\/workflows\/.+\.ya?ml$|^\.gitlab-ci\.yml$|^\.circleci\/|^Jenkinsfile$|^bitbucket-pipelines\.yml$/,
-  );
-  const lock = has(
-    /^(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|Cargo\.lock|go\.sum|composer\.lock|Gemfile\.lock)$/,
-  );
+  return {
+    linter: has(LINTER_FILES) || /\[tool\.(ruff|flake8|pylint)\]/.test(pyproject),
+    formatter:
+      has(FORMATTER_FILES) ||
+      /"prettier"/.test(read('package.json')) ||
+      /\[tool\.(black|ruff\.format)\]/.test(pyproject),
+    typed: has(TYPED_FILES) || /\[tool\.(mypy|pyright)\]/.test(pyproject),
+  };
+}
+
+/** Critère de bonne pratique tout ou rien : pass si `found`, fail sinon. */
+function presenceCrit(
+  id: string,
+  label: string,
+  max: number,
+  found: boolean,
+  [yes, no]: [string, string],
+  fix: string,
+): Criterion {
+  return crit(id, 'practices', label, max, passIf(found), found ? yes : no, fix);
+}
+
+/** Bonnes pratiques générales : ce qui donne à Claude des boucles de feedback. */
+function practiceCriteria(ctx: RepoContext): Criterion[] {
+  const { has, find, read } = ctx;
+  const tests = find(TEST_FILES);
+  const { linter, formatter, typed } = toolsFound(ctx);
+  const gitignore = Boolean(read('.gitignore'));
   const envDocumented = has(/(^|\/)\.env\.example$/) || !has(/(^|\/)\.env$/);
   return [
     crit(
@@ -515,49 +532,44 @@ function practiceCriteria({ has, find, read }: RepoContext): Criterion[] {
       `${tests.length} fichier(s) de test.`,
       'Claude vérifie son travail par les tests : sans eux, il devine.',
     ),
-    crit(
+    presenceCrit(
       'linter',
-      'practices',
       'Linter configuré',
       5,
-      passIf(linter),
-      linter ? 'Trouvé.' : 'Aucun linter détecté.',
+      linter,
+      ['Trouvé.', 'Aucun linter détecté.'],
       'Ajouter ESLint/Biome/Ruff… et l’appeler par hook.',
     ),
-    crit(
+    presenceCrit(
       'formatter',
-      'practices',
       'Formatter configuré',
       4,
-      passIf(formatter),
-      formatter ? 'Trouvé.' : 'Aucun formatter détecté.',
+      formatter,
+      ['Trouvé.', 'Aucun formatter détecté.'],
       'Ajouter Prettier/Biome/Black/gofmt.',
     ),
-    crit(
+    presenceCrit(
       'types',
-      'practices',
       'Typage statique',
       4,
-      passIf(typed),
-      typed ? 'Trouvé.' : 'Pas de vérification de types.',
+      typed,
+      ['Trouvé.', 'Pas de vérification de types.'],
       'Activer TypeScript strict / mypy / pyright.',
     ),
-    crit(
+    presenceCrit(
       'ci',
-      'practices',
       'Intégration continue',
       5,
-      passIf(ci),
-      ci ? 'Pipeline trouvé.' : 'Aucune CI.',
+      has(CI_FILES),
+      ['Pipeline trouvé.', 'Aucune CI.'],
       'Ajouter une CI qui lance lint + tests.',
     ),
-    crit(
+    presenceCrit(
       'lockfile',
-      'practices',
       'Dépendances verrouillées',
       2,
-      passIf(lock),
-      lock ? 'Lockfile présent.' : 'Pas de lockfile.',
+      has(LOCK_FILES),
+      ['Lockfile présent.', 'Pas de lockfile.'],
       'Committer le lockfile.',
     ),
     crit(
@@ -565,7 +577,7 @@ function practiceCriteria({ has, find, read }: RepoContext): Criterion[] {
       'practices',
       '.gitignore + .env.example',
       3,
-      passIf(Boolean(gitignore) && envDocumented, Boolean(gitignore)),
+      passIf(gitignore && envDocumented, gitignore),
       gitignore ? 'Présent.' : 'Absent.',
       'Ignorer .env et documenter les variables dans .env.example.',
     ),
