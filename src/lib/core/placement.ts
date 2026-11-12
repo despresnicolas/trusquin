@@ -82,10 +82,7 @@ function sections(rules: Rule[]): string {
     const inCategory = rules.filter((r) => r.category === category);
     if (!inCategory.length) continue;
     parts.push(`## ${CATEGORY_LABELS[category]}`, '');
-    for (const rule of inCategory) {
-      if (inCategory.length > 1 && rule.title) parts.push(`### ${rule.title}`, '');
-      parts.push(toBullets(rule.body), '');
-    }
+    for (const rule of inCategory) parts.push(...ruleBlock(rule, inCategory.length > 1));
   }
   return parts.join('\n');
 }
@@ -103,36 +100,61 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
   return map;
 }
 
-function rootMemory(project: Project, rules: Rule[], hooks: Rule[]): string {
+/** Titre du projet, puis description et stack si renseignées. */
+function projectHead(project: Project): string[] {
   const head = [`# ${project.name || 'Projet'}`, ''];
   if (project.description) head.push(project.description.trim(), '');
   if (project.stack) head.push(`**Stack :** ${project.stack.trim()}`, '');
-  const automation = hooks.length
-    ? [
-        '## Automatisations',
-        '',
-        'Ces contrôles tournent via des hooks (`.claude/settings.json`) : ne pas les refaire à la main.',
-        '',
-        ...hooks.map((h) => `- ${h.title || h.command} (${h.event}${h.matcher ? ` · ${h.matcher}` : ''})`),
-        '',
-      ]
-    : [];
+  return head;
+}
+
+/** Corps d'une règle en puces, précédé de son titre en `###` si demandé. */
+function ruleBlock(rule: Rule, titled: boolean): string[] {
+  const title = titled && rule.title ? [`### ${rule.title}`, ''] : [];
+  return [...title, toBullets(rule.body), ''];
+}
+
+const hookLine = (h: Rule) => {
+  const matcher = h.matcher ? ` · ${h.matcher}` : '';
+  return `- ${h.title || h.command} (${h.event}${matcher})`;
+};
+
+/** Liste des hooks, pour que Claude ne refasse pas leur travail à la main. */
+function automationSection(hooks: Rule[]): string[] {
+  if (!hooks.length) return [];
+  return [
+    '## Automatisations',
+    '',
+    'Ces contrôles tournent via des hooks (`.claude/settings.json`) : ne pas les refaire à la main.',
+    '',
+    ...hooks.map(hookLine),
+    '',
+  ];
+}
+
+function criticalSection(critical: Rule[]): string[] {
+  if (!critical.length) return [];
+  return ['## Règles critiques', '', ...critical.flatMap((r) => ruleBlock(r, critical.length > 1))];
+}
+
+function remindersSection(critical: Rule[]): string[] {
+  if (!critical.length) return [];
+  return ['## Rappels', '', ...critical.map((r) => toBullets(r.body)), ''];
+}
+
+function rootMemory(project: Project, rules: Rule[], hooks: Rule[]): string {
   // Ancrage : les règles critiques ouvrent le fichier et sont rappelées à la fin (biais de primauté et de récence).
   const critical = rules.filter((r) => r.critical);
-  const top = critical.length
-    ? [
-        '## Règles critiques',
-        '',
-        ...critical.flatMap((r) => [
-          ...(critical.length > 1 && r.title ? [`### ${r.title}`, ''] : []),
-          toBullets(r.body),
-          '',
-        ]),
-      ]
-    : [];
-  const bottom = critical.length ? ['## Rappels', '', ...critical.map((r) => toBullets(r.body)), ''] : [];
   const others = rules.filter((r) => !r.critical);
-  return finalize([...head, ...top, sections(others), ...automation, ...bottom].join('\n'));
+  return finalize(
+    [
+      ...projectHead(project),
+      ...criticalSection(critical),
+      sections(others),
+      ...automationSection(hooks),
+      ...remindersSection(critical),
+    ].join('\n'),
+  );
 }
 
 function settingsFile(project: Project, hooks: Rule[]): string | null {
