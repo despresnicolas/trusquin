@@ -102,106 +102,134 @@ export const GRADES: { grade: RepoAnalysis['grade']; min: number }[] = [
 
 const grade = (score: number) => GRADES.find((g) => score >= g.min)!.grade;
 
-export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
-  const { paths, contents } = repo;
-  const has = (re: RegExp) => paths.some((p) => re.test(p));
-  const find = (re: RegExp) => paths.filter((p) => re.test(p));
-  const read = (p: string) => contents[p] ?? '';
-  const criteria: Criterion[] = [];
+/** pass si `pass`, sinon partial si `partial`, sinon fail. */
+const passIf = (pass: boolean, partial = false): CriterionStatus => (pass ? 'pass' : partial ? 'partial' : 'fail');
 
-  const memoryFiles = find(/(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md)$/);
+/** na quand le critère ne s'applique pas au dépôt. */
+const naUnless = (applies: boolean, status: CriterionStatus): CriterionStatus => (applies ? status : 'na');
+
+/** Lectures du dépôt partagées par tous les critères, calculées une fois. */
+interface RepoContext {
+  paths: string[];
+  read: (p: string) => string;
+  has: (re: RegExp) => boolean;
+  find: (re: RegExp) => string[];
+  memoryFiles: string[];
+  ruleFiles: string[];
+  rootPath: string | undefined;
+  root: string;
+  rootLines: number;
+  rootSpans: string[];
+}
+
+function repoContext({ paths, contents }: RepoSnapshot): RepoContext {
+  const read = (p: string) => contents[p] ?? '';
+  const find = (re: RegExp) => paths.filter((p) => re.test(p));
   const rootPath = ['CLAUDE.md', 'AGENTS.md'].find((p) => paths.includes(p));
   let root = rootPath ? read(rootPath) : '';
   // CLAUDE.md qui ne fait qu'importer AGENTS.md : analyser AGENTS.md.
   if (rootPath === 'CLAUDE.md' && /^@AGENTS\.md\s*$/m.test(root) && paths.includes('AGENTS.md')) {
     root = read('AGENTS.md') + '\n' + root;
   }
-  const rootLines = root ? root.split('\n').length : 0;
-  const rootSpans = root.match(/`[^`\n]+`/g) ?? [];
-  const ruleFiles = find(/^\.claude\/rules\/.*\.md$/);
+  return {
+    paths,
+    read,
+    has: (re) => paths.some((p) => re.test(p)),
+    find,
+    memoryFiles: find(/(^|\/)(CLAUDE(\.local)?\.md|AGENTS\.md)$/),
+    ruleFiles: find(/^\.claude\/rules\/.*\.md$/),
+    rootPath,
+    root,
+    rootLines: root ? root.split('\n').length : 0,
+    rootSpans: root.match(/`[^`\n]+`/g) ?? [],
+  };
+}
 
-  criteria.push(
+function rootMemoryDetail({ rootPath, rootLines }: RepoContext): string {
+  if (!rootPath) return 'Aucun CLAUDE.md ni AGENTS.md à la racine.';
+  if (rootPath === 'AGENTS.md') {
+    return `AGENTS.md présent (${rootLines} lignes), mais sans CLAUDE.md Claude Code ne le lit pas.`;
+  }
+  return `${rootPath} présent (${rootLines} lignes).`;
+}
+
+/** Mémoire racine : présence, longueur, commandes, section architecture. */
+function rootCriteria(ctx: RepoContext): Criterion[] {
+  const { rootPath, rootLines, root } = ctx;
+  const hasRoot = Boolean(rootPath);
+  const commandSpans = ctx.rootSpans.filter((s) =>
+    /\b(npm|pnpm|yarn|bun|make|cargo|go|pytest|uv|poetry|composer|php|mvn|gradle|docker|just)\b/.test(s),
+  );
+  const hasArchitecture = /^#{1,3} .*(architecture|structure|organisation|layout|overview|vue d)/im.test(root);
+  return [
     crit(
       'root-memory',
       'claude',
       'Mémoire racine (CLAUDE.md / AGENTS.md)',
       12,
-      rootPath === 'CLAUDE.md' ? 'pass' : rootPath ? 'partial' : 'fail',
-      rootPath === 'AGENTS.md'
-        ? `AGENTS.md présent (${rootLines} lignes), mais sans CLAUDE.md Claude Code ne le lit pas.`
-        : rootPath
-          ? `${rootPath} présent (${rootLines} lignes).`
-          : 'Aucun CLAUDE.md ni AGENTS.md à la racine.',
-      rootPath
+      passIf(rootPath === 'CLAUDE.md', hasRoot),
+      rootMemoryDetail(ctx),
+      hasRoot
         ? 'Créer un CLAUDE.md à côté contenant `@AGENTS.md`.'
         : 'Générer un CLAUDE.md avec le générateur ou `/init`, puis élaguer.',
     ),
-  );
-  criteria.push(
     crit(
       'root-length',
       'claude',
       'Mémoire racine concise',
       6,
-      !rootPath ? 'na' : rootLines <= LIMITS.rootWarn ? 'pass' : rootLines <= LIMITS.rootError ? 'partial' : 'fail',
-      rootPath ? `${rootLines} lignes (cible < ${LIMITS.rootWarn}, max ${LIMITS.rootError}).` : '—',
+      naUnless(hasRoot, passIf(rootLines <= LIMITS.rootWarn, rootLines <= LIMITS.rootError)),
+      hasRoot ? `${rootLines} lignes (cible < ${LIMITS.rootWarn}, max ${LIMITS.rootError}).` : '—',
       'Déplacer le détail dans .claude/rules/ ou des skills.',
     ),
-  );
-
-  const commandSpans = rootSpans.filter((s) =>
-    /\b(npm|pnpm|yarn|bun|make|cargo|go|pytest|uv|poetry|composer|php|mvn|gradle|docker|just)\b/.test(s),
-  );
-  criteria.push(
     crit(
       'commands',
       'claude',
       'Commandes exactes (build/test/lint)',
       8,
-      !rootPath ? 'na' : commandSpans.length >= 3 ? 'pass' : commandSpans.length ? 'partial' : 'fail',
+      naUnless(hasRoot, passIf(commandSpans.length >= 3, commandSpans.length > 0)),
       `${commandSpans.length} commande(s) exacte(s) trouvée(s).`,
       'Lister install, dev, test, test ciblé, lint, typecheck, build entre backticks.',
     ),
-  );
-  const hasArchitecture = /^#{1,3} .*(architecture|structure|organisation|layout|overview|vue d)/im.test(root);
-  criteria.push(
     crit(
       'architecture',
       'claude',
       'Section architecture / structure',
       5,
-      !rootPath ? 'na' : hasArchitecture ? 'pass' : 'fail',
+      naUnless(hasRoot, passIf(hasArchitecture)),
       hasArchitecture ? 'Section trouvée.' : 'Pas de section décrivant la structure.',
       'Ajouter le WHAT/WHY : dossiers clés, rôle, décisions d’architecture.',
     ),
-  );
+  ];
+}
 
-  const memoryIssues: Issue[] = [];
-  for (const file of memoryFiles) {
-    memoryIssues.push(...lintMemoryText(file, read(file), file === rootPath));
-  }
-  for (const file of ruleFiles) memoryIssues.push(...lintMemoryText(file, read(file)));
-
+/** Imports `@chemin` de la mémoire racine, et ceux qui pointent vers un fichier absent. */
+function rootImports({ root, paths }: RepoContext): { imports: string[]; broken: string[] } {
   const imports = [...root.matchAll(/^\s*@([\w./-]+)/gm)].map((m) => m[1]);
   const broken = imports.filter((p) => !p.startsWith('~') && !paths.includes(p.replace(/^\.\//, '')));
-  for (const p of broken) {
-    memoryIssues.push({
-      severity: 'error',
-      code: 'broken-import',
-      params: { path: p },
-      file: rootPath,
-      message: `Import @${p} introuvable.`,
-      fix: 'Corriger le chemin ou retirer l’import.',
-    });
-  }
+  return { imports, broken };
+}
 
-  // Claude Code ne charge que CLAUDE.md : un AGENTS.md doit être importé par un CLAUDE.md voisin.
-  // shortcut: seul l'import depuis le même dossier est reconnu, élargir si des imports croisés apparaissent.
+function brokenImportIssue(path: string, file: string | undefined): Issue {
+  return {
+    severity: 'error',
+    code: 'broken-import',
+    params: { path },
+    file,
+    message: `Import @${path} introuvable.`,
+    fix: 'Corriger le chemin ou retirer l’import.',
+  };
+}
+
+// Claude Code ne charge que CLAUDE.md : un AGENTS.md doit être importé par un CLAUDE.md voisin.
+// shortcut: seul l'import depuis le même dossier est reconnu, élargir si des imports croisés apparaissent.
+function agentsNotImportedIssues({ find, read }: RepoContext): Issue[] {
+  const issues: Issue[] = [];
   for (const file of find(/(^|\/)AGENTS\.md$/)) {
     const dir = file.slice(0, -'AGENTS.md'.length);
     const importers = [`${dir}CLAUDE.md`, `${dir}CLAUDE.local.md`].map(read);
     if (importers.some((c) => /^\s*@(\.\/)?AGENTS\.md\s*$/m.test(c))) continue;
-    memoryIssues.push({
+    issues.push({
       severity: 'warning',
       code: 'agents-not-imported',
       params: { dir },
@@ -210,75 +238,91 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       fix: `Ajouter la ligne \`@AGENTS.md\` en tête de ${dir}CLAUDE.md (le créer si besoin).`,
     });
   }
+  return issues;
+}
 
-  const secrets = memoryIssues.filter((i) => i.code === 'secret');
-  criteria.push(
+/** Problèmes des fichiers mémoire et rules : lint du texte, imports cassés, AGENTS.md non importés. */
+function memoryTextIssues(ctx: RepoContext, broken: string[]): Issue[] {
+  const { memoryFiles, ruleFiles, read, rootPath } = ctx;
+  return [
+    ...memoryFiles.flatMap((file) => lintMemoryText(file, read(file), file === rootPath)),
+    ...ruleFiles.flatMap((file) => lintMemoryText(file, read(file))),
+    ...broken.map((p) => brokenImportIssue(p, rootPath)),
+    ...agentsNotImportedIssues(ctx),
+  ];
+}
+
+/** Contenu de la mémoire : secrets, formulations vagues, imports, fichiers exemplaires. */
+function contentCriteria(ctx: RepoContext, issues: Issue[], imports: string[], broken: string[]): Criterion[] {
+  const { memoryFiles, ruleFiles, read, paths } = ctx;
+  const secrets = issues.filter((i) => i.code === 'secret');
+  const vague = issues.filter((i) => i.code === 'vague');
+  // Few-shot : la mémoire pointe vers des fichiers existants du dépôt à prendre pour modèle.
+  const memoryText = [...memoryFiles, ...ruleFiles].map(read).join('\n');
+  const referenced = [...memoryText.matchAll(/`([\w@./-]+\.\w+)(?::\d+)?`/g)].map((m) => m[1]);
+  const examples = [...new Set(referenced.filter((p) => paths.includes(p)))];
+  const hasMemory = memoryFiles.length > 0;
+  return [
     crit(
       'no-secrets',
       'claude',
       'Aucun secret dans la mémoire',
       8,
-      secrets.length ? 'fail' : 'pass',
+      passIf(!secrets.length),
       secrets.length ? `${secrets.length} secret(s) probable(s).` : 'Rien détecté.',
       'Retirer les valeurs ; référencer seulement les noms de variables.',
     ),
-  );
-  const vague = memoryIssues.filter((i) => i.code === 'vague');
-  criteria.push(
     crit(
       'specific',
       'claude',
       'Règles spécifiques et vérifiables',
       4,
-      !memoryFiles.length ? 'na' : vague.length === 0 ? 'pass' : vague.length <= 2 ? 'partial' : 'fail',
+      naUnless(hasMemory, passIf(vague.length === 0, vague.length <= 2)),
       vague.length ? `${vague.length} fichier(s) avec formulations vagues.` : 'Pas de formulation vague détectée.',
       'Remplacer « code propre » par une règle testable.',
     ),
-  );
-  criteria.push(
     crit(
       'imports',
       'claude',
       'Imports @ valides',
       3,
-      !imports.length ? 'na' : broken.length ? 'fail' : 'pass',
+      naUnless(imports.length > 0, passIf(!broken.length)),
       imports.length ? `${imports.length} import(s), ${broken.length} cassé(s).` : 'Aucun import.',
       'Corriger les chemins importés.',
     ),
-  );
-
-  // Few-shot : la mémoire pointe vers des fichiers existants du dépôt à prendre pour modèle.
-  const memoryText = [...memoryFiles, ...ruleFiles].map(read).join('\n');
-  const referenced = [...memoryText.matchAll(/`([\w@./-]+\.\w+)(?::\d+)?`/g)].map((m) => m[1]);
-  const examples = [...new Set(referenced.filter((p) => paths.includes(p)))];
-  criteria.push(
     crit(
       'examples',
       'claude',
       'Fichiers exemplaires cités',
       3,
-      !memoryFiles.length ? 'na' : examples.length ? 'pass' : 'fail',
+      naUnless(hasMemory, passIf(examples.length > 0)),
       examples.length
         ? `${examples.length} fichier(s) du dépôt cité(s) : ${examples.slice(0, 3).join(', ')}.`
         : 'Aucun fichier du dépôt cité en exemple.',
       'Pointer vers un composant, un test ou un endpoint exemplaire (« suivre `src/…` ») plutôt que décrire le style.',
     ),
-  );
+  ];
+}
 
+function packageMemoryDetail(packages: string[], covered: string[], uncovered: string[]): string {
+  if (!packages.length) return 'Pas de workspace détecté.';
+  const summary = `${covered.length}/${packages.length} paquet(s) avec un CLAUDE.md ou une règle paths:`;
+  if (!uncovered.length) return summary + '.';
+  const more = uncovered.length > 5 ? '…' : '';
+  return `${summary} ; sans : ${uncovered.slice(0, 5).join(', ')}${more}.`;
+}
+
+function targetedCommandsDetail(packages: string[], targeted: boolean): string {
+  if (!packages.length) return 'Pas de workspace détecté.';
+  if (targeted) return 'La mémoire racine cite une commande filtrée par paquet.';
+  return 'Aucune commande filtrée (--filter, nx run…) dans la mémoire racine.';
+}
+
+/** Découpage de la mémoire : rules avec `paths:`, CLAUDE.md de dossier, couverture des paquets d'un monorepo. */
+function modularCriteria(ctx: RepoContext): Criterion[] {
+  const { ruleFiles, memoryFiles, read, paths } = ctx;
   const scoped = ruleFiles.filter((p) => /^paths:/m.test(frontmatterOf(read(p)) ?? ''));
   const subMemory = memoryFiles.filter((p) => p.includes('/'));
-  criteria.push(
-    crit(
-      'modular',
-      'claude',
-      'Règles modulaires (rules/ ou CLAUDE.md de dossier)',
-      6,
-      scoped.length || subMemory.length ? 'pass' : ruleFiles.length ? 'partial' : 'fail',
-      `${ruleFiles.length} fichier(s) rules (${scoped.length} avec paths), ${subMemory.length} CLAUDE.md de sous-dossier.`,
-      'Isoler les règles spécifiques dans .claude/rules/*.md avec `paths:`.',
-    ),
-  );
-
   const packages = workspacePackages(paths, read);
   const covered = packages.filter(
     (d) =>
@@ -286,250 +330,279 @@ export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
       ruleFiles.some((r) => (frontmatterOf(read(r)) ?? '').match(/^paths:.*$/m)?.[0].includes(`${d}/`)),
   );
   const uncovered = packages.filter((d) => !covered.includes(d));
-  criteria.push(
+  const targeted = ctx.rootSpans.some((s) =>
+    /--filter|--workspace|\s-F\s|yarn workspace |\b(nx|turbo) (run|affected)\b|lerna .*--scope|cargo \w+ (-p|--package)\b/.test(
+      s,
+    ),
+  );
+  const isMonorepo = packages.length > 0;
+  return [
+    crit(
+      'modular',
+      'claude',
+      'Règles modulaires (rules/ ou CLAUDE.md de dossier)',
+      6,
+      passIf(scoped.length > 0 || subMemory.length > 0, ruleFiles.length > 0),
+      `${ruleFiles.length} fichier(s) rules (${scoped.length} avec paths), ${subMemory.length} CLAUDE.md de sous-dossier.`,
+      'Isoler les règles spécifiques dans .claude/rules/*.md avec `paths:`.',
+    ),
     crit(
       'package-memory',
       'claude',
       'Mémoire par paquet (monorepo)',
       5,
-      !packages.length ? 'na' : !uncovered.length ? 'pass' : covered.length ? 'partial' : 'fail',
-      !packages.length
-        ? 'Pas de workspace détecté.'
-        : `${covered.length}/${packages.length} paquet(s) avec un CLAUDE.md ou une règle paths:` +
-            (uncovered.length
-              ? ` ; sans : ${uncovered.slice(0, 5).join(', ')}${uncovered.length > 5 ? '…' : ''}.`
-              : '.'),
+      naUnless(isMonorepo, passIf(!uncovered.length, covered.length > 0)),
+      packageMemoryDetail(packages, covered, uncovered),
       'Ajouter un CLAUDE.md par paquet (commandes, structure, conventions locales) : chargé seulement quand Claude y travaille.',
     ),
-  );
-  const targeted = rootSpans.some((s) =>
-    /--filter|--workspace|\s-F\s|yarn workspace |\b(nx|turbo) (run|affected)\b|lerna .*--scope|cargo \w+ (-p|--package)\b/.test(
-      s,
-    ),
-  );
-  criteria.push(
     crit(
       'targeted-commands',
       'claude',
       'Commandes ciblées sur un paquet',
       3,
-      !packages.length ? 'na' : targeted ? 'pass' : 'fail',
-      !packages.length
-        ? 'Pas de workspace détecté.'
-        : targeted
-          ? 'La mémoire racine cite une commande filtrée par paquet.'
-          : 'Aucune commande filtrée (--filter, nx run…) dans la mémoire racine.',
+      naUnless(isMonorepo, passIf(targeted)),
+      targetedCommandsDetail(packages, targeted),
       'Citer les commandes d’un seul paquet (`pnpm --filter <paquet> test`) : plus rapides et moins de sortie qu’un test global.',
     ),
-  );
+  ];
+}
 
-  let settings: { permissions?: { allow?: unknown[]; deny?: unknown[] }; hooks?: Record<string, unknown[]> } = {};
+type Settings = { permissions?: { allow?: unknown[]; deny?: unknown[] }; hooks?: Record<string, unknown[]> };
+
+/** .claude/settings.json lu, ou vide avec un problème si le JSON est invalide. */
+function readSettings(read: (p: string) => string): { settings: Settings; issues: Issue[] } {
   try {
-    settings = JSON.parse(read('.claude/settings.json') || '{}');
+    return { settings: JSON.parse(read('.claude/settings.json') || '{}'), issues: [] };
   } catch {
-    memoryIssues.push({
-      severity: 'error',
-      code: 'settings-json',
-      file: '.claude/settings.json',
-      message: 'JSON invalide.',
-      fix: 'Corriger la syntaxe.',
-    });
+    return {
+      settings: {},
+      issues: [
+        {
+          severity: 'error',
+          code: 'settings-json',
+          file: '.claude/settings.json',
+          message: 'JSON invalide.',
+          fix: 'Corriger la syntaxe.',
+        },
+      ],
+    };
   }
-  const perms = settings.permissions ?? {};
-  const permCount = (perms.allow?.length ?? 0) + (perms.deny?.length ?? 0);
-  criteria.push(
+}
+
+/** Permissions et hooks de .claude/settings.json. */
+function settingsCriteria(settings: Settings, paths: string[]): Criterion[] {
+  const allow = settings.permissions?.allow?.length ?? 0;
+  const deny = settings.permissions?.deny?.length ?? 0;
+  const hookCount = Object.values(settings.hooks ?? {}).flat().length;
+  return [
     crit(
       'permissions',
       'claude',
       'Permissions versionnées',
       5,
-      perms.deny?.length && perms.allow?.length ? 'pass' : permCount ? 'partial' : 'fail',
-      paths.includes('.claude/settings.json')
-        ? `${perms.allow?.length ?? 0} allow, ${perms.deny?.length ?? 0} deny.`
-        : 'Pas de .claude/settings.json.',
+      passIf(deny > 0 && allow > 0, allow + deny > 0),
+      paths.includes('.claude/settings.json') ? `${allow} allow, ${deny} deny.` : 'Pas de .claude/settings.json.',
       'Autoriser les commandes sûres (tests, lint) et refuser `.env`, secrets.',
     ),
-  );
-  const hookCount = Object.values(settings.hooks ?? {}).flat().length;
-  criteria.push(
     crit(
       'hooks',
       'claude',
       'Hooks déterministes (format/lint/tests)',
       6,
-      hookCount ? 'pass' : 'fail',
+      passIf(hookCount > 0),
       hookCount ? `${hookCount} hook(s).` : 'Aucun hook.',
       'Ajouter un hook PostToolUse `Edit|Write` lançant le formatter.',
     ),
-  );
+  ];
+}
 
+function skillIssues(file: string, text: string): Issue[] {
+  // shortcut: description sur une seule ligne ; une description YAML multiligne (> ou |) n'est pas lue.
+  const description = (frontmatterOf(text) ?? '').match(/^description:\s*['"]?(.*?)['"]?\s*$/m)?.[1] ?? '';
+  const name = file.split('/')[2];
+  return lintSkill(name, description, stripFrontmatter(text)).map((i) => ({ ...i, file }));
+}
+
+/** Skills, slash commands et sous-agents, avec les problèmes de chaque skill. */
+function onDemandAnalysis({ find, read }: RepoContext): { criteria: Criterion[]; issues: Issue[] } {
   const skills = find(/^\.claude\/skills\/[^/]+\/SKILL\.md$/);
   const commands = find(/^\.claude\/commands\/.*\.md$/);
+  const agents = find(/^\.claude\/agents\/.*\.md$/);
   const badSkills = skills.filter((p) => !/^description:\s*\S.{30,}/m.test(frontmatterOf(read(p)) ?? ''));
-  for (const file of skills) {
-    const text = read(file);
-    // shortcut: description sur une seule ligne ; une description YAML multiligne (> ou |) n'est pas lue.
-    const description = (frontmatterOf(text) ?? '').match(/^description:\s*['"]?(.*?)['"]?\s*$/m)?.[1] ?? '';
-    const body = stripFrontmatter(text);
-    const name = file.split('/')[2];
-    memoryIssues.push(...lintSkill(name, description, body).map((i) => ({ ...i, file })));
-  }
-  criteria.push(
+  const hasOnDemand = skills.length + commands.length > 0;
+  const badDetail = badSkills.length ? `, ${badSkills.length} skill(s) sans description utile` : '';
+  const criteria = [
     crit(
       'on-demand',
       'claude',
       'Skills / slash commands',
       5,
-      skills.length + commands.length === 0 ? 'fail' : badSkills.length ? 'partial' : 'pass',
-      `${skills.length} skill(s), ${commands.length} commande(s)${badSkills.length ? `, ${badSkills.length} skill(s) sans description utile` : ''}.`,
+      passIf(hasOnDemand && !badSkills.length, hasOnDemand),
+      `${skills.length} skill(s), ${commands.length} commande(s)${badDetail}.`,
       'Extraire les procédures ponctuelles (release, migration…) en skills.',
     ),
-  );
-  const agents = find(/^\.claude\/agents\/.*\.md$/);
-  criteria.push(
     crit(
       'agents',
       'claude',
       'Sous-agents spécialisés',
       2,
-      agents.length ? 'pass' : 'fail',
+      passIf(agents.length > 0),
       `${agents.length} agent(s).`,
       'Optionnel : un agent reviewer ou test-runner avec outils restreints.',
     ),
-  );
+  ];
+  return { criteria, issues: skills.flatMap((file) => skillIssues(file, read(file))) };
+}
 
+function localIgnoredCriterion({ read, paths }: RepoContext): Criterion {
   const gitignore = read('.gitignore');
   const localFiles = ['CLAUDE.local.md', '.claude/settings.local.json'];
-  const leaked = localFiles.filter((f) => paths.includes(f) && !gitignore.includes(f.split('/').pop()!));
-  criteria.push(
-    crit(
-      'local-ignored',
-      'claude',
-      'Fichiers perso gitignorés',
-      3,
-      leaked.length ? 'fail' : localFiles.every((f) => gitignore.includes(f.split('/').pop()!)) ? 'pass' : 'partial',
-      leaked.length ? `Non ignoré(s) : ${leaked.join(', ')}.` : 'OK.',
-      'Ajouter `CLAUDE.local.md` et `.claude/settings.local.json` à .gitignore.',
-    ),
+  const ignored = (f: string) => gitignore.includes(f.split('/').pop()!);
+  const leaked = localFiles.filter((f) => paths.includes(f) && !ignored(f));
+  return crit(
+    'local-ignored',
+    'claude',
+    'Fichiers perso gitignorés',
+    3,
+    passIf(!leaked.length && localFiles.every(ignored), !leaked.length),
+    leaked.length ? `Non ignoré(s) : ${leaked.join(', ')}.` : 'OK.',
+    'Ajouter `CLAUDE.local.md` et `.claude/settings.local.json` à .gitignore.',
   );
+}
 
-  // Bonnes pratiques générales : ce qui donne à Claude des boucles de feedback.
-  criteria.push(
-    crit(
-      'readme',
-      'practices',
-      'README',
-      3,
-      has(/^README(\.md)?$/i) ? 'pass' : 'fail',
-      has(/^README/i) ? 'Présent.' : 'Absent.',
-      'Ajouter un README.',
-    ),
-  );
+/** Bonnes pratiques générales : ce qui donne à Claude des boucles de feedback. */
+function practiceCriteria({ has, find, read }: RepoContext): Criterion[] {
   const tests = find(/(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/);
-  criteria.push(
-    crit(
-      'tests',
-      'practices',
-      'Tests automatisés',
-      8,
-      tests.length >= 5 ? 'pass' : tests.length ? 'partial' : 'fail',
-      `${tests.length} fichier(s) de test.`,
-      'Claude vérifie son travail par les tests : sans eux, il devine.',
-    ),
-  );
   const pkg = read('package.json');
   const pyproject = read('pyproject.toml');
+  const gitignore = read('.gitignore');
   const linter =
     has(
       /(^|\/)(\.?eslint(rc)?[^/]*|eslint\.config\.[cm]?[jt]s|biome\.jsonc?|\.golangci\.ya?ml|\.rubocop\.yml|ruff\.toml|\.flake8|phpstan\.neon(\.dist)?|clippy\.toml)$/,
     ) || /\[tool\.(ruff|flake8|pylint)\]/.test(pyproject);
-  criteria.push(
-    crit(
-      'linter',
-      'practices',
-      'Linter configuré',
-      5,
-      linter ? 'pass' : 'fail',
-      linter ? 'Trouvé.' : 'Aucun linter détecté.',
-      'Ajouter ESLint/Biome/Ruff… et l’appeler par hook.',
-    ),
-  );
   const formatter =
     has(
       /(^|\/)(\.prettierrc[^/]*|prettier\.config\.[cm]?js|biome\.jsonc?|\.editorconfig|rustfmt\.toml|\.php-cs-fixer(\.dist)?\.php)$/,
     ) ||
     /"prettier"/.test(pkg) ||
     /\[tool\.(black|ruff\.format)\]/.test(pyproject);
-  criteria.push(
+  const typed =
+    has(/(^|\/)tsconfig[^/]*\.json$|(^|\/)(mypy\.ini|pyrightconfig\.json)$|\.go$|\.rs$/) ||
+    /\[tool\.(mypy|pyright)\]/.test(pyproject);
+  const ci = has(
+    /^\.github\/workflows\/.+\.ya?ml$|^\.gitlab-ci\.yml$|^\.circleci\/|^Jenkinsfile$|^bitbucket-pipelines\.yml$/,
+  );
+  const lock = has(
+    /^(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|Cargo\.lock|go\.sum|composer\.lock|Gemfile\.lock)$/,
+  );
+  const envDocumented = has(/(^|\/)\.env\.example$/) || !has(/(^|\/)\.env$/);
+  return [
+    crit(
+      'readme',
+      'practices',
+      'README',
+      3,
+      passIf(has(/^README(\.md)?$/i)),
+      has(/^README/i) ? 'Présent.' : 'Absent.',
+      'Ajouter un README.',
+    ),
+    crit(
+      'tests',
+      'practices',
+      'Tests automatisés',
+      8,
+      passIf(tests.length >= 5, tests.length > 0),
+      `${tests.length} fichier(s) de test.`,
+      'Claude vérifie son travail par les tests : sans eux, il devine.',
+    ),
+    crit(
+      'linter',
+      'practices',
+      'Linter configuré',
+      5,
+      passIf(linter),
+      linter ? 'Trouvé.' : 'Aucun linter détecté.',
+      'Ajouter ESLint/Biome/Ruff… et l’appeler par hook.',
+    ),
     crit(
       'formatter',
       'practices',
       'Formatter configuré',
       4,
-      formatter ? 'pass' : 'fail',
+      passIf(formatter),
       formatter ? 'Trouvé.' : 'Aucun formatter détecté.',
       'Ajouter Prettier/Biome/Black/gofmt.',
     ),
-  );
-  const typed =
-    has(/(^|\/)tsconfig[^/]*\.json$|(^|\/)(mypy\.ini|pyrightconfig\.json)$|\.go$|\.rs$/) ||
-    /\[tool\.(mypy|pyright)\]/.test(pyproject);
-  criteria.push(
     crit(
       'types',
       'practices',
       'Typage statique',
       4,
-      typed ? 'pass' : 'fail',
+      passIf(typed),
       typed ? 'Trouvé.' : 'Pas de vérification de types.',
       'Activer TypeScript strict / mypy / pyright.',
     ),
-  );
-  const ci = has(
-    /^\.github\/workflows\/.+\.ya?ml$|^\.gitlab-ci\.yml$|^\.circleci\/|^Jenkinsfile$|^bitbucket-pipelines\.yml$/,
-  );
-  criteria.push(
     crit(
       'ci',
       'practices',
       'Intégration continue',
       5,
-      ci ? 'pass' : 'fail',
+      passIf(ci),
       ci ? 'Pipeline trouvé.' : 'Aucune CI.',
       'Ajouter une CI qui lance lint + tests.',
     ),
-  );
-  const lock = has(
-    /^(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|Cargo\.lock|go\.sum|composer\.lock|Gemfile\.lock)$/,
-  );
-  criteria.push(
     crit(
       'lockfile',
       'practices',
       'Dépendances verrouillées',
       2,
-      lock ? 'pass' : 'fail',
+      passIf(lock),
       lock ? 'Lockfile présent.' : 'Pas de lockfile.',
       'Committer le lockfile.',
     ),
-  );
-  criteria.push(
     crit(
       'gitignore',
       'practices',
       '.gitignore + .env.example',
       3,
-      gitignore && (has(/(^|\/)\.env\.example$/) || !has(/(^|\/)\.env$/)) ? 'pass' : gitignore ? 'partial' : 'fail',
+      passIf(Boolean(gitignore) && envDocumented, Boolean(gitignore)),
       gitignore ? 'Présent.' : 'Absent.',
       'Ignorer .env et documenter les variables dans .env.example.',
     ),
-  );
+  ];
+}
 
+/** Note sur 100 : points obtenus sur les critères applicables. */
+function scoreOf(criteria: Criterion[]): number {
   const scored = criteria.filter((c) => c.status !== 'na');
   const max = scored.reduce((s, c) => s + c.max, 0);
   const got = scored.reduce((s, c) => s + c.points, 0);
-  const score = max ? Math.round((got / max) * 100) : 0;
-  return { score, grade: grade(score), criteria, memoryIssues, memoryFiles };
+  return max ? Math.round((got / max) * 100) : 0;
+}
+
+export function analyzeRepo(repo: RepoSnapshot): RepoAnalysis {
+  const ctx = repoContext(repo);
+  const { imports, broken } = rootImports(ctx);
+  const textIssues = memoryTextIssues(ctx, broken);
+  const { settings, issues: settingsIssues } = readSettings(ctx.read);
+  const onDemand = onDemandAnalysis(ctx);
+  const criteria = [
+    ...rootCriteria(ctx),
+    ...contentCriteria(ctx, textIssues, imports, broken),
+    ...modularCriteria(ctx),
+    ...settingsCriteria(settings, ctx.paths),
+    ...onDemand.criteria,
+    localIgnoredCriterion(ctx),
+    ...practiceCriteria(ctx),
+  ];
+  const score = scoreOf(criteria);
+  return {
+    score,
+    grade: grade(score),
+    criteria,
+    memoryIssues: [...textIssues, ...settingsIssues, ...onDemand.issues],
+    memoryFiles: ctx.memoryFiles,
+  };
 }
 
 const HEADING_CATEGORY: [RegExp, Category][] = [
