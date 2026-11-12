@@ -87,101 +87,139 @@ const NEGATIVE =
   /^\s*(?:[-*+]|\d+\.)\s+(?:\*\*[^*]+\*\*\s*:?\s*)?(?:ne\s+(?:jamais|pas)\b|n['’]|jamais\b|pas\s+d[e'’]|aucun|interdit|never\b|don['’]t\b|do\s+not\b|avoid\b|évite[rz]?\b)/i;
 const ALTERNATIVE = /[:→;—]|\bplutôt\b|\bà la place\b|\binstead\b|\bprefer|\bpréférer\b/i;
 
-/** Contrôles applicables à n'importe quel fichier mémoire (générateur et analyse). */
-export function lintMemoryText(file: string, text: string, isRoot = false): Issue[] {
-  const issues: Issue[] = [];
-  const lines = text.split('\n');
-  const count = lines.length;
-  if (isRoot && count > LIMITS.rootError) {
-    issues.push({
-      severity: 'error',
-      code: 'root-too-long',
-      params: { n: count, max: LIMITS.rootError },
-      file,
-      message: `${count} lignes : au-delà de ${LIMITS.rootError}, Claude suit moins bien les consignes.`,
-      fix: 'Déplacer les sections spécifiques dans .claude/rules/ avec `paths`, ou en skills.',
-    });
-  } else if (isRoot && count > LIMITS.rootWarn) {
-    issues.push({
-      severity: 'warning',
-      code: 'root-long',
-      params: { n: count, max: LIMITS.rootWarn },
-      file,
-      message: `${count} lignes : viser moins de ${LIMITS.rootWarn} lignes pour la racine.`,
-      fix: 'Garder la racine comme index ; détailler ailleurs.',
-    });
-  } else if (!isRoot && count > LIMITS.otherWarn) {
-    issues.push({
-      severity: 'warning',
-      code: 'file-long',
-      params: { n: count },
-      file,
-      message: `${count} lignes dans un seul fichier de règles.`,
-      fix: 'Découper par thème ou par chemin.',
-    });
-  }
+/** Problème de lint d'un fichier mémoire, avant d'y rattacher le fichier. */
+type TextIssue = Omit<Issue, 'file'>;
 
+/** Taille : seuils de la racine (avertissement puis erreur) ou d'un fichier de règles. */
+function lengthIssues(count: number, isRoot: boolean): TextIssue[] {
+  if (!isRoot) {
+    if (count <= LIMITS.otherWarn) return [];
+    return [
+      {
+        severity: 'warning',
+        code: 'file-long',
+        params: { n: count },
+        message: `${count} lignes dans un seul fichier de règles.`,
+        fix: 'Découper par thème ou par chemin.',
+      },
+    ];
+  }
+  if (count > LIMITS.rootError) {
+    return [
+      {
+        severity: 'error',
+        code: 'root-too-long',
+        params: { n: count, max: LIMITS.rootError },
+        message: `${count} lignes : au-delà de ${LIMITS.rootError}, Claude suit moins bien les consignes.`,
+        fix: 'Déplacer les sections spécifiques dans .claude/rules/ avec `paths`, ou en skills.',
+      },
+    ];
+  }
+  if (count > LIMITS.rootWarn) {
+    return [
+      {
+        severity: 'warning',
+        code: 'root-long',
+        params: { n: count, max: LIMITS.rootWarn },
+        message: `${count} lignes : viser moins de ${LIMITS.rootWarn} lignes pour la racine.`,
+        fix: 'Garder la racine comme index ; détailler ailleurs.',
+      },
+    ];
+  }
+  return [];
+}
+
+function vagueIssues(text: string): TextIssue[] {
   const lower = text.toLowerCase();
   const vague = VAGUE.filter((v) => lower.includes(v));
-  if (vague.length) {
-    issues.push({
+  if (!vague.length) return [];
+  return [
+    {
       severity: 'warning',
       code: 'vague',
       params: { terms: vague.join(', ') },
-      file,
       message: `Formulations vagues : ${vague.map((v) => `« ${v} »`).join(', ')}.`,
       fix: 'Remplacer par une règle vérifiable (commande, seuil, exemple de fichier). Test : « sans cette ligne, Claude se tromperait-il ? »',
-    });
-  }
+    },
+  ];
+}
 
-  for (const [pattern, label] of SECRET_PATTERNS) {
-    if (pattern.test(text)) {
-      issues.push({
-        severity: 'error',
-        code: 'secret',
-        params: { kind: label },
-        file,
-        message: `Secret probable (${label}).`,
-        fix: 'Retirer la valeur, la mettre dans .env (gitignoré) et ne référencer que le nom de variable.',
-      });
-    }
-  }
+/** Un problème par type de secret détecté. */
+function secretIssues(text: string): TextIssue[] {
+  return SECRET_PATTERNS.filter(([pattern]) => pattern.test(text)).map(([, label]) => ({
+    severity: 'error',
+    code: 'secret',
+    params: { kind: label },
+    message: `Secret probable (${label}).`,
+    fix: 'Retirer la valeur, la mettre dans .env (gitignoré) et ne référencer que le nom de variable.',
+  }));
+}
 
-  const negative: number[] = [];
-  let inside = false;
+/** Numéros (1-based) des lignes hors bloc de code qui interdisent sans donner d'alternative. */
+function negativeLines(lines: string[]): number[] {
+  const found: number[] = [];
+  let inFence = false;
   lines.forEach((line, i) => {
-    if (line.trim().startsWith('```')) inside = !inside;
-    else if (!inside && NEGATIVE.test(line) && !ALTERNATIVE.test(line.replace(NEGATIVE, ''))) negative.push(i + 1);
+    if (line.trim().startsWith('```')) inFence = !inFence;
+    else if (!inFence && isBareProhibition(line)) found.push(i + 1);
   });
-  if (negative.length) {
-    issues.push({
+  return found;
+}
+
+const isBareProhibition = (line: string) => NEGATIVE.test(line) && !ALTERNATIVE.test(line.replace(NEGATIVE, ''));
+
+/** Les 5 premiers numéros, suivis de « … » s'il y en a plus. */
+const firstLines = (lines: number[]) => lines.slice(0, 5).join(', ') + (lines.length > 5 ? '…' : '');
+
+function negativeIssues(lines: string[]): TextIssue[] {
+  const negative = negativeLines(lines);
+  if (!negative.length) return [];
+  const shown = firstLines(negative);
+  return [
+    {
       severity: 'info',
       code: 'negative-phrasing',
-      params: { n: negative.length, lines: negative.slice(0, 5).join(', ') + (negative.length > 5 ? '…' : '') },
-      file,
-      message: `${negative.length} consigne(s) formulée(s) en interdiction sans alternative (ligne ${negative.slice(0, 5).join(', ')}${negative.length > 5 ? '…' : ''}).`,
+      params: { n: negative.length, lines: shown },
+      message: `${negative.length} consigne(s) formulée(s) en interdiction sans alternative (ligne ${shown}).`,
       fix: "Dire quoi faire : « Utiliser TypeScript strict » plutôt que « Pas de any ». Garder l'interdiction seulement suivie de l'alternative (« … : utiliser X »).",
-    });
-  }
+    },
+  ];
+}
 
-  let inFence = false;
-  let fenceStart = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].trim().startsWith('```')) continue;
-    if (!inFence) fenceStart = i;
-    else if (i - fenceStart - 1 > LIMITS.codeBlock) {
-      issues.push({
-        severity: 'info',
-        code: 'code-copy',
-        params: { n: i - fenceStart - 1, line: fenceStart + 1 },
-        file,
-        message: `Bloc de code de ${i - fenceStart - 1} lignes (ligne ${fenceStart + 1}).`,
-        fix: 'Pointer vers le fichier source (`chemin:ligne`) plutôt que copier : une copie devient obsolète.',
-      });
-    }
-    inFence = !inFence;
+/** Blocs de code fermés : index (0-based) de la ligne d'ouverture et nombre de lignes de contenu. */
+function codeBlocks(lines: string[]): { start: number; size: number }[] {
+  const fences = lines.flatMap((line, i) => (line.trim().startsWith('```') ? [i] : []));
+  const blocks: { start: number; size: number }[] = [];
+  // Les clôtures vont par paires ; une ouverture sans fermeture est ignorée.
+  for (let k = 0; k + 1 < fences.length; k += 2) {
+    blocks.push({ start: fences[k], size: fences[k + 1] - fences[k] - 1 });
   }
-  return issues;
+  return blocks;
+}
+
+function codeCopyIssues(lines: string[]): TextIssue[] {
+  return codeBlocks(lines)
+    .filter((b) => b.size > LIMITS.codeBlock)
+    .map(({ start, size }) => ({
+      severity: 'info',
+      code: 'code-copy',
+      params: { n: size, line: start + 1 },
+      message: `Bloc de code de ${size} lignes (ligne ${start + 1}).`,
+      fix: 'Pointer vers le fichier source (`chemin:ligne`) plutôt que copier : une copie devient obsolète.',
+    }));
+}
+
+/** Contrôles applicables à n'importe quel fichier mémoire (générateur et analyse). */
+export function lintMemoryText(file: string, text: string, isRoot = false): Issue[] {
+  const lines = text.split('\n');
+  const issues = [
+    ...lengthIssues(lines.length, isRoot),
+    ...vagueIssues(text),
+    ...secretIssues(text),
+    ...negativeIssues(lines),
+    ...codeCopyIssues(lines),
+  ];
+  return issues.map((issue) => ({ ...issue, file }));
 }
 
 /** Contrôles de conception d'une skill (Générateur et SKILL.md d'un dépôt analysé). */
