@@ -587,83 +587,102 @@ function crossRuleIssues(rules: Rule[]): Issue[] {
   return [...duplicateIssues(memory), ...contradictionIssues(memory), ...packageManagerIssues(memory)];
 }
 
-function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
-  const issues: Issue[] = [];
-  const active = project.rules.filter((r) => r.enabled);
-  if (!active.length) {
-    issues.push({
-      severity: 'error',
-      code: 'no-rules',
-      message: 'Aucune règle active : rien à envoyer à Claude.',
-      fix: "Ajouter une règle, partir d'un pattern ou importer un CLAUDE.md.",
-    });
-  }
-  if (!active.some((r) => r.kind === 'rule' && r.category === 'commands' && r.scope === 'project')) {
-    issues.push({
-      severity: 'warning',
-      code: 'no-commands',
-      message: 'Aucune commande build/test/lint dans la mémoire racine.',
-      fix: 'Ajouter une règle « Commandes » : install, dev, test, test unitaire, lint, typecheck, build.',
-    });
-  }
-  if (!project.description.trim() || !project.stack.trim()) {
-    issues.push({
-      severity: 'info',
-      code: 'no-context',
-      message: 'Description ou stack du projet manquante.',
-      fix: 'Une phrase sur le « quoi » et la stack aident Claude sur les cas ambigus.',
-    });
-  }
-  if (!active.some((r) => r.kind === 'hook')) {
-    issues.push({
-      severity: 'info',
-      code: 'no-hooks',
-      message: 'Aucun hook : format et lint reposent sur la bonne volonté du modèle.',
-      fix: 'Ajouter un hook PostToolUse `Edit|Write` qui lance le formatter.',
-    });
-  }
-  if (!project.permissions.deny.length) {
-    issues.push({
-      severity: 'info',
-      code: 'no-deny',
-      message: 'Aucune permission refusée.',
-      fix: 'Ex. refuser `Read(./.env)` et `Read(./secrets/**)`.',
-    });
-  }
-  const critical = active.filter((r) => r.kind === 'rule' && r.scope === 'project' && r.critical);
-  if (critical.length > LIMITS.criticalRules) {
-    issues.push({
-      severity: 'warning',
-      code: 'too-many-critical',
-      params: { n: critical.length, max: LIMITS.criticalRules },
-      file: 'CLAUDE.md',
-      message: `${critical.length} règles critiques : au-delà de ${LIMITS.criticalRules}, plus rien ne ressort.`,
-      fix: 'Garder critiques seulement les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits).',
-    });
-  }
-  if (active.some((r) => r.kind === 'rule' && r.scope === 'local')) {
-    issues.push({
-      severity: 'info',
-      code: 'local-gitignore',
-      file: 'CLAUDE.local.md',
-      message: 'CLAUDE.local.md doit rester hors du dépôt.',
-      fix: 'Vérifier que `.gitignore` contient `CLAUDE.local.md`.',
-    });
-  }
-  const paths = new Map<string, number>();
-  for (const f of files) paths.set(f.path, (paths.get(f.path) ?? 0) + 1);
-  for (const [path, n] of paths) {
-    if (n > 1)
-      issues.push({
+/** Manques du projet : chaque contrôle associe une condition d'échec au problème signalé. */
+function projectChecks(project: Project, active: Rule[]): [failed: boolean, issue: Issue][] {
+  const memory = active.filter((r) => r.kind === 'rule');
+  const critical = memory.filter((r) => r.scope === 'project' && r.critical);
+  return [
+    [
+      !active.length,
+      {
         severity: 'error',
-        code: 'collision',
-        params: { n, path },
-        file: path,
-        message: `${n} éléments génèrent ${path}.`,
-        fix: 'Renommer un des éléments.',
-      });
-  }
-  return issues;
+        code: 'no-rules',
+        message: 'Aucune règle active : rien à envoyer à Claude.',
+        fix: "Ajouter une règle, partir d'un pattern ou importer un CLAUDE.md.",
+      },
+    ],
+    [
+      !memory.some((r) => r.category === 'commands' && r.scope === 'project'),
+      {
+        severity: 'warning',
+        code: 'no-commands',
+        message: 'Aucune commande build/test/lint dans la mémoire racine.',
+        fix: 'Ajouter une règle « Commandes » : install, dev, test, test unitaire, lint, typecheck, build.',
+      },
+    ],
+    [
+      !project.description.trim() || !project.stack.trim(),
+      {
+        severity: 'info',
+        code: 'no-context',
+        message: 'Description ou stack du projet manquante.',
+        fix: 'Une phrase sur le « quoi » et la stack aident Claude sur les cas ambigus.',
+      },
+    ],
+    [
+      !active.some((r) => r.kind === 'hook'),
+      {
+        severity: 'info',
+        code: 'no-hooks',
+        message: 'Aucun hook : format et lint reposent sur la bonne volonté du modèle.',
+        fix: 'Ajouter un hook PostToolUse `Edit|Write` qui lance le formatter.',
+      },
+    ],
+    [
+      !project.permissions.deny.length,
+      {
+        severity: 'info',
+        code: 'no-deny',
+        message: 'Aucune permission refusée.',
+        fix: 'Ex. refuser `Read(./.env)` et `Read(./secrets/**)`.',
+      },
+    ],
+    [
+      critical.length > LIMITS.criticalRules,
+      {
+        severity: 'warning',
+        code: 'too-many-critical',
+        params: { n: critical.length, max: LIMITS.criticalRules },
+        file: 'CLAUDE.md',
+        message: `${critical.length} règles critiques : au-delà de ${LIMITS.criticalRules}, plus rien ne ressort.`,
+        fix: 'Garder critiques seulement les consignes les plus souvent oubliées (tests avant de rendre la main, format des commits).',
+      },
+    ],
+    [
+      memory.some((r) => r.scope === 'local'),
+      {
+        severity: 'info',
+        code: 'local-gitignore',
+        file: 'CLAUDE.local.md',
+        message: 'CLAUDE.local.md doit rester hors du dépôt.',
+        fix: 'Vérifier que `.gitignore` contient `CLAUDE.local.md`.',
+      },
+    ],
+  ];
+}
+
+/** Chemin produit par plusieurs éléments : un seul survivrait à l'export. */
+function collisionIssues(files: GeneratedFile[]): Issue[] {
+  const counts = new Map<string, number>();
+  for (const f of files) counts.set(f.path, (counts.get(f.path) ?? 0) + 1);
+  return [...counts]
+    .filter(([, n]) => n > 1)
+    .map(([path, n]) => ({
+      severity: 'error',
+      code: 'collision',
+      params: { n, path },
+      file: path,
+      message: `${n} éléments génèrent ${path}.`,
+      fix: 'Renommer un des éléments.',
+    }));
+}
+
+function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
+  const active = project.rules.filter((r) => r.enabled);
+  const failed = projectChecks(project, active)
+    .filter(([fails]) => fails)
+    .map(([, issue]) => issue);
+  return [...failed, ...collisionIssues(files)];
 }
 
 export function scoreFrom(issues: Issue[]): number {
