@@ -488,75 +488,103 @@ function ruleIssues(rule: Rule): Issue[] {
   return issues.map((i) => ({ ruleId: rule.id, ...i }));
 }
 
-function crossRuleIssues(rules: Rule[]): Issue[] {
+/** Chaque ligne du corps de chaque règle, avec sa règle, dans l'ordre. */
+function ruleLines(rules: Rule[]): { rule: Rule; line: string }[] {
+  return rules.flatMap((rule) => rule.body.split('\n').map((line) => ({ rule, line })));
+}
+
+/** Clé de comparaison d'une ligne : sans puce, en minuscules. */
+const lineKey = (line: string) =>
+  line
+    .replace(/^[-*+\s]+/, '')
+    .trim()
+    .toLowerCase();
+
+/** Ligne (d'au moins 12 caractères) déjà présente dans une autre règle. */
+function duplicateIssues(memory: Rule[]): Issue[] {
   const issues: Issue[] = [];
-  const memory = rules.filter((r) => r.kind === 'rule');
-
   const seen = new Map<string, Rule>();
-  for (const rule of memory) {
-    for (const line of rule.body.split('\n')) {
-      const key = line
-        .replace(/^[-*+\s]+/, '')
-        .trim()
-        .toLowerCase();
-      if (key.length < 12) continue;
-      const other = seen.get(key);
-      if (other && other.id !== rule.id) {
-        issues.push({
-          severity: 'warning',
-          code: 'duplicate',
-          params: { title: other.title, line: line.trim() },
-          ruleId: rule.id,
-          message: `Ligne dupliquée avec « ${other.title} » : « ${line.trim()} ».`,
-          fix: 'Garder une seule source de vérité.',
-        });
-      } else seen.set(key, rule);
+  for (const { rule, line } of ruleLines(memory)) {
+    const key = lineKey(line);
+    if (key.length < 12) continue;
+    const other = seen.get(key);
+    if (!other || other.id === rule.id) {
+      seen.set(key, rule);
+      continue;
     }
+    issues.push({
+      severity: 'warning',
+      code: 'duplicate',
+      params: { title: other.title, line: line.trim() },
+      ruleId: rule.id,
+      message: `Ligne dupliquée avec « ${other.title} » : « ${line.trim()} ».`,
+      fix: 'Garder une seule source de vérité.',
+    });
   }
+  return issues;
+}
 
+/** Première règle citant chaque `code` dans une ligne affirmative, et dans une ligne d'interdiction. */
+function spansByPolarity(memory: Rule[]): { positive: Map<string, Rule>; negative: Map<string, Rule> } {
   const positive = new Map<string, Rule>();
   const negative = new Map<string, Rule>();
-  for (const rule of memory) {
-    for (const line of rule.body.split('\n')) {
-      const target = NEGATION.test(line) ? negative : positive;
-      for (const span of codeSpans(line)) if (!target.has(span)) target.set(span, rule);
-    }
-  }
-  for (const [span, rule] of negative) {
+  const cited = ruleLines(memory).flatMap(({ rule, line }) =>
+    codeSpans(line).map((span) => ({ rule, span, target: NEGATION.test(line) ? negative : positive })),
+  );
+  for (const { rule, span, target } of cited) if (!target.has(span)) target.set(span, rule);
+  return { positive, negative };
+}
+
+/** Même `code` demandé par une règle et interdit par une autre de même portée. */
+function contradictionIssues(memory: Rule[]): Issue[] {
+  const { positive, negative } = spansByPolarity(memory);
+  return [...negative].flatMap(([span, rule]): Issue[] => {
     const other = positive.get(span);
-    if (other && other.scope === rule.scope) {
-      issues.push({
+    if (!other || other.scope !== rule.scope) return [];
+    return [
+      {
         severity: 'warning',
         code: 'contradiction',
         params: { span, allowed: other.title, denied: rule.title },
         ruleId: rule.id,
         message: `\`${span}\` est à la fois demandé (« ${other.title} ») et interdit (« ${rule.title} »).`,
         fix: 'Clarifier quand l’un ou l’autre s’applique, ou supprimer une des deux règles.',
-      });
-    }
-  }
+      },
+    ];
+  });
+}
 
-  const managers = new Set<string>();
-  for (const rule of memory.filter((r) => r.category === 'commands')) {
-    // Seule la partie avant une négation compte : « `pnpm install` (jamais `npm`) » n'utilise que pnpm.
-    for (const line of rule.body.split('\n')) {
-      const negation = line.search(NEGATION);
-      for (const span of (negation >= 0 ? line.slice(0, negation) : line).matchAll(/`([^`]+)`/g)) {
-        const first = span[1].trim().split(/\s+/)[0];
-        if (PACKAGE_MANAGERS.includes(first)) managers.add(first);
-      }
-    }
-  }
-  if (managers.size > 1) {
-    issues.push({
+/** `code` d'une ligne situés avant une éventuelle négation : « `pnpm install` (jamais `npm`) » ne cite que pnpm. */
+function affirmedSpans(line: string): string[] {
+  const negation = line.search(NEGATION);
+  const affirmed = negation >= 0 ? line.slice(0, negation) : line;
+  return [...affirmed.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+}
+
+/** Plusieurs gestionnaires de paquets cités dans les règles de commandes. */
+function packageManagerIssues(memory: Rule[]): Issue[] {
+  const commandLines = ruleLines(memory.filter((r) => r.category === 'commands'));
+  const managers = new Set(
+    commandLines
+      .flatMap(({ line }) => affirmedSpans(line))
+      .map((span) => span.trim().split(/\s+/)[0])
+      .filter((first) => PACKAGE_MANAGERS.includes(first)),
+  );
+  if (managers.size <= 1) return [];
+  return [
+    {
       severity: 'warning',
       code: 'package-manager',
       params: { managers: [...managers].join(', ') },
       message: `Plusieurs gestionnaires de paquets : ${[...managers].join(', ')}.`,
       fix: 'N’en garder qu’un ; Claude choisira sinon au hasard.',
-    });
-  }
-  return issues;
+    },
+  ];
+}
+
+function crossRuleIssues(rules: Rule[]): Issue[] {
+  const memory = rules.filter((r) => r.kind === 'rule');
+  return [...duplicateIssues(memory), ...contradictionIssues(memory), ...packageManagerIssues(memory)];
 }
 
 function projectIssues(project: Project, files: GeneratedFile[]): Issue[] {
